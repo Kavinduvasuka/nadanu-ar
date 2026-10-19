@@ -193,11 +193,7 @@ body { isolation: isolate; }
 
 /* Thunky DEMO — Nadanu 3.0 Retro Typography */
 
-@font-face {
-    font-family: "Thunky";
-    src: url("./assets/fonts/Thunky-DEMO.ttf") format("truetype");
-    font-display: swap;
-}
+
 
 body {
     font-family: "Orbitron", Arial, sans-serif;
@@ -212,7 +208,7 @@ h1, h2, h3, h4,
 .ar-showcase h2,
 .category-card h3,
 .finals-step h3 {
-    font-family: "Thunky", "Audiowide", sans-serif !important;
+    font-family: "Bungee", "Audiowide", sans-serif !important;
     text-transform: none !important;
     font-weight: normal;
     letter-spacing: 1px;
@@ -221,18 +217,14 @@ h1, h2, h3, h4,
 .primary,
 .secondary,
 .text-button {
-    font-family: "Thunky", "Audiowide", sans-serif;
+    font-family: "Bungee", "Audiowide", sans-serif;
     text-transform: none;
 }
 
 
 
 /* GitHub Pages custom font fix */
-@font-face {
-    font-family: "Thunky";
-    src: url("./assets/fonts/") format("");
-    font-display: swap;
-}
+
 
 body {
     font-family: "Orbitron", Arial, sans-serif;
@@ -248,17 +240,13 @@ nav a,
 button,
 .primary,
 .secondary {
-    font-family: "Thunky", "Audiowide", sans-serif !important;
+    font-family: "Bungee", "Audiowide", sans-serif !important;
     text-transform: none !important;
 }
 
 
 /* Thunky DEMO custom font */
-@font-face {
-    font-family: "Thunky";
-    src: url("./assets/fonts/Thunky-DEMO.otf") format("opentype");
-    font-display: swap;
-}
+
 
 h1, h2, h3, h4,
 .brand,
@@ -267,12 +255,10 @@ nav a,
 button,
 .category-card h3,
 .competition-step h3 {
-    font-family: "Thunky", sans-serif !important;
+    font-family: "Bungee", sans-serif !important;
 }
 
 /* Public website fonts */
-@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Audiowide&display=swap');
-
 body {
     font-family: "Audiowide", sans-serif;
 }
@@ -293,3 +279,26 @@ button,
     font-family: "Audiowide", sans-serif !important;
 }
 
+
+/* NADANU PUBLIC FONT FIX */
+
+body {
+    font-family: "Audiowide", sans-serif;
+}
+
+h1, h2, h3, h4,
+.hero h1,
+.footer-logo,
+.category-card h3,
+.neon-category-card h3,
+.competition-step h3 {
+    font-family: "Bungee", sans-serif !important;
+    text-transform: none !important;
+}
+
+nav a,
+button,
+.brand,
+.countdown-units strong {
+    font-family: "Audiowide", sans-serif !important;
+}
