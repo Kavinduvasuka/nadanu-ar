@@ -422,3 +422,31 @@ button,
 .footer-society-logo {
     display: none !important;
 }
+
+
+
+
+/* NADANU GLOBAL FONT - EIGHTIES COMEBACK */
+@font-face {
+    font-family: "Eighties Comeback";
+    src: url("./assets/fonts/EightiesComeback.otf") format("opentype");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
+:root {
+    --font-main: "Eighties Comeback", sans-serif;
+}
+
+html,
+body,
+body *,
+button,
+input,
+textarea,
+select,
+dialog,
+dialog * {
+    font-family: "Eighties Comeback", sans-serif !important;
+}
