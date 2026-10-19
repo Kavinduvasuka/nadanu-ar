@@ -112,3 +112,66 @@ body { isolation: isolate; }
 @media(max-width:750px){.countdown-banner{justify-content:center;text-align:center;padding:18px 5%}.countdown-heading{justify-content:center}.countdown-message{width:100%}.journey-track{grid-template-columns:1fr}.journey-card:nth-child(2):after{content:'↓';display:block;right:auto;left:50%;top:auto;bottom:-28px}}
 @media(max-width:450px){.neon-category-grid{gap:10px}.neon-category-card{padding:15px 12px 20px}.category-illustration{height:110px}.category-illustration svg{width:85px;height:85px}.neon-category-card h3{font-size:14px}.neon-category-card p{font-size:10px}.countdown-units>div{min-width:60px}}
 @media(prefers-reduced-motion:reduce){.neon-category-card{transition:none}.live-pulse{animation:none}}
+
+/* Larger Nadanu 3.0 event date section */
+.date-strip {
+    display: flex;
+    align-items: center;
+    gap: 55px;
+    max-width: 700px;
+    padding-top: 35px;
+    margin-top: 35px;
+}
+
+.date-strip > strong {
+    font-size: 85px;
+    line-height: 1;
+    color: #ffba42;
+    font-weight: 900;
+}
+
+.date-strip small {
+    display: block;
+    font-size: 15px;
+    letter-spacing: 2px;
+    margin-top: 12px;
+    white-space: nowrap;
+}
+
+.date-strip b {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #fff0d6;
+}
+
+.date-strip span {
+    font-size: 18px;
+    line-height: 1.6;
+    margin-top: 12px;
+    color: #e2c5ab;
+}
+
+@media (max-width: 600px) {
+    .date-strip {
+        gap: 25px;
+        padding-top: 25px;
+    }
+
+    .date-strip > strong {
+        font-size: 62px;
+    }
+
+    .date-strip small {
+        font-size: 11px;
+        letter-spacing: 1px;
+    }
+
+    .date-strip b {
+        font-size: 15px;
+    }
+
+    .date-strip span {
+        font-size: 13px;
+    }
+}
