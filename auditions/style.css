@@ -369,3 +369,48 @@ button,
         max-width: 250px;
     }
 }
+/* NADANU footer bottom alignment fix */
+
+/* Ensure footer copyright row has space for the logo */
+.footer-bottom {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 24px !important;
+}
+
+/* Logo positioned separately without overlapping copyright */
+.society-footer-bottom {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: auto !important;
+    max-width: 250px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    flex-shrink: 0 !important;
+}
+
+.society-footer-bottom .footer-society-logo {
+    display: block !important;
+    width: 190px !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    object-fit: contain !important;
+}
+
+@media (max-width: 768px) {
+    .footer-bottom {
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    .society-footer-bottom {
+        width: 100% !important;
+        max-width: none !important;
+        justify-content: center !important;
+    }
+}
