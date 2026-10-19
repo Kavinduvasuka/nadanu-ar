@@ -302,3 +302,19 @@ button,
 .countdown-units strong {
     font-family: "Audiowide", sans-serif !important;
 }
+
+/* Computing Society Footer Logo */
+.footer-society-logo {
+    display: block;
+    width: min(100%, 340px);
+    height: auto;
+    object-fit: contain;
+    margin: 0 0 26px;
+}
+
+@media (max-width: 600px) {
+    .footer-society-logo {
+        width: min(100%, 280px);
+        margin-bottom: 20px;
+    }
+}
