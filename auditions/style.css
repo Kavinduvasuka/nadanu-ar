@@ -85,22 +85,30 @@ body { isolation: isolate; }
   .light-beam { width: 75vw; opacity: .12; } .ambient-orb { opacity: .16; } }
 @media (prefers-reduced-motion: reduce) { .light-beam, .ambient-orb, .retro-grid, .music-sparks { animation: none !important; } }
 
-/* 1980s retro-futuristic typography across the entire website */
-:root { --font-retro: 'Orbitron', 'Trebuchet MS', sans-serif; --font-display: 'Audiowide', 'Orbitron', sans-serif; }
-html, body, button, input, select, textarea, dialog, a, p, span, small, strong, b, label, li, div {
-    font-family: var(--font-retro);
-}
-body { font-family: var(--font-retro); }
-h1, h2, h3, h4, h5, h6, .brand, .footer-logo, .footer-brand-column h2,
-.poster-stamp, .step-number, .date-strip > strong, .finals-card h3 {
-    font-family: var(--font-display);
-}
-button, .primary, .secondary, .text-button, .glass { font-family: var(--font-retro); }
-/* Keep compact 80s typography readable on small screens */
-@media (max-width: 600px) {
-    h1 { font-size: clamp(38px, 10vw, 65px); line-height: 1.13; }
-    .about-section h2, .journey-section h2, .ar-showcase h2,
-    .join-section h2, .section-heading h2 { font-size: clamp(29px, 7.5vw, 46px); line-height: 1.2; }
-    .society, .site-nav a, .eyebrow { letter-spacing: .06em; }
-    .primary, .secondary { line-height: 1.5; }
-}
+/* 2026 audition countdown + neon category illustrations */
+.countdown-banner{position:relative;z-index:2;max-width:1280px;margin:0 auto;padding:16px 6%;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:linear-gradient(90deg,#33120ee8,#1b0b10e8);border-bottom:1px solid #ff89385c;box-shadow:inset 0 1px #ffcc6a1b}
+.countdown-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:.04em}
+.countdown-heading strong{color:#ffcc83;font-size:10px}
+.live-pulse{width:9px;height:9px;background:#ff763c;border-radius:50%;box-shadow:0 0 14px #ff763c;animation:live-dot 1.5s infinite}
+.countdown-units{display:flex;gap:8px;align-items:center}
+.countdown-units>div{min-width:65px;text-align:center;border:1px solid #ffab5855;border-radius:8px;padding:8px 9px;background:#0904078a}
+.countdown-units strong{display:block;font-family:'Audiowide',sans-serif;color:#ffd389;font-size:clamp(17px,2vw,26px);font-variant-numeric:tabular-nums;text-shadow:0 0 14px #ff672b85}
+.countdown-units small{display:block;color:#d5aa93;font-size:9px;letter-spacing:.04em;margin-top:4px}
+.countdown-message{color:#e9b99e;font-size:10px}
+.neon-category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.neon-category-card{position:relative;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;padding:23px 19px 26px;border:1px solid #ff8d4c5c;border-radius:15px;background:linear-gradient(150deg,#341724c9,#1a0b12e8 70%);box-shadow:inset 0 1px #ffc68e24,0 12px 30px #0004;transition:transform .25s,border-color .25s,box-shadow .25s}
+.neon-category-card:hover{transform:translateY(-6px);border-color:#ffae65;box-shadow:0 0 27px #ff6b282b}
+.category-illustration{width:100%;height:145px;display:grid;place-items:center;margin-bottom:17px;background:radial-gradient(ellipse,#ff682b20,transparent 68%);color:#ff974d}
+.category-illustration svg{height:118px;width:118px;filter:drop-shadow(0 0 8px #ff7527) drop-shadow(0 0 19px #ff6c2677)}
+.category-kicker{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.09em;color:#ffbd7b}
+.neon-category-card h3{font-family:'Audiowide',sans-serif;font-size:clamp(15px,1.55vw,21px);line-height:1.3;margin:12px 0 8px;color:#fff0d5;text-transform:none}
+.neon-category-card p{font-size:12px;line-height:1.7;color:#c9ab9c;margin:0}
+.category-glint{position:absolute;right:17px;top:14px;color:#ffb060;text-shadow:0 0 12px #ff8b37}
+.category-note{font-size:11px;color:#bd9b8b;margin-top:20px}
+.journey-track{grid-template-columns:repeat(3,minmax(0,1fr))}
+.journey-card:nth-child(2):after{display:block}
+.journey-card:nth-child(3):after{display:none}
+@media(max-width:1050px){.neon-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.journey-track{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:750px){.countdown-banner{justify-content:center;text-align:center;padding:18px 5%}.countdown-heading{justify-content:center}.countdown-message{width:100%}.journey-track{grid-template-columns:1fr}.journey-card:nth-child(2):after{content:'↓';display:block;right:auto;left:50%;top:auto;bottom:-28px}}
+@media(max-width:450px){.neon-category-grid{gap:10px}.neon-category-card{padding:15px 12px 20px}.category-illustration{height:110px}.category-illustration svg{width:85px;height:85px}.neon-category-card h3{font-size:14px}.neon-category-card p{font-size:10px}.countdown-units>div{min-width:60px}}
+@media(prefers-reduced-motion:reduce){.neon-category-card{transition:none}.live-pulse{animation:none}}
