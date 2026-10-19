@@ -318,3 +318,27 @@ button,
         margin-bottom: 20px;
     }
 }
+/* Society logo at the end of the footer */
+.society-footer-bottom {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 28px 16px 12px;
+    margin-top: 24px;
+    border-top: 1px solid rgba(255, 174, 70, 0.2);
+}
+
+.society-footer-bottom .footer-society-logo {
+    display: block;
+    width: min(100%, 320px);
+    height: auto;
+    object-fit: contain;
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .society-footer-bottom .footer-society-logo {
+        width: min(100%, 250px);
+    }
+}
