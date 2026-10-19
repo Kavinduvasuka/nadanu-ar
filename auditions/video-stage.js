@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-export function createVideoStage(video, posterSrc = 'assets/poster.jpg', providedTexture = null, showTarget = true) {
+export function createVideoStage(video, posterSrc = 'assets/post 10.png', providedTexture = null, showTarget = true) {
     const group = new THREE.Group(), texture = providedTexture || new THREE.VideoTexture(video); texture.minFilter = THREE.LinearFilter; texture.magFilter = THREE.LinearFilter; texture.encoding = THREE.sRGBEncoding;
     const geometry = new THREE.PlaneGeometry(1, 1920 / 1080), material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false, transparent: true }); const screen = new THREE.Mesh(geometry, material); screen.position.z = .018; screen.renderOrder = 2; group.add(screen);
     const posterTexture = showTarget ? new THREE.TextureLoader().load(posterSrc) : new THREE.Texture(); posterTexture.encoding = THREE.sRGBEncoding; const pg = new THREE.PlaneGeometry(1, 1.416), pm = new THREE.MeshBasicMaterial({ map: posterTexture, transparent: true, toneMapped: false }); const poster = new THREE.Mesh(pg, pm); poster.position.z = .020; poster.renderOrder = 3; poster.visible = false; if (showTarget) group.add(poster);
