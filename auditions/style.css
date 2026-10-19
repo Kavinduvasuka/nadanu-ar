@@ -342,3 +342,30 @@ button,
         width: min(100%, 250px);
     }
 }
+/* Final Footer Logo Position */
+.society-footer-bottom {
+    clear: both;
+    width: 100%;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center;
+    margin: 35px 0 0;
+    padding: 30px 15px 20px;
+    border-top: 1px solid rgba(255, 174, 70, 0.2);
+    box-sizing: border-box;
+}
+
+.society-footer-bottom .footer-society-logo {
+    display: block;
+    width: min(100%, 320px);
+    max-width: 320px;
+    height: auto;
+    margin: 0 auto;
+    object-fit: contain;
+}
+
+@media (max-width: 600px) {
+    .society-footer-bottom .footer-society-logo {
+        max-width: 250px;
+    }
+}
