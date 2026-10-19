@@ -190,3 +190,38 @@ body { isolation: isolate; }
     text-transform: none !important;
 }
 
+
+/* Thunky DEMO — Nadanu 3.0 Retro Typography */
+
+@font-face {
+    font-family: "Thunky";
+    src: url("./assets/fonts/Thunky-DEMO.ttf") format("truetype");
+    font-display: swap;
+}
+
+body {
+    font-family: "Orbitron", Arial, sans-serif;
+}
+
+h1, h2, h3, h4,
+.brand,
+.hero h1,
+.event-about h2,
+.competition-section h2,
+.competition-step h3,
+.ar-showcase h2,
+.category-card h3,
+.finals-step h3 {
+    font-family: "Thunky", "Audiowide", sans-serif !important;
+    text-transform: none !important;
+    font-weight: normal;
+    letter-spacing: 1px;
+}
+
+.primary,
+.secondary,
+.text-button {
+    font-family: "Thunky", "Audiowide", sans-serif;
+    text-transform: none;
+}
+
