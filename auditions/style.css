@@ -252,3 +252,20 @@ button,
     text-transform: none !important;
 }
 
+
+/* Thunky DEMO custom font */
+@font-face {
+    font-family: "Thunky";
+    src: url("./assets/fonts/Thunky-DEMO.otf") format("opentype");
+    font-display: swap;
+}
+
+h1, h2, h3, h4,
+.brand,
+.footer-logo,
+nav a,
+button,
+.category-card h3,
+.competition-step h3 {
+    font-family: "Thunky", sans-serif !important;
+}
