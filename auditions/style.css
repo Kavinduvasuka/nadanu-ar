@@ -225,3 +225,30 @@ h1, h2, h3, h4,
     text-transform: none;
 }
 
+
+
+/* GitHub Pages custom font fix */
+@font-face {
+    font-family: "Thunky";
+    src: url("./assets/fonts/") format("");
+    font-display: swap;
+}
+
+body {
+    font-family: "Orbitron", Arial, sans-serif;
+}
+
+h1, h2, h3, h4,
+.brand,
+.footer-logo,
+.hero h1,
+.category-card h3,
+.competition-step h3,
+nav a,
+button,
+.primary,
+.secondary {
+    font-family: "Thunky", "Audiowide", sans-serif !important;
+    text-transform: none !important;
+}
+
