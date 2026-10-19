@@ -8,11 +8,11 @@ export const JUDGE_SCENES = [
     { start: 11, end: 15, kicker: 'WE WOULD BE HONOURED', lines: ['BY YOUR', 'PRESENCE.'], copy: ['Lohitha  075 899 9638', 'Dulsith  071 092 9324'] }
 ];
 
-export function createJudgesStage(movie, posterSrc = 'assets/judges-invitation-ar-qr.jpg') {
+export function createJudgesStage(movie, posterSrc = 'assets/judges-invitation-ar-qr.webp') {
     const canvas = document.createElement('canvas'); canvas.width = 1080; canvas.height = 1920;
     const ctx = canvas.getContext('2d'), texture = new THREE.CanvasTexture(canvas);
     const stage = createVideoStage(movie, posterSrc, texture, false);
-    const logo = new Image(); logo.src = 'assets/logo.png';
+    const logo = new Image(); logo.src = 'assets/logo.webp';
     const clamp = v => Math.max(0, Math.min(1, v)), ease = v => 1 - (1 - clamp(v)) ** 3;
     function text(value, y, size, color = '#fff0cf', weight = 700) { ctx.font = `${weight} ${size}px Arial, sans-serif`; ctx.textAlign = 'center'; ctx.fillStyle = color; ctx.fillText(value, 540, y, 900); }
     function rule(y, width, alpha = 1) { ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = '#dbac69'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(540 - width / 2, y); ctx.lineTo(540 + width / 2, y); ctx.stroke(); ctx.restore(); }

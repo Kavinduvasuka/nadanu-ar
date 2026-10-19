@@ -4,7 +4,7 @@ import { createVideoStage } from './video-stage.js';
 import { createJudgesStage } from './judges-stage.js?v=invitation-only-3';
 const PAGE_KIND = 'auditions';
 const { ACTS, TOTAL, startOf, position } = await import(PAGE_KIND === 'judges' ? './judges-timeline.js?v=invitation-only-3' : './timeline.js');
-const TARGETS = [{ src: 'assets/post 10.png', kind: 'auditions' }, { src: 'assets/judges-invitation.jpg', kind: 'judges' }, { src: 'assets/judges-invitation-ar-qr.jpg', kind: 'judges' }].filter(target => target.kind === PAGE_KIND);
+const TARGETS = [{ src: 'assets/post 10.webp', kind: 'auditions' }, { src: 'assets/judges-invitation.webp', kind: 'judges' }, { src: 'assets/judges-invitation-ar-qr.webp', kind: 'judges' }].filter(target => target.kind === PAGE_KIND);
 // One .mind per experience. Judges .mind must contain both images in TARGETS order.
 const MIND_FILE = PAGE_KIND === 'judges' ? 'assets/judges.mind' : 'assets/auditions.mind';
 const CACHE_KEY = `nadanu-${PAGE_KIND}-targets-v4`;
