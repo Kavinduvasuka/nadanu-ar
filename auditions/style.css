@@ -269,3 +269,27 @@ button,
 .competition-step h3 {
     font-family: "Thunky", sans-serif !important;
 }
+
+/* Public website fonts */
+@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Audiowide&display=swap');
+
+body {
+    font-family: "Audiowide", sans-serif;
+}
+
+h1, h2, h3, h4,
+.hero h1,
+.footer-logo,
+.category-card h3,
+.competition-step h3 {
+    font-family: "Bungee", sans-serif !important;
+    text-transform: none !important;
+}
+
+nav a,
+button,
+.countdown,
+.brand {
+    font-family: "Audiowide", sans-serif !important;
+}
+
