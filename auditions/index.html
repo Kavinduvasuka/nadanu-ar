@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-experience="auditions">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#1c0e08">
+    <title>Nadanu 3.0 — Feel the Beat. Own the Stage.</title>
+    <meta name="description"
+        content="Bring the Nadanu auditions poster to life with neon performances and retro music. 4 November, 9 AM onwards, ICBT Colombo Campus Auditorium.">
+    <link rel="stylesheet" href="style.css">
+    <script
+        type="importmap">{"imports":{"three":"./assets/three.module.js","three/addons/renderers/CSS3DRenderer.js":"./assets/CSS3DRenderer.js"}}</script>
+</head>
+
+<body>
+    <main id="landing">
+        <header class="masthead"><a href="./" class="brand">NADANU <span>3.0</span></a><span class="society">COMPUTING
+                SOCIETY<br>OF ICBT</span><button class="text-button" data-register>Register</button></header>
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow"><i></i> THE 80s. A NEW DIMENSION.</p>
+                <h1>FEEL THE BEAT.<br><em>OWN THE<br class="desktop-break"> STAGE.</em></h1>
+                <p class="intro">A 15-second burst of neon performances, animated titles, and retro music. Scan the
+                    audition poster and bring the stage to life.</p>
+                <div class="hero-actions"><button id="startAR" class="primary">Start poster AR
+                        <span>↗</span></button><button id="preview" class="secondary">Watch the show
+                        <span>▷</span></button></div>
+                <p class="camera-note">On your phone, allow the camera and frame the full audition poster.<br>Your
+                    matching experience starts when the artwork is found.</p>
+                <div class="date-strip"><strong>04<br><small>NOVEMBER</small></strong>
+                    <div><b>9:00 AM ONWARDS</b><span>ICBT Colombo Campus<br>Auditorium</span></div>
+                </div>
+            </div>
+            <div class="poster-display">
+                <div class="poster-glow"></div><img src="assets/post 10.png"
+                    alt="Nadanu 3.0 auditions — 4 November, 9 AM onwards, ICBT Colombo Campus Auditorium"
+                    class="poster"><span class="poster-stamp">SCAN THE POSTER.<br>FEEL THE SPOTLIGHT.</span><span
+                    class="vertical-note">AUDITIONS / LIVE IN A NEW DIMENSION</span>
+            </div>
+        </section>
+        <p style="text-align:center;padding:18px"><a href="./" style="color:inherit">View judges invitation ↗</a></p>
+        <section class="categories" aria-label="Audition categories">
+            <p>FOUR WAYS TO OWN THE STAGE</p>
+            <div class="category-row"><button data-act="2"><span>01</span>Solo singing <i>↗</i></button><button
+                    data-act="3"><span>02</span>Group singing <i>↗</i></button><button data-act="4"><span>03</span>Solo
+                    dancing <i>↗</i></button><button data-act="5"><span>04</span>Group dancing <i>↗</i></button></div>
+        </section>
+        <section class="how">
+            <div><small>01 / OPEN</small>
+                <p>Start the camera.</p>
+            </div>
+            <div><small>02 / FRAME</small>
+                <p>Keep your artwork in view.</p>
+            </div>
+            <div><small>03 / EXPERIENCE</small>
+                <p>Let the stage come alive.</p>
+            </div>
+        </section>
+        <footer><span>THE STAGE IS WAITING. ARE YOU?</span><a href="assets/post%2010.png" target="_blank"
+                rel="noopener">Open the tracking poster ↗</a></footer>
+    </main>
+    <section id="experience" hidden aria-label="Nadanu performance">
+        <div id="arContainer"></div>
+        <div class="experience-top"><button id="exit" class="glass" aria-label="Exit the show">← Back</button><span
+                id="modeTag" class="mode-pill">POSTER AR</span><button id="sound" class="glass"
+                aria-pressed="true">Music on</button></div>
+        <div id="scanner">
+            <p class="scan-eyebrow"><span></span> NADANU / POSTER RECOGNITION</p>
+            <div class="viewfinder">
+                <div class="scan-grid" aria-hidden="true"></div><span class="corner-id corner-one"
+                    aria-hidden="true">01</span><span class="corner-id corner-two" aria-hidden="true">02</span><span
+                    class="scan-lock" aria-hidden="true">✓</span><i></i><i></i><i></i><i></i>
+                <div class="scan-line"></div>
+            </div>
+            <p class="scan-heading"><span class="search-label">FRAME YOUR POSTER</span><span class="lock-label">POSTER
+                    DETECTED</span></p>
+            <p id="status" role="status">Preparing your poster…</p>
+            <div class="scan-steps" aria-hidden="true">
+                <span>CAMERA</span><i></i><span>POSTER</span><i></i><span>SHOWTIME</span></div><button id="fallback"
+                class="glass" hidden>Watch the show instead</button>
+        </div>
+        <div id="showHUD" class="show-hud">
+            <p class="hud-kicker" id="actKicker">COMPUTING SOCIETY OF ICBT PRESENTS</p>
+            <h2 id="actTitle">Nadanu 3.0</h2>
+            <p id="actCopy">Feel the Beat. Own the Stage.</p>
+            <div class="timeline" id="timeline" aria-label="Show progress"></div>
+            <div class="play-controls"><button id="pause" class="glass" aria-label="Pause show">Ⅱ Pause</button><span
+                    id="timeLabel">00:00 / 00:15</span><button id="replay" class="glass">↻ Replay</button></div><a
+                id="register" class="primary" href="https://luma.com/vofdxmeh" target="_blank" rel="noopener noreferrer"
+                hidden>Register now ↗</a>
+        </div>
+        <p id="notice" role="status" hidden></p>
+    </section>
+    <dialog id="registration"><button id="closeRegistration" class="close"
+            aria-label="Close registration details">×</button>
+        <p class="eyebrow">NADANU 3.0 / AUDITIONS</p>
+        <h2>Your stage<br>is waiting.</h2>
+        <p>4 November · 9:00 AM onwards<br>ICBT Colombo Campus Auditorium</p><a class="primary"
+            href="https://luma.com/vofdxmeh" target="_blank" rel="noopener">Register on Luma ↗</a>
+        <p class="contact-intro">For more details, contact the organizers.</p><a class="contact"
+            href="tel:+94758999638"><span>Lohitha</span><strong>075 899 9638 ↗</strong></a><a class="contact"
+            href="tel:+94710929324"><span>Dulsith</span><strong>071 092 9324 ↗</strong></a><small>Feel the Beat. Own the
+            Stage.</small>
+    </dialog>
+    <script type="module" src="app.js?v=separate-pages-1"></script>
+</body>
+
+</html>
