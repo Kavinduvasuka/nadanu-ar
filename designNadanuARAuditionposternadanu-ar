@@ -1,0 +1,89 @@
+warning: in the working copy of 'auditions/index.html', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/auditions/app.js b/auditions/app.js[m
+[1mindex ede4701..9b781ab 100644[m
+[1m--- a/auditions/app.js[m
+[1m+++ b/auditions/app.js[m
+[36m@@ -4,7 +4,7 @@[m [mimport { createVideoStage } from './video-stage.js';[m
+ import { createJudgesStage } from './judges-stage.js?v=invitation-only-3';[m
+ const PAGE_KIND = 'auditions';[m
+ const { ACTS, TOTAL, startOf, position } = await import(PAGE_KIND === 'judges' ? './judges-timeline.js?v=invitation-only-3' : './timeline.js');[m
+[31m-const TARGETS = [{ src: 'assets/post 10.png', kind: 'auditions' }, { src: 'assets/judges-invitation.jpg', kind: 'judges' }, { src: 'assets/judges-invitation-ar-qr.jpg', kind: 'judges' }].filter(target => target.kind === PAGE_KIND);[m
+[32m+[m[32mconst TARGETS = [{ src: 'assets/post 10.webp', kind: 'auditions' }, { src: 'assets/judges-invitation.webp', kind: 'judges' }, { src: 'assets/judges-invitation-ar-qr.jpg', kind: 'judges' }].filter(target => target.kind === PAGE_KIND);[m
+ // One .mind per experience. Judges .mind must contain both images in TARGETS order.[m
+ const MIND_FILE = PAGE_KIND === 'judges' ? 'assets/judges.mind' : 'assets/auditions.mind';[m
+ const CACHE_KEY = `nadanu-${PAGE_KIND}-targets-v4`;[m
+[1mdiff --git a/auditions/index.html b/auditions/index.html[m
+[1mindex 6e9b28d..84b128c 100644[m
+[1m--- a/auditions/index.html[m
+[1m+++ b/auditions/index.html[m
+[36m@@ -64,7 +64,7 @@[m
+         </div>[m
+       </div>[m
+       <div class="poster-display">[m
+[31m-        <div class="poster-glow"></div><img src="assets/post%2010.png" alt="Nadanu 3.0 official auditions poster"[m
+[32m+[m[32m        <div class="poster-glow"></div><img src="assets/post%2010.webp" alt="Nadanu 3.0 official auditions poster"[m
+           class="poster"><span class="poster-stamp">THE ROAD TO<br>The Grand Finale</span><span[m
+           class="vertical-note">NADANU / AUDITIONS 3.0</span>[m
+       </div>[m
+[36m@@ -169,7 +169,7 @@[m
+         <p class="camera-note">Camera permission is requested only after you tap Start Poster AR.</p>[m
+       </div>[m
+       <div class="ar-showcase-visual">[m
+[31m-        <div class="ar-poster-glow"></div><img src="assets/post%2010.png" alt="Official Nadanu 3.0 poster to scan"[m
+[32m+[m[32m        <div class="ar-poster-glow"></div><img src="assets/post%2010.webp" alt="Official Nadanu 3.0 poster to scan"[m
+           loading="lazy"><span class="ar-scan-label">SCAN · DETECT · EXPERIENCE</span>[m
+       </div>[m
+     </section>[m
+[36m@@ -221,7 +221,7 @@[m
+           <h3>EVENT DETAILS</h3>[m
+           <p><strong>04 NOVEMBER 2026</strong><br>9:00 AM onwards</p>[m
+           <p>ICBT Colombo Campus<br>Auditorium</p>[m
+[31m-          <a href="assets/post%2010.png" target="_blank" rel="noopener noreferrer">View Auditions Poster &#8599;</a>[m
+[32m+[m[32m          <a href="assets/post%2010.webp" target="_blank" rel="noopener noreferrer">View Auditions Poster &#8599;</a>[m
+         </div>[m
+       </div>[m
+       <div class="footer-bottom">[m
+[1mdiff --git a/auditions/judges-stage.js b/auditions/judges-stage.js[m
+[1mindex 83abd63..ae94c64 100644[m
+[1m--- a/auditions/judges-stage.js[m
+[1m+++ b/auditions/judges-stage.js[m
+[36m@@ -12,7 +12,7 @@[m [mexport function createJudgesStage(movie, posterSrc = 'assets/judges-invitation-a[m
+     const canvas = document.createElement('canvas'); canvas.width = 1080; canvas.height = 1920;[m
+     const ctx = canvas.getContext('2d'), texture = new THREE.CanvasTexture(canvas);[m
+     const stage = createVideoStage(movie, posterSrc, texture, false);[m
+[31m-    const logo = new Image(); logo.src = 'assets/logo.png';[m
+[32m+[m[32m    const logo = new Image(); logo.src = 'assets/logo.webp';[m
+     const clamp = v => Math.max(0, Math.min(1, v)), ease = v => 1 - (1 - clamp(v)) ** 3;[m
+     function text(value, y, size, color = '#fff0cf', weight = 700) { ctx.font = `${weight} ${size}px Arial, sans-serif`; ctx.textAlign = 'center'; ctx.fillStyle = color; ctx.fillText(value, 540, y, 900); }[m
+     function rule(y, width, alpha = 1) { ctx.save(); ctx.globalAlpha *= alpha; ctx.strokeStyle = '#dbac69'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(540 - width / 2, y); ctx.lineTo(540 + width / 2, y); ctx.stroke(); ctx.restore(); }[m
+[1mdiff --git a/auditions/stage.js b/auditions/stage.js[m
+[1mindex 2dac9ac..6f221d5 100644[m
+[1m--- a/auditions/stage.js[m
+[1m+++ b/auditions/stage.js[m
+[36m@@ -10,10 +10,10 @@[m [mexport function createStage(videos, { preview = false } = {}) {[m
+     const plate = mesh(new THREE.PlaneGeometry(1.4, 1.5), new THREE.MeshBasicMaterial({ color: 0x160902, transparent: true, opacity: .62, depthWrite: false })); plate.position.set(0, 0, .035);[m
+     const beams = []; for (const side of [-1, 1]) { const mat = new THREE.ShaderMaterial({ uniforms: { strength: { value: .035 } }, vertexShader: 'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}', fragmentShader: 'varying vec2 vUv;uniform float strength;void main(){float width=(1.0-vUv.y)*.85+.04;float edge=1.0-smoothstep(width*.55,width,abs(vUv.x-.5));float a=edge*strength*sin(vUv.y*3.14159);gl_FragColor=vec4(1.0,.24,.06,a);}', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }); const b = mesh(new THREE.PlaneGeometry(1.15, 1.48), mat); b.position.set(side * .26, -.015, .075); b.rotation.z = side * .28; beams.push(b); }[m
+     const glow = (() => { const c = document.createElement('canvas'); c.width = c.height = 512; const x = c.getContext('2d'), g = x.createRadialGradient(256, 256, 4, 256, 256, 250); g.addColorStop(0, 'rgba(255,105,35,.44)'); g.addColorStop(.42, 'rgba(180,48,12,.19)'); g.addColorStop(1, 'rgba(100,20,3,0)'); x.fillStyle = g; x.fillRect(0, 0, 512, 512); const t = new THREE.CanvasTexture(c); owned.push(t); const p = mesh(new THREE.PlaneGeometry(1.75, 1.75), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); p.position.z = .05; return p; })();[m
+[31m-    const logo = art('assets/logo.png', .86, .98); logo.position.set(0, .10, .30);[m
+[31m-    const auditions = art('assets/auditions.png', 1.30, .433); auditions.position.set(0, -.40, .35);[m
+[32m+[m[32m    const logo = art('assets/logo.webp', .86, .98); logo.position.set(0, .10, .30);[m
+[32m+[m[32m    const auditions = art('assets/auditions.webp', 1.30, .433); auditions.position.set(0, -.40, .35);[m
+     const finaleTitle = label('REGISTER NOW', 1.15, 82, '#ffdc78'); finaleTitle.position.set(0, .65, .29);[m
+[31m-    const invitation = art('assets/invitation.png', .95, .577); invitation.position.set(0, -.47, .32);[m
+[32m+[m[32m    const invitation = art('assets/invitation.webp', .95, .577); invitation.position.set(0, -.47, .32);[m
+     const organizer = label('COMPUTING SOCIETY OF ICBT', 1.1, 41, '#f8d896'); organizer.position.set(0, .67, .2);[m
+     const captions = new Map(); for (const act of ACTS.filter(a => a.type.includes('-'))) { const l = label(act.title, 1.2, 76); l.position.set(0, .68, .27); captions.set(act.type, l); }[m
+     const popupRing = mesh(new THREE.TorusGeometry(.055, .002, 8, 60), new THREE.MeshBasicMaterial({ color: 0xffb457, transparent: true, opacity: .8, depthWrite: false, blending: THREE.AdditiveBlending })); popupRing.position.z = .055;[m
+[1mdiff --git a/auditions/video-stage.js b/auditions/video-stage.js[m
+[1mindex 325a540..3a841ee 100644[m
+[1m--- a/auditions/video-stage.js[m
+[1m+++ b/auditions/video-stage.js[m
+[36m@@ -3,7 +3,7 @@[m [mimport * as THREE from 'three';[m
+ [m
+ export function createVideoStage([m
+     video,[m
+[31m-    posterSrc = 'assets/post 10.png',[m
+[32m+[m[32m    posterSrc = 'assets/post 10.webp',[m
+     providedTexture = null,[m
+     showTarget = false[m
+ ) {[m
