@@ -415,46 +415,10 @@ button,
     }
 }
 
-/* NADANU FINAL FOOTER ALIGNMENT START */
 
-/* Align society logo with the existing footer content */
-.society-footer-bottom {
-    box-sizing: border-box !important;
-    display: flex !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-
-    width: min(100% - 40px, 1380px) !important;
-    max-width: 1380px !important;
-
-    margin: 18px auto 0 !important;
-    padding: 18px 0 12px !important;
-
-    border: none !important;
-    clear: both !important;
+/* Removed footer society logo */
+.society-footer-bottom,
+.society-logo-wrap,
+.footer-society-logo {
+    display: none !important;
 }
-
-/* Control the logo size */
-.society-footer-bottom .footer-society-logo {
-    display: block !important;
-    width: 190px !important;
-    max-width: 100% !important;
-    height: auto !important;
-    margin: 0 !important;
-    object-fit: contain !important;
-}
-
-/* Mobile layout */
-@media (max-width: 768px) {
-    .society-footer-bottom {
-        width: calc(100% - 32px) !important;
-        justify-content: center !important;
-        margin-top: 20px !important;
-    }
-
-    .society-footer-bottom .footer-society-logo {
-        width: 170px !important;
-    }
-}
-
-/* NADANU FINAL FOOTER ALIGNMENT END */
