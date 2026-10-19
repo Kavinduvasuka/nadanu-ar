@@ -175,3 +175,18 @@ body { isolation: isolate; }
         font-size: 13px;
     }
 }
+
+/* Nadanu Title Case Typography */
+.hero h1,
+.event-about h2,
+.competition-section h2,
+.competition-step h3,
+.categories > p,
+.ar-showcase h2,
+.ar-showcase-content h2,
+.category-row,
+.category-card h3,
+.finals-step h3 {
+    text-transform: none !important;
+}
+
