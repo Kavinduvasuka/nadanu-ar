@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#120b10" />
   <title>Nadanu 3.0 | Grand Finale AR</title>
-  <link rel="stylesheet" href="./style.css?v=invitation-orbit-20261106" />
+  <link rel="stylesheet" href="./style.css?v=premium-invitation-20261106" />
   <script type="importmap">
   {"imports": {
     "three": "https://unpkg.com/three@0.147.0/build/three.module.js",
@@ -15,25 +15,60 @@
   </script>
 </head>
 <body>
-  <main id="landing">
-    <div class="frame">
-      <div class="eyebrow">COMPUTING SOCIETY OF ICBT PRESENTS</div>
-      <h1>NADANU <span>3.0</span></h1>
-      <div class="line"></div>
-      <h2>GRAND FINALE</h2>
-      <p>Scan your printed B5 invitation to see the original 3D Stage Lights concert, featuring your real singer, solo dancer, and group models.</p>
-      <button id="startButton" type="button">START AR EXPERIENCE</button>
-      <a href="./world.html" style="display:block;max-width:320px;margin:14px auto 0;padding:14px 18px;border:1px solid #33e1ff;border-radius:999px;color:#061419;text-decoration:none;font:600 11px 'Unbounded',Arial,sans-serif;background:#33e1ff">STABLE 3D EXPERIENCE · ALL DEVICES</a>
-      <p class="hint">For the same shake-free concert on iPhone, Android and desktop, choose STABLE 3D EXPERIENCE. Invitation AR remains available above.</p>
-      <p class="hint">Camera permission is required · Best on Chrome or Safari</p>
+  <main id="landing" class="finale-invite">
+    <div class="invite-glow invite-glow-a" aria-hidden="true"></div>
+    <div class="invite-glow invite-glow-b" aria-hidden="true"></div>
+    <div class="invite-stars" aria-hidden="true"></div>
+    <section class="invite-card" aria-label="Nadanu Grand Finale digital invitation">
+      <div class="invite-kicker"><span class="kicker-line"></span> COMPUTING SOCIETY OF ICBT <span class="kicker-line"></span></div>
+      <div class="invite-logo-wrap">
+        <div class="invite-logo-aura" aria-hidden="true"></div>
+        <img class="invite-logo" src="./assets/nadanu-logo.png" alt="Nadanu 3.0 · Feel the Beat. Own the Stage." onerror="this.style.display='none';document.querySelector('.invite-logo-fallback').style.display='grid'" />
+        <div class="invite-logo-fallback" aria-label="Nadanu 3.0" style="display:none"><span class="fallback-star">★</span><strong>NADANU <em>3.0</em></strong></div>
+      </div>
+      <div class="invite-smallheading">YOU ARE CORDIALLY INVITED TO</div>
+      <h1 class="invite-heading">THE <span>GRAND FINALE</span></h1>
+      <div class="invite-rule"><span>✦</span></div>
+      <p class="invite-message">A celebration of rhythm, talent and unforgettable performances. Get ready to witness the stars take the stage.</p>
+      <div class="invite-chips"><span>✦ LIVE PERFORMANCES</span><span>✦ MUSIC & DANCE</span><span>✦ A NIGHT TO REMEMBER</span></div>
+      <div class="invite-actions">
+        <button id="startButton" type="button" class="invite-primary">✦ START INVITATION AR <span>↗</span></button>
+        <button id="previewButton" type="button" class="invite-secondary">▶ WATCH THE INVITATION</button>
+      </div>
+      <a href="./world.html" class="invite-explore">EXPLORE THE INTERACTIVE 3D STAGE <span>↗</span></a>
+      <div class="invite-foot"><span>AN IMMERSIVE INVITATION EXPERIENCE</span><span class="invite-foot-dot">✧</span><span>FEEL THE BEAT. OWN THE STAGE.</span></div>
       <p id="message" role="status" aria-live="polite"></p>
-    </div>
+    </section>
+    <div class="invite-bottom-glow" aria-hidden="true"></div>
   </main>
+  <div id="videoDialog" class="invite-video-dialog" hidden role="dialog" aria-modal="true" aria-label="Nadanu invitation film">
+    <div class="invite-video-inner">
+      <button id="closeVideo" class="invite-close-video" type="button" aria-label="Close video">✕</button>
+      <video id="invitationVideo" controls playsinline preload="none" poster="./assets/nadanu-logo.png">
+        <source src="./assets/nadanu-finale-promo.mp4" type="video/mp4">
+        Your browser does not support video playback.
+      </video>
+      <p id="videoStatus">NADANU 3.0 · THE GRAND FINALE</p>
+    </div>
+  </div>
   <div id="arContainer"></div>
   <div id="arUI" hidden>
     <div class="topbar"><strong>NADANU 3.0 · STAGE LIGHTS</strong><button id="stopButton" type="button">EXIT AR</button></div><div class="act-controls"><button class="active" data-act="auto">AUTO</button><button data-act="0">SINGER</button><button data-act="1">SOLO DANCE</button><button data-act="2">GROUP</button><button id="soundButton">SOUND OFF</button></div>
     <button id="resetViewButton" type="button" style="position:absolute;top:calc(73px + env(safe-area-inset-top));right:12px;pointer-events:auto;color:white;background:#a32167;border-radius:30px;padding:10px;font:600 10px Arial,sans-serif">RESET ACTORS</button><div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
   </div>
   <script type="module" src="./app.js?v=angle-stable-sound-on-20261106"></script>
+  <script>
+  (()=>{
+    const open=document.getElementById('previewButton'),dialog=document.getElementById('videoDialog'),close=document.getElementById('closeVideo'),video=document.getElementById('invitationVideo'),status=document.getElementById('videoStatus');
+    const hide=()=>{video.pause();dialog.hidden=true;document.body.classList.remove('invite-modal-open');open.focus();};
+    open.addEventListener('click',()=>{dialog.hidden=false;document.body.classList.add('invite-modal-open');video.play().catch(()=>{status.textContent='Tap play to watch the invitation';});});
+    close.addEventListener('click',hide);
+    dialog.addEventListener('click',e=>{if(e.target===dialog)hide();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!dialog.hidden)hide();});
+    video.addEventListener('error',()=>{status.textContent='Video file is not published yet. The invitation AR is still available.';});
+    // Gracefully expose a helpful note if the local MP4 has not been uploaded.
+    video.addEventListener('loadeddata',()=>{status.textContent='FEEL THE BEAT. OWN THE STAGE.';});
+  })();
+  </script>
 </body>
 </html>
