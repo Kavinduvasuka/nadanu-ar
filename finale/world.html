@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nadanu 3.0 · World AR</title><meta name="theme-color" content="#07040f">
+<style>body{margin:0;background:#07040f;color:#fff;font:14px system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
+main{max-width:470px;text-align:center}h1{color:#ffc857}p{line-height:1.7;color:#cbbfdb}a{display:block;color:white;text-decoration:none;background:#97246c;border-radius:25px;padding:15px;margin:12px 0;border:1px solid #ff3d9a}small{color:#ada1c0}</style></head><body>
+<main><h1>NADANU 3.0<br>WORLD AR</h1><p id="msg">Checking your phone…</p>
+<a id="recommended" href="./world-ar.html">OPEN WORLD AR</a>
+<a href="./world-ar.html">ANDROID · WEBXR STAGE</a><a href="./ios-ar.html">iPHONE · SAFARI QUICK LOOK</a>
+<a href="./">INVITATION TRACKING AR</a><small>World AR needs compatible device support. The invitation AR is the fallback.</small></main>
+<script>
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const path=isIOS?'./ios-ar.html':'./world-ar.html';
+document.getElementById('recommended').href=path;
+document.getElementById('recommended').textContent=isIOS?'OPEN iPHONE WORLD AR':'OPEN ANDROID WORLD AR';
+document.getElementById('msg').textContent=isIOS?'iPhone detected: Safari Quick Look will place a 3D stage on a surface.':'Android or other device: WebXR works on supported ARCore phones.';
+</script></body></html>
