@@ -22,7 +22,7 @@ const mixers = [];
 let lastFrame=0, trackingTime=0, sequenceTime=0;
 // Camera remains controlled by MindAR; gestures orbit/zoom the virtual stage.
 const orbit={yaw:0,tilt:.62,zoom:1,pointers:new Map(),distance:0};
-const BASE_SCALE=.096;
+const BASE_SCALE=0.288;
 function applyOrbit(){if(stage)stage.rotation.set(orbit.tilt,orbit.yaw,0,'YXZ');}
 function bindOrbitControls(){
  const surface=document.querySelector('#arContainer');
