@@ -211,16 +211,10 @@ async function loadPerformers() {
  return errors;
 }
 function setup() {
- mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind',maxTrack:1,filterMinCF:0.001,filterBeta:10,warmupTolerance:8,missTolerance:12,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
+ mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
  const {scene,renderer,camera}=mindarThree;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
- const anchor=mindarThree.addAnchor(0);
- // Keep the tracking target separate from the displayed stage so we can
- // smooth its measured pose without overwriting MindAR's own matrices.
- const root=new THREE.Group();
- scene.add(root);
- const posePosition=new THREE.Vector3(),poseQuaternion=new THREE.Quaternion(),poseScale=new THREE.Vector3();
- let smoothPoseInitialized=false;
+ const anchor=mindarThree.addAnchor(0),root=anchor.group;
  scene.add(new THREE.HemisphereLight(0xffffff,0x34132a,2.8));
  warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
@@ -230,28 +224,11 @@ function setup() {
  subtitle=textMesh(['YOU ARE CORDIALLY INVITED'],1.05,.22,0,-.50,.17,52);root.add(subtitle);
  label=textMesh(['SOLO SINGING'],.77,.16,0,.62,.10,67);root.add(label);
  root.visible=false;
- anchor.onTargetFound=()=>{tracked=true;smoothPoseInitialized=false;trackingTime=clock.getElapsedTime();root.visible=true;status.textContent='Stage detected · drag to orbit · pinch to zoom';};
+ anchor.onTargetFound=()=>{tracked=true;trackingTime=clock.getElapsedTime();root.visible=true;status.textContent='Stage detected · drag to orbit · pinch to zoom';};
  anchor.onTargetLost=()=>{tracked=false;root.visible=false;status.textContent='Point your camera at the printed Grand Finale invitation';};
  renderer.setAnimationLoop(()=>{
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
   if(running&&tracked){
-    // MindAR updates anchor.group every tracking frame. Smooth the full pose,
-    // including position, rotation and target scale, before drawing our stage.
-    anchor.group.updateMatrixWorld(true);
-    anchor.group.matrixWorld.decompose(posePosition,poseQuaternion,poseScale);
-    if(!smoothPoseInitialized){
-      root.position.copy(posePosition);
-      root.quaternion.copy(poseQuaternion);
-      root.scale.copy(poseScale);
-      smoothPoseInitialized=true;
-    }else{
-      // About 200ms stabilization time: removes small frame-to-frame jumps.
-      // The stage still follows the invitation when it genuinely moves.
-      const blend=1-Math.exp(-Math.max(dt,.001)*7);
-      root.position.lerp(posePosition,blend);
-      root.quaternion.slerp(poseQuaternion,blend);
-      root.scale.lerp(poseScale,blend);
-    }
     sequenceTime+=dt;
     // 6s singer, 6s solo dancer, 6s group, then repeat.
     const index=selectedAct===null?Math.floor(sequenceTime/8)%3:selectedAct;
