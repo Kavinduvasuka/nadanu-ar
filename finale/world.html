@@ -1,14 +1,9 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Nadanu 3.0 · World AR</title><meta name="theme-color" content="#07040f">
-<style>body{margin:0;background:#07040f;color:#fff;font:14px system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}
-main{max-width:470px;text-align:center}h1{color:#ffc857}p{line-height:1.7;color:#cbbfdb}a{display:block;color:white;text-decoration:none;background:#97246c;border-radius:25px;padding:15px;margin:12px 0;border:1px solid #ff3d9a}small{color:#ada1c0}</style></head><body>
-<main><h1>NADANU 3.0<br>WORLD AR</h1><p id="msg">Checking your phone…</p>
-<a id="recommended" href="./world-ar.html">START WORLD AR</a>
-<small>Automatically selects iPhone Quick Look or Android WebXR. Requires a compatible device. For invitation tracking, use the main AR page.</small></main>
-<script>
-const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-const path=isIOS?'./ios-ar.html':'./world-ar.html';
-document.getElementById('recommended').href=path;
-document.getElementById('recommended').textContent='START WORLD AR';
-document.getElementById('msg').textContent=isIOS?'iPhone detected: Safari Quick Look will place a 3D stage on a surface.':'Android or other device: WebXR works on supported ARCore phones.';
-</script></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#07040f">
+<title>Nadanu 3.0 · Universal Stage Experience</title>
+<style>*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at center,#32163a,#07040f 80%);min-height:100dvh;color:#f7ecff;font-family:system-ui,-apple-system,Arial,sans-serif;display:grid;place-items:center;padding:20px}main{text-align:center;max-width:490px}h1{font-size:clamp(26px,7vw,42px);line-height:1.2;color:#ffc857;text-shadow:0 0 24px #d6208e}p{color:#d9c8e8;line-height:1.8}a{display:block;max-width:340px;margin:18px auto 0;border-radius:999px;border:1px solid #ff3d9a;padding:16px;background:#b01b68;text-decoration:none;color:white;font-weight:800;letter-spacing:.05em}small{display:block;margin-top:20px;color:#ac9cb7;line-height:1.7}</style></head>
+<body><main><h1>NADANU 3.0<br>GRAND FINALE</h1>
+<p>One interactive concert stage for iPhone, Android and desktop. Explore the original stage lights, performers and music without camera tracking shake.</p>
+<a href="./stage.html">START EXPERIENCE</a>
+<small>Drag to orbit · Pinch to zoom · Choose singer, solo dancer or group dance.<br>For the invitation camera AR, return to the main page.</small>
+</main></body></html>
