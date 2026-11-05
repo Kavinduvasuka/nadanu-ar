@@ -20,16 +20,16 @@
       <div class="eyebrow">COMPUTING SOCIETY OF ICBT PRESENTS</div>
       <h1>NADANU <span>3.0</span></h1>
       <div class="line"></div>
-      <h2>GRAND FINALE</h2>
-      <p>Bring your invitation to life. Tap Start AR and point your camera at the printed B5 invitation.</p>
+      <h2>GRAND FINALE</h2><div class="subline">A 3D INVITATION TO THE SHOW</div>
+      <p>See a 3D singer, solo dancer, and dance group performing on a miniature stage — with original music. Point your camera at the printed B5 invitation.</p>
       <button id="startButton" type="button">START AR EXPERIENCE</button>
-      <p class="hint">Camera permission is required · Best on Chrome or Safari</p>
+      <p class="hint">Camera and audio are used only after you tap Start · Chrome or Safari</p>
       <p id="message" role="status" aria-live="polite"></p>
     </div>
   </main>
   <div id="arContainer"></div>
   <div id="arUI" hidden>
-    <div class="topbar"><strong>NADANU 3.0</strong><button id="stopButton" type="button">EXIT AR</button></div>
+    <div class="topbar"><strong>NADANU 3.0</strong><div class="actions"><button id="audioButton" type="button">MUTE MUSIC</button><button id="stopButton" type="button">EXIT AR</button></div></div><div id="actLabel" class="actLabel">SCANNING INVITATION</div>
     <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
   </div>
   <script type="module" src="./app.js"></script>

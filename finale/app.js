@@ -1,217 +1,244 @@
 import * as THREE from 'three';
 import { MindARThree } from 'mindar-image-three';
 
-// Nadanu 3.0 Grand Finale — lightweight, real Three.js objects.
-// Keeps the same MindAR target and Start/Exit AR behaviour as the working version.
-const landing = document.querySelector('#landing');
-const startButton = document.querySelector('#startButton');
-const stopButton = document.querySelector('#stopButton');
-const message = document.querySelector('#message');
-const arUI = document.querySelector('#arUI');
-const status = document.querySelector('#trackingStatus');
-const clock = new THREE.Clock();
-let mindarThree, initialized = false, running = false, busy = false;
-let targetVisible = false, targetStart = 0;
-let effects = [];
-let stage, title, invite, lights = [], equalizers = [], particles = [], beamGroup;
+// NADANU 3.0 — genuine 3D procedural stage & performers.
+// No GLB downloads required. Your own assets/finale.mind is required.
+const $ = id => document.getElementById(id);
+const landing = $('landing'), startBtn = $('startButton'), stopBtn = $('stopButton');
+const status = $('trackingStatus'), message = $('message'), arUI = $('arUI');
+const actLabel = $('actLabel'), audioBtn = $('audioButton');
+const GOLD = 0xffc35e, ORANGE = 0xff6c2a, PURPLE = 0xaf50ed;
+let mindar, renderer, scene, camera, stage, root, titlePlane, invitePlane;
+let initialized=false, running=false, working=false, tracked=false;
+let sequenceTime=0, lastFrame=0, currentAct=-1;
+let performers=[], spotlights=[], leds=[], sparkles=[], showStage;
+let audioCtx=null, master=null, musicTimer=null, nextBeat=0, beat=0, soundOn=false;
 
-function textTexture(lines, {size = 74, color = '#ffe1a2', accent = '#ff9b43'} = {}) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024; canvas.height = 384;
-  const c = canvas.getContext('2d');
-  c.clearRect(0, 0, canvas.width, canvas.height);
-  c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.shadowColor = accent; c.shadowBlur = 25;
-  const gradient = c.createLinearGradient(0, 50, 0, 330);
-  gradient.addColorStop(0, '#fff1bd'); gradient.addColorStop(0.52, color);
-  gradient.addColorStop(1, accent);
-  c.fillStyle = gradient;
-  const count = lines.length;
-  lines.forEach((line, index) => {
-    // Shrink very long lines to prevent clipped letters on mobile.
-    let px = size;
-    c.font = `900 ${px}px Impact, Arial Black, sans-serif`;
-    while (c.measureText(line).width > 930 && px > 28) {
-      px -= 2; c.font = `900 ${px}px Impact, Arial Black, sans-serif`;
-    }
-    const y = count === 1 ? 195 : 145 + index * 125;
-    c.fillText(line, 512, y);
+const mat = (color, emissive=0x000000, intensity=0) => new THREE.MeshStandardMaterial({color, metalness:.1, roughness:.55, emissive, emissiveIntensity:intensity});
+const glow = color => new THREE.MeshBasicMaterial({color, side:THREE.DoubleSide});
+function mesh(geometry, material, parent, x=0,y=0,z=0){
+  const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);parent.add(m);return m;
+}
+function cube(parent,w,h,d,color,x=0,y=0,z=0){return mesh(new THREE.BoxGeometry(w,h,d), mat(color),parent,x,y,z)}
+function ball(parent,r,color,x=0,y=0,z=0){return mesh(new THREE.SphereGeometry(r,12,9),mat(color),parent,x,y,z)}
+function rod(parent,a,b,r,color){
+  const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b), delta=bv.clone().sub(av);
+  const m=mesh(new THREE.CylinderGeometry(r,r,delta.length(),9),mat(color),parent);
+  m.position.copy(av.add(bv).multiplyScalar(.5));m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());return m;
+}
+function makeText(lines,w,h,opts={}){
+  const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=384;
+  const ctx=canvas.getContext('2d');ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.shadowColor=opts.shadow||'#ff731a';ctx.shadowBlur=20;
+  ctx.fillStyle=opts.color||'#ffe4a2';
+  lines.forEach((line,i)=>{
+    let size=opts.size||78;
+    ctx.font=`900 ${size}px Impact, Arial Black, sans-serif`;
+    while(ctx.measureText(line).width>935&&size>24){size-=2;ctx.font=`900 ${size}px Impact, Arial Black, sans-serif`;}
+    ctx.fillText(line,512,lines.length===1?192:140+122*i);
   });
-  const t = new THREE.CanvasTexture(canvas);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+  return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,side:THREE.DoubleSide,opacity:0}));
 }
 
-function textPlane(lines, width, height, y, z, opts={}) {
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(width, height),
-    new THREE.MeshBasicMaterial({map: textTexture(lines, opts), transparent:true, depthWrite:false, side:THREE.DoubleSide})
-  );
-  mesh.position.set(0,y,z);
-  return mesh;
-}
-
-function box(w,h,d,color, metalness=0.0) {
-  return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
-    new THREE.MeshStandardMaterial({color,metalness,roughness:.43}));
-}
-function circle(radius, color, opacity=1) {
-  return new THREE.Mesh(new THREE.CircleGeometry(radius, 24),
-    new THREE.MeshBasicMaterial({color,transparent:opacity!==1,opacity,side:THREE.DoubleSide,depthWrite:false}));
-}
-function makeSpeaker(x) {
-  const group = new THREE.Group();
-  const cabinet = box(.125,.26,.115,0x190f1b);
-  group.add(cabinet);
-  for (const [y,r] of [[-.058,.045],[.073,.026]]) {
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(r,.008,6,28),
-      new THREE.MeshBasicMaterial({color:0xfdae4b}));
-    rim.position.set(0,y,.064); group.add(rim);
-    const cone = circle(r*.77,0x583543);
-    cone.position.set(0,y,.066);group.add(cone);
+function makePerformer({color=0xf3a83c,skin=0xe9af83, skirt=false, mic=false}={}){
+  const all=new THREE.Group(), rig=new THREE.Group();all.add(rig);
+  // Anatomical volumes are real 3D geometry, not image planes.
+  const torso=cube(rig,.072,.124,.046,color,0,.112,.005);
+  if(skirt){mesh(new THREE.ConeGeometry(.065,.092,12),mat(color),rig,0,.039,.004).rotation.z=Math.PI;}
+  const neck=cube(rig,.018,.022,.017,skin,0,.185,.004);
+  ball(rig,.042,skin,0,.221,.006);
+  const hair=mesh(new THREE.SphereGeometry(.045,12,8,0,Math.PI*2,0,Math.PI*.54),mat(0x21151d),rig,0,.24,.001);
+  // Articulated arms and legs are parented to independently animated shoulder/hip pivots.
+  const limbs={};
+  for(const s of [-1,1]){
+    const arm=new THREE.Group();arm.position.set(s*.047,.165,0);rig.add(arm);
+    rod(arm,[0,0,0],[s*.015,-.085,.009],.012,skin);
+    ball(arm,.014,skin,s*.015,-.085,.009);
+    limbs[s<0?'leftArm':'rightArm']=arm;
+    const leg=new THREE.Group();leg.position.set(s*.021,.058,0);rig.add(leg);
+    rod(leg,[0,0,0],[s*.006,-.104,.007],.014,0x27243e);
+    cube(leg,.035,.013,.055,0x15111c,s*.007,-.105,.028);
+    limbs[s<0?'leftLeg':'rightLeg']=leg;
   }
-  group.position.set(x,-.075,.215);
-  return group;
+  if(mic){
+    // Handheld microphone in the singer's right hand.
+    const arm=limbs.rightArm;
+    rod(arm,[.012,-.082,.012],[.012,-.116,.02],.004,0xc9cbd2);
+    ball(arm,.012,0x343444,.012,-.117,.02);
+  }
+  all.userData={rig,limbs,baseY:0,phase:0,skirt,mic};
+  return all;
 }
-function makeSpotlight(x) {
-  const g = new THREE.Group();
-  g.position.set(x,.065,.23);
-  const head = new THREE.Mesh(new THREE.CylinderGeometry(.035,.047,.07,14),
-    new THREE.MeshStandardMaterial({color:0x29212d,metalness:.5,roughness:.38}));
-  head.rotation.x = Math.PI/2;
-  g.add(head);
-  const lens = circle(.033,0xffb453);lens.position.z=.042;g.add(lens);
-  // Transparent cone is a real Three.js 3D object; no video asset required.
-  const cone = new THREE.Mesh(new THREE.ConeGeometry(.155,.52,24,1,true),
-    new THREE.MeshBasicMaterial({color:0xff8426,transparent:true,opacity:.14,
-      depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));
-  cone.rotation.x = -Math.PI/2;
-  cone.position.set(0,.17,.28);
-  g.add(cone);
-  return {group:g,cone};
+function makeSpeaker(parent,x){
+  const g=new THREE.Group();g.position.set(x,-.004,.23);parent.add(g);
+  cube(g,.11,.22,.09,0x16121a);
+  for(const [y,r] of [[-.046,.033],[.061,.022]]){
+    const tor=mesh(new THREE.TorusGeometry(r,.006,6,20),glow(GOLD),g,0,y,.05);
+    mesh(new THREE.CircleGeometry(r*.72,20),glow(0x58243b),g,0,y,.051);
+  }
 }
-function setup() {
-  mindarThree = new MindARThree({
-    container:document.querySelector('#arContainer'),
-    imageTargetSrc:'./assets/finale.mind',
-    maxTrack:1,uiLoading:'yes',uiScanning:'no',uiError:'yes'
-  });
-  const {renderer,scene,camera} = mindarThree;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  const anchor = mindarThree.addAnchor(0);
-  const root = anchor.group;
-
-  scene.add(new THREE.AmbientLight(0xffffff,1.5));
-  const warm = new THREE.PointLight(0xff8e38,3,4);warm.position.set(0,.4,.9);root.add(warm);
-  const violet = new THREE.PointLight(0xa34dff,2,3);violet.position.set(-.3,0,.7);root.add(violet);
-
-  // Mini stage rises above the printed invitation (z dimension).
-  stage = new THREE.Group();stage.position.set(0,-.10,.085);
-  const platform=box(.77,.065,.31,0x40151e,.15);
-  platform.position.z=.11;stage.add(platform);
-  const stageTrim=box(.78,.014,.32,0xffa444,.1);
-  stageTrim.position.set(0,-.034,.11);stage.add(stageTrim);
-  const backWall=box(.77,.36,.045,0x261323,.08);
-  backWall.position.set(0,.19,.0);stage.add(backWall);
-  const topTruss=box(.86,.025,.035,0xd08a48,.55);
-  topTruss.position.set(0,.39,.055);stage.add(topTruss);
-  // Three dimensional stage side uprights.
-  for (const x of [-.40,.40]) {
-    const upright=box(.022,.38,.025,0xc27c42,.4);
-    upright.position.set(x,.20,.05);stage.add(upright);
-    stage.add(makeSpeaker(x * .79));
+function makeBeam(parent,x,phase){
+  const g=new THREE.Group();g.position.set(x,.32,.15);parent.add(g);
+  const head=mesh(new THREE.CylinderGeometry(.023,.03,.058,12),mat(0x302837),g);
+  head.rotation.x=Math.PI/2;
+  const cone=mesh(new THREE.ConeGeometry(.105,.43,18,1,true),new THREE.MeshBasicMaterial({color:x<0?ORANGE:PURPLE,transparent:true,opacity:.12,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}),g,0,-.19,.10);
+  cone.rotation.z=Math.PI;
+  spotlights.push({g,cone,phase});
+}
+function makeStage(rootGroup){
+  const stageGroup=new THREE.Group();stageGroup.position.set(0,-.12,.16);rootGroup.add(stageGroup);
+  cube(stageGroup,.86,.047,.37,0x371725,0,-.09,.13);
+  cube(stageGroup,.87,.012,.38,0xff8c32,0,-.114,.13);
+  cube(stageGroup,.82,.32,.027,0x1f122a,0,.135,-.027);
+  cube(stageGroup,.92,.022,.055,0xd9a35b,0,.34,-.004);
+  for(const x of [-.44,.44]){
+    cube(stageGroup,.021,.36,.025,0x99634c,x,.155,-.006);
+    makeSpeaker(stageGroup,x*.85);
   }
-  // Colored LED bars on the back wall.
-  for (let i=0;i<11;i++) {
-    const led=box(.026,.06,.007,i%2 ? 0xff8739 : 0xa357ff);
-    led.material=new THREE.MeshBasicMaterial({color:i%2 ? 0xff8739 : 0xbb6eff});
-    led.position.set(-.30+i*.06,.18,.028);
-    stage.add(led);equalizers.push(led);
+  for(let i=0;i<11;i++){
+    const led=mesh(new THREE.BoxGeometry(.024,.060,.009),glow(i%2?ORANGE:PURPLE),stageGroup,-.30+i*.06,.12,-.009);
+    leds.push(led);
   }
-  beamGroup=new THREE.Group();stage.add(beamGroup);
-  for(let i=0;i<4;i++){
-    const item=makeSpotlight(-.29+i*.19);
-    item.group.position.y=.35;
-    stage.add(item.group);lights.push(item);
+  for(let i=0;i<5;i++)makeBeam(stageGroup,-.35+i*.175,i*.9);
+  return stageGroup;
+}
+function spawnSparkles(rootGroup){
+  for(let i=0;i<22;i++){
+    const p=mesh(new THREE.OctahedronGeometry(.005+(i%3)*.002,0),glow(i%3?GOLD:PURPLE),rootGroup);
+    const a=i*2.4, r=.2+(i%7)*.045;
+    p.position.set(Math.cos(a)*r,Math.sin(a)*.42,.36+(i%4)*.018);
+    p.userData={base:p.position.clone(),phase:i*.63};sparkles.push(p);
   }
-  root.add(stage);
-
-  title = textPlane(['NADANU 3.0','GRAND FINALE'],.98,.32,.48,.20,{size:94});
-  root.add(title);
-  invite = textPlane(['YOU ARE CORDIALLY INVITED','WITNESS THE FINAL SHOWDOWN'],1.06,.29,-.51,.16,{size:60,color:'#fff4ce',accent:'#f1a544'});
-  root.add(invite);
-
-  // Floating celebratory golden particles.
-  for(let i=0;i<26;i++) {
-    const p = new THREE.Mesh(new THREE.OctahedronGeometry(.004+Math.random()*.007),
-      new THREE.MeshBasicMaterial({color:i%4===0?0xd38dff:0xffba4d}));
-    const theta=Math.random()*Math.PI*2;
-    const r=.22+Math.random()*.37;
-    p.position.set(Math.cos(theta)*r,Math.sin(theta)*r*.96,.18+Math.random()*.15);
-    p.userData={y:p.position.y,phase:Math.random()*6.28,speed:.9+Math.random()*.8};
-    root.add(p);particles.push(p);
+}
+function buildAR(){
+  mindar=new MindARThree({container:$('arContainer'),imageTargetSrc:'./assets/finale.mind',maxTrack:1,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
+  ({renderer,scene,camera}=mindar);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.7));
+  const anchor=mindar.addAnchor(0);root=anchor.group;
+  scene.add(new THREE.AmbientLight(0xffffff,1.45));
+  const key=new THREE.PointLight(ORANGE,2.5,4);key.position.set(.25,.65,.95);root.add(key);
+  const fill=new THREE.PointLight(PURPLE,2.1,3);fill.position.set(-.4,.2,.9);root.add(fill);
+  stage=makeStage(root);
+  // Three separate 3D scenes: singer, solo dancer, and three-person group dance.
+  const singer=makePerformer({color:0xe8a62f,skin:0xe9b58b,mic:true});singer.position.set(0,-.043,.25);stage.add(singer);
+  const solo=makePerformer({color:0xaa5be8,skin:0xb98668,skirt:true});solo.position.set(0,-.043,.25);stage.add(solo);
+  const group=[];
+  for(let i=0;i<3;i++){
+    const p=makePerformer({color:[0xed753e,0xc35ae4,0xf6bf53][i],skin:[0xd49b74,0xa9775b,0xe4b18c][i],skirt:i===1});
+    p.position.set((i-1)*.23,-.043,.25);p.scale.setScalar(.87);p.userData.phase=i*1.2;stage.add(p);group.push(p);
   }
+  performers=[singer,solo,...group];
+  titlePlane=makeText(['NADANU 3.0','GRAND FINALE'],1.02,.30,{size:96});titlePlane.position.set(0,.46,.22);root.add(titlePlane);
+  invitePlane=makeText(['YOU ARE CORDIALLY INVITED','WITNESS THE FINAL SHOWDOWN'],1.08,.30,{size:54,color:'#ffeab6'});invitePlane.position.set(0,-.53,.21);root.add(invitePlane);
+  spawnSparkles(root);
   root.visible=false;
   anchor.onTargetFound=()=>{
-    targetVisible=true;targetStart=clock.getElapsedTime();root.visible=true;
-    status.textContent='Invitation detected — enjoy the Grand Finale preview!';
+    tracked=true;sequenceTime=0;currentAct=-1;root.visible=true;
+    status.textContent='Invitation detected — welcome to NADANU 3.0!';
+    if(soundOn)resumeMusic();
   };
   anchor.onTargetLost=()=>{
-    targetVisible=false;root.visible=false;
+    tracked=false;root.visible=false;pauseMusic();
     status.textContent='Point your camera at the Grand Finale invitation';
+    actLabel.textContent='SCANNING INVITATION';
   };
   renderer.setAnimationLoop(()=>{
-    const t=clock.getElapsedTime();
-    if (running && targetVisible) {
-      const reveal=Math.min(1,(t-targetStart)/1.4);
-      // Stage rises over the first second, then the title and invitation appear.
-      stage.scale.setScalar(.35+.65*THREE.MathUtils.smoothstep(reveal,0,1));
-      stage.rotation.y=Math.sin(t*.55)*.055;
-      title.material.opacity=Math.min(1,Math.max(0,(t-targetStart-0.5)*1.7));
-      title.position.y=.48+Math.sin(t*1.7)*.014;
-      invite.material.opacity=Math.min(1,Math.max(0,(t-targetStart-1.5)*1.4));
-      invite.scale.setScalar(1+Math.sin(t*2)*.016);
-      lights.forEach((item,i)=>{
-        item.cone.rotation.z=Math.sin(t*1.9+i*1.4)*.38;
-        item.cone.material.opacity=.10+.09*(.5+.5*Math.sin(t*3+i));
-      });
-      equalizers.forEach((led,i)=>{
-        led.scale.y=.55+.85*(.5+.5*Math.sin(t*5+i*.9));
-      });
-      particles.forEach(p=>{
-        p.position.y=p.userData.y+Math.sin(t*p.userData.speed+p.userData.phase)*.026;
-        p.rotation.y=t*.7;
-      });
-    }
+    const now=performance.now()/1000;
+    const dt=Math.min(.07,Math.max(0,now-lastFrame));lastFrame=now;
+    if(running&&tracked){sequenceTime+=dt;animate(sequenceTime);}
     renderer.render(scene,camera);
   });
   initialized=true;
 }
+const acts=['SOLO SINGING','SOLO DANCING','GROUP DANCING','YOU ARE INVITED!'];
+function animate(t){
+  const reveal=THREE.MathUtils.smoothstep(t,0,1.65);
+  stage.scale.setScalar(.05+.95*reveal);
+  titlePlane.material.opacity=THREE.MathUtils.smoothstep(t,.2,1.3);
+  invitePlane.material.opacity=THREE.MathUtils.smoothstep(t,12.5,14);
+  titlePlane.position.y=.46+Math.sin(t*1.5)*.01;
+  const loop=(t-1.7)%18;
+  const phase=loop<0?0:loop<4.5?0:loop<9?1:loop<13.5?2:3;
+  if(phase!==currentAct){currentAct=phase;actLabel.textContent=acts[phase];}
+  performers.forEach((p,i)=>{p.visible=phase===0&&i===0||phase===1&&i===1||phase===2&&i>=2;
+    if(!p.visible)return;
+    const d=p.userData, {rig,limbs}=d, beatTime=t*5.3+d.phase;
+    rig.position.y=Math.abs(Math.sin(beatTime))*(i===0?.008:.023);
+    rig.rotation.z=Math.sin(beatTime*.54)*(i===0?.055:.15);
+    rig.rotation.y=Math.sin(beatTime*.34)*.2;
+    limbs.leftArm.rotation.z=Math.sin(beatTime)*.65+.2;
+    limbs.rightArm.rotation.z=d.mic?-.95+Math.sin(beatTime*.52)*.14:-Math.sin(beatTime+.8)*.83-.15;
+    limbs.leftLeg.rotation.z=Math.sin(beatTime)*.38;
+    limbs.rightLeg.rotation.z=-Math.sin(beatTime)*.38;
+  });
+  if(phase===3){ // The 3D stage remains present behind the final invitation message.
+    invitePlane.material.opacity=1;
+  }else{
+    invitePlane.material.opacity=0;
+  }
+  spotlights.forEach(({g,cone,phase:p})=>{
+    g.rotation.z=Math.sin(t*1.7+p)*.42;
+    cone.material.opacity=.09+.07*(.5+.5*Math.sin(t*3+p));
+  });
+  leds.forEach((m,i)=>{m.scale.y=.42+.85*(.5+.5*Math.sin(t*6+i*.85));});
+  sparkles.forEach(p=>{p.position.y=p.userData.base.y+Math.sin(t*1.4+p.userData.phase)*.025;p.rotation.y=t*.6;});
+}
+
+// Original music generated live from oscillators; no copyrighted music or external audio file.
+// Schedule short notes with Web Audio, initiated only by a direct user click.
+const melody=[0,4,7,9,7,4,2,4,0,4,7,12,9,7,4,2];
+function note(freq,start,len,volume=.025,type='triangle'){
+  if(!audioCtx||!master)return;
+  const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type=type;osc.frequency.value=freq;
+  gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(volume,start+.012);
+  gain.gain.exponentialRampToValueAtTime(.001,start+len);
+  osc.connect(gain);gain.connect(master);osc.start(start);osc.stop(start+len+.03);
+}
+function scheduleMusic(){
+  if(!audioCtx||!soundOn||!tracked||!running)return;
+  const bpm=112,step=60/bpm/2;
+  while(nextBeat<audioCtx.currentTime+.12){
+    const n=beat%16;
+    // Original celebratory electronic melody, plus kick and hi-hat rhythm.
+    note(220*Math.pow(2,melody[n]/12),nextBeat,step*.75,.023,'triangle');
+    if(n%4===0)note(90,nextBeat,.17,.065,'sine');
+    if(n%2===0)note(880,nextBeat,.045,.006,'square');
+    if(n%8===4)note(135,nextBeat,.13,.028,'sawtooth');
+    nextBeat+=step;beat++;
+  }
+}
+async function enableMusic(){
+  if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();master=audioCtx.createGain();master.gain.value=.42;master.connect(audioCtx.destination);}
+  await audioCtx.resume();soundOn=true;audioBtn.textContent='MUTE MUSIC';
+  nextBeat=audioCtx.currentTime+.05;
+  if(!musicTimer)musicTimer=setInterval(scheduleMusic,55);
+}
+function pauseMusic(){if(master)master.gain.setTargetAtTime(0,audioCtx.currentTime,.025);}
+function resumeMusic(){if(master){master.gain.setTargetAtTime(.42,audioCtx.currentTime,.025);nextBeat=audioCtx.currentTime+.06;}}
+function disableMusic(){soundOn=false;audioBtn.textContent='PLAY MUSIC';pauseMusic();}
+
 async function startAR(){
-  if (busy||running) return;
-  busy=true;startButton.disabled=true;message.textContent='Preparing camera…';
-  try {
-    const response=await fetch('./assets/finale.mind',{cache:'no-cache'});
-    if(!response.ok) throw new Error('Missing assets/finale.mind. Add your compiled invitation target.');
-    if(!initialized)setup();
-    await mindarThree.start();
-    running=true;clock.start();
-    landing.style.display='none';arUI.hidden=false;
-    status.textContent='Point your camera at the Grand Finale invitation';
-  } catch(err) {
-    console.error(err);message.textContent=err.message||'AR could not start. Check camera permission and HTTPS.';
-    if(mindarThree){try{await mindarThree.stop();}catch(_){}}
-  } finally {busy=false;startButton.disabled=false;}
+  if(working||running)return;working=true;startBtn.disabled=true;message.textContent='Starting camera...';
+  try{
+    const r=await fetch('./assets/finale.mind',{cache:'no-store'});
+    if(!r.ok)throw new Error('Missing assets/finale.mind — copy your compiled invitation target.');
+    if(!initialized)buildAR();
+    // AudioContext is unlocked from this button gesture before camera async operations.
+    await enableMusic();
+    await mindar.start();running=true;lastFrame=performance.now()/1000;
+    landing.style.display='none';arUI.hidden=false;status.textContent='Point camera at your printed B5 invitation';
+  }catch(err){console.error(err);disableMusic();message.textContent=err.message||'Camera failed. Use HTTPS and allow camera permission.';
+    if(mindar){try{await mindar.stop();}catch(_){}}
+  }finally{working=false;startBtn.disabled=false;}
 }
 async function stopAR(){
-  if(busy||!running)return;
-  busy=true;
-  try {
-    await mindarThree.stop();running=false;targetVisible=false;
+  if(working||!running)return;working=true;
+  try{await mindar.stop();running=false;tracked=false;disableMusic();root.visible=false;
     arUI.hidden=true;landing.style.display='grid';message.textContent='';
-  } catch(err){console.error(err);status.textContent='Unable to stop camera. Refresh the page.';}
-  finally {busy=false;}
+  }catch(err){console.error(err);status.textContent='Unable to stop camera — refresh the page.';}
+  finally{working=false;}
 }
-startButton.addEventListener('click',startAR);
-stopButton.addEventListener('click',stopAR);
-window.addEventListener('pagehide',()=>{if(running&&mindarThree)mindarThree.stop().catch(()=>{});});
+startBtn.addEventListener('click',startAR);stopBtn.addEventListener('click',stopAR);
+audioBtn.addEventListener('click',async()=>{if(soundOn)disableMusic();else{await enableMusic();if(tracked)resumeMusic();}});
+window.addEventListener('pagehide',()=>{disableMusic();if(running&&mindar)mindar.stop().catch(()=>{});});
