@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MindARThree } from 'mindar-image-three';
 
-// Nadanu 3.0 Grand Finale: the THREE uploaded 3D models, isolated from your existing repository.
+// Nadanu 3.0: ORIGINAL Stage Lights concert geometry + real GLB actors, anchored to the invitation.
 // Animations: singer.glb and solo-dancer.glb have embedded animation clips.
 // group-dancers.glb is a STATIC mesh; it moves as a whole, not as rigged individuals.
 const landing = document.querySelector('#landing');
@@ -34,80 +34,111 @@ function textMesh(lines,w,h,x,y,z,size=74){
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:panelTexture(lines,size),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
  mesh.position.set(x,y,z);return mesh;
 }
-function box(x,y,z,w,h,d,color){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,metalness:.25,roughness:.4}));m.position.set(x,y,z);return m;}
+// Original Stage Lights geometry and proportions, mounted as a complete
+// mini concert world on the printed invitation. Nothing is flattened to a plane.
+let stageWorld, halo, noteSprites=[], noteCooldown=0;
+const stageV=new THREE.Vector3(), stageQ=new THREE.Quaternion(), stageUp=new THREE.Vector3(0,1,0);
 function createStage(root){
-  // Stage Lights style: black/plum platform, neon pink/cyan/gold, LED equalizer,
-  // animated spotlights and glitter. All are actual Three.js geometry anchored by MindAR.
-  stage=new THREE.Group(); stage.position.set(0,-.16,.17); root.add(stage);
-  const dark=new THREE.MeshStandardMaterial({color:0x140a28,metalness:.65,roughness:.27});
-  const pink=0xff3d9a, cyan=0x33e1ff, gold=0xffc857;
-  stage.add(box(0,-.032,0,.98,.064,.43,0x170c2a));
-  stage.add(box(0,-.067,.06,1.02,.012,.47,pink));
-  stage.add(box(0,.21,-.17,.94,.44,.025,0x10091d));
-  stage.add(box(0,.44,-.15,1.04,.014,.032,gold));
-  for(let x of [-.48,.48]){
-    stage.add(box(x,.17,-.15,.018,.52,.025,cyan));
-    stage.add(box(x,-.005,.16,.11,.16,.095,0x15101e));
+  stage=new THREE.Group();
+  stage.position.set(0,-.10,.16);
+  stage.scale.setScalar(.055);
+  root.add(stage);
+  stageWorld=stage;
+  const colors=[0xff3d9a,0x33e1ff,0xffc857];
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(10,64),new THREE.MeshStandardMaterial({color:0x140a28,metalness:.75,roughness:.22,side:THREE.DoubleSide}));
+  floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
+  neonRings=colors.concat([0xff3d9a]).map((c,i)=>{
+    const mesh=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
+    mesh.rotation.x=-Math.PI/2;mesh.position.y=.01;stage.add(mesh);return mesh;
+  });
+  eqBars=[];
+  for(let i=0;i<40;i++){
+    const a=i/40*Math.PI*2;
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(.16,1,.16),new THREE.MeshBasicMaterial({color:0xffffff}));
+    bar.position.set(Math.sin(a)*9,0,Math.cos(a)*9);stage.add(bar);eqBars.push(bar);
   }
-  const ringMaterial=(color)=>new THREE.MeshBasicMaterial({color,transparent:true,opacity:.58,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false});
-  for(let i=0;i<3;i++){
-    const r=new THREE.Mesh(new THREE.RingGeometry(.15+i*.105,.157+i*.105,64),ringMaterial([pink,cyan,gold][i]));
-    r.rotation.x=-Math.PI/2; r.position.set(0,.006+i*.001,.05);stage.add(r);neonRings.push(r);
-  }
-  for(let i=0;i<24;i++){
-    const x=-.437+i*.038;
-    const b=new THREE.Mesh(new THREE.BoxGeometry(.018,.08,.009),new THREE.MeshBasicMaterial({color:[pink,cyan,gold][i%3]}));
-    b.position.set(x,.21,-.147);stage.add(b);eqBars.push(b);
-  }
-  const coneMat=(color)=>new THREE.MeshBasicMaterial({color,transparent:true,opacity:.075,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
-  for(let i=0;i<3;i++){
-    const color=[pink,cyan,gold][i];
-    const spot=new THREE.SpotLight(color,2.2,3,.65,.65,1);
-    spot.position.set((i-1)*.29,.65,.05);spot.target.position.set(0,.16,.05);
-    stage.add(spot,spot.target);stageSpots.push(spot);
-    const cone=new THREE.Mesh(new THREE.ConeGeometry(.15,.55,24,1,true),coneMat(color));
-    cone.position.set((i-1)*.29,.37,.05);cone.rotation.z=Math.PI;
-    stage.add(cone);beamCones.push(cone);
-  }
-  const count=90, pts=new Float32Array(count*3);
-  for(let i=0;i<count;i++){
-    pts[i*3]=(Math.random()-.5)*1.0;
-    pts[i*3+1]=Math.random()*.8;
-    pts[i*3+2]=(Math.random()-.5)*.42;
-  }
-  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(pts,3));
-  particles=new THREE.Points(geometry,new THREE.PointsMaterial({color:0xffd9f5,size:.009,transparent:true,opacity:.78,blending:THREE.AdditiveBlending,depthWrite:false}));
-  stage.add(particles);
-  // Actual GLB performers, never replaced by cylinder/sphere characters.
+  halo=new THREE.Mesh(new THREE.TorusGeometry(2.4,.04,12,96),new THREE.MeshBasicMaterial({color:0xff3d9a}));
+  halo.position.set(0,2.2,-2.6);stage.add(halo);
+  // Same 3-spot rotating lights and translucent beam cones from the uploaded HTML.
+  stageSpots=[];beamCones=[];
+  colors.forEach((c,i)=>{
+    const light=new THREE.SpotLight(c,2.4,32,.5,.55,1);
+    light.position.set(Math.cos(i*2.1)*6,9,Math.sin(i*2.1)*6);
+    light.target.position.set(0,1,0);stage.add(light,light.target);stageSpots.push(light);
+    const beam=new THREE.Mesh(new THREE.ConeGeometry(2.1,10,32,1,true),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    stage.add(beam);beamCones.push(beam);
+  });
+  const count=350,positions=new Float32Array(count*3);
+  for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,r=Math.random()*9;positions[i*3]=Math.cos(a)*r;positions[i*3+1]=Math.random()*8;positions[i*3+2]=Math.sin(a)*r;}
+  const geom=new THREE.BufferGeometry();geom.setAttribute('position',new THREE.BufferAttribute(positions,3));
+  particles=new THREE.Points(geom,new THREE.PointsMaterial({size:.07,color:0xffd9f5,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false}));stage.add(particles);
+  // Real GLBs only: no generated human geometry.
   for(const group of performers)stage.add(group);
+  // Stage Lights musical notes are mounted to the singer's group.
+  const chars=['♪','♫','♪','♬'];
+  chars.forEach((letter,i)=>{
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=64;
+    const c=canvas.getContext('2d');c.font='48px serif';c.fillStyle=['#33e1ff','#ff3d9a','#ffc857','#ffffff'][i];c.textAlign='center';c.textBaseline='middle';c.fillText(letter,32,34);
+    const tex=new THREE.CanvasTexture(canvas);
+    for(let j=0;j<4;j++){
+      const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+      sprite.visible=false;sprite.userData.life=0;performers[0].add(sprite);noteSprites.push(sprite);
+    }
+  });
+}
+function updateStageEffects(t,dt,index){
+  const pulse=Math.pow(1-((t*2)%1),3),sw=index===2?1.6:1;
+  stageSpots.forEach((l,i)=>{
+    const a=t*.4+i*2.1;
+    l.position.set(Math.cos(a)*6,9,Math.sin(a)*6);
+    l.target.position.set(Math.sin(t*.7+i)*1.5*sw,1,Math.cos(t*.6+i)*1.5*sw);
+    l.intensity=1.8+pulse*1.6;
+    const beam=beamCones[i],d=stageV.copy(l.position).sub(l.target.position),length=d.length();
+    beam.position.copy(l.position).add(l.target.position).multiplyScalar(.5);
+    stageQ.setFromUnitVectors(stageUp,d.normalize());beam.quaternion.copy(stageQ);
+    beam.scale.y=length/10;beam.material.opacity=.05+pulse*.05;
+  });
+  neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.04*(i+1));r.material.opacity=.22+pulse*.45;});
+  eqBars.forEach((bar,i)=>{const height=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;bar.scale.y=height;bar.position.y=height/2;bar.material.color.setHSL((i/40+t*.05)%1,.9,.55);});
+  halo.material.color.setHSL((t*.08)%1,.9,.6);halo.scale.setScalar(1+pulse*.05);
+  const positions=particles.geometry.attributes.position;
+  for(let i=0;i<positions.count;i++){let y=positions.getY(i)+dt*(.2+(i%5)*.06);if(y>8)y=0;positions.setY(i,y);}positions.needsUpdate=true;
+  if(index===0){
+    noteCooldown-=dt;
+    if(noteCooldown<=0){
+      const sprite=noteSprites.find(n=>!n.visible)||noteSprites[Math.floor(Math.random()*noteSprites.length)];
+      sprite.position.set((Math.random()-.5)*.6,1.9,.4);sprite.scale.setScalar(.35);
+      sprite.userData.life=1;sprite.visible=true;noteCooldown=.28+Math.random()*.2;
+    }
+  }
+  noteSprites.forEach(s=>{if(!s.visible)return;s.userData.life-=dt*.4;if(s.userData.life<=0){s.visible=false;return;}s.position.y+=dt*.8;s.position.x+=Math.sin(t*7+s.position.y)*dt*.3;s.scale.setScalar(.35+(1-s.userData.life)*.35);s.material.opacity=Math.min(1,s.userData.life*1.6);});
 }
 
-function normalizeGLB(gltf, desiredHeight, targetX=0, targetZ=.07) {
+function normalizeGLB(gltf, desiredHeight, targetX=0, targetZ=0, maxWidth=6.7){
   const object=gltf.scene;
   object.updateMatrixWorld(true);
-  const bounds=new THREE.Box3().setFromObject(object), size=bounds.getSize(new THREE.Vector3());
-  if(size.y<1e-6)throw new Error('Model has no usable height.');
+  const bounds=new THREE.Box3().setFromObject(object),size=bounds.getSize(new THREE.Vector3());
+  if(!Number.isFinite(size.y)||size.y<1e-6)throw new Error('GLB has no usable height.');
   const center=bounds.getCenter(new THREE.Vector3());
-  const factor=desiredHeight/size.y;
-  // Center on X/Z, put feet at the stage floor, retain all texture/material data.
+  const factor=Math.min(desiredHeight/size.y,maxWidth/Math.max(size.x,1e-6));
   const wrap=new THREE.Group();
   object.scale.multiplyScalar(factor);
   object.position.set(-center.x*factor,-bounds.min.y*factor,-center.z*factor);
-  wrap.add(object);wrap.position.set(targetX,.032,targetZ);
-  object.traverse(o=>{if(o.isMesh||o.isSkinnedMesh){o.frustumCulled=false;}});
+  wrap.add(object);wrap.position.set(targetX,0,targetZ);
+  object.traverse(o=>{if(o.isMesh||o.isSkinnedMesh){o.frustumCulled=false;o.castShadow=true;}});
   return {wrap,object};
 }
 async function loadPerformers() {
  const assets=[
-  {path:'./assets/singer.glb',index:0,height:.33,x:0,z:.10,name:'Singer'},
-  {path:'./assets/solo-dancer.glb',index:1,height:.34,x:0,z:.10,name:'Solo dancer'},
-  {path:'./assets/group-dancers.glb',index:2,height:.32,x:0,z:.10,name:'Group dancers'}
+  {path:'./assets/singer.glb',index:0,height:2.25,x:0,z:0,maxWidth:3,name:'Singer'},
+  {path:'./assets/solo-dancer.glb',index:1,height:2.25,x:0,z:0,maxWidth:3,name:'Solo dancer'},
+  {path:'./assets/group-dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
  ];
  const errors=[];
  for(const a of assets){
   try{
    const gltf=await gltfLoader.loadAsync(a.path);
-   const {wrap,object}=normalizeGLB(gltf,a.height,a.x,a.z);
+   const {wrap,object}=normalizeGLB(gltf,a.height,a.x,a.z,a.maxWidth);
    performers[a.index].add(wrap);
    if(gltf.animations.length){
     const mixer=new THREE.AnimationMixer(object);
@@ -150,22 +181,16 @@ function setup() {
     }
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
     performers[2].rotation.y=Math.sin(now*.65)*.10;
-    stage.scale.setScalar(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1));
+    stage.scale.setScalar(.055*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
-    const pulse=Math.pow(1-((now*2)%1),3);
-    neonRings.forEach((r,i)=>{const q=1+pulse*.06*(i+1);r.scale.set(q,q,q);r.material.opacity=.26+pulse*.54;});
-    eqBars.forEach((b,i)=>{const h=.5+(.5+.5*Math.sin(now*8+i*.9))*1.1+pulse*.65;b.scale.y=h;b.position.y=.21+(h-1)*.04;});
-    stageSpots.forEach((l,i)=>{l.target.position.set(Math.sin(now*.8+i*2)*.28,.14,Math.cos(now*.6+i)*.10);l.intensity=1.4+pulse*1.7;});
-    beamCones.forEach((cone,i)=>{cone.rotation.z=Math.PI+Math.sin(now*.8+i*2)*.32;cone.material.opacity=.045+pulse*.065;});
-    const attr=particles.geometry.attributes.position;
-    for(let i=0;i<attr.count;i++){let y=attr.getY(i)+dt*(.07+(i%5)*.012);if(y>.84)y=0;attr.setY(i,y);}attr.needsUpdate=true;
+    updateStageEffects(now,dt,index);
     title.position.y=.53+.012*Math.sin(now*1.5);
   }
   renderer.render(scene,camera);
  });
  initialized=true;
 }
-let modelErrors=[];
+let modelErrors=[];let performersPromise=null;
 async function startAR(){
  if(busy||running)return;busy=true;startButton.disabled=true;message.textContent='Checking invitation target and 3D models…';
  try{
@@ -191,7 +216,7 @@ async function startAR(){
   running=true;clock.start();lastFrame=clock.getElapsedTime();
   landing.style.display='none';arUI.hidden=false;
   status.textContent='Camera ready. Loading your 3D performers…';
-  loadPerformers().then(errors=>{
+  (performersPromise ??= loadPerformers()).then(errors=>{
     modelErrors=errors;
     if(!running) return;
     status.textContent=errors.length
