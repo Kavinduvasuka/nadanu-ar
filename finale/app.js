@@ -20,6 +20,45 @@ let selectedAct=null, musicContext=null, soundInterval=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
 const mixers = [];
 let lastFrame=0, trackingTime=0, sequenceTime=0;
+// Camera remains controlled by MindAR; gestures orbit/zoom the virtual stage.
+const orbit={yaw:0,tilt:.62,zoom:1,pointers:new Map(),distance:0};
+const BASE_SCALE=.083;
+function applyOrbit(){if(stage)stage.rotation.set(orbit.tilt,orbit.yaw,0,'YXZ');}
+function bindOrbitControls(){
+ const surface=document.querySelector('#arContainer');
+ surface.style.touchAction='none';
+ surface.addEventListener('pointerdown',e=>{
+  if(!running)return;
+  orbit.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  orbit.distance=0;
+  try{surface.setPointerCapture(e.pointerId);}catch(_){}
+ });
+ surface.addEventListener('pointermove',e=>{
+  if(!running||!orbit.pointers.has(e.pointerId))return;
+  const old=orbit.pointers.get(e.pointerId);
+  orbit.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(orbit.pointers.size===1){
+    orbit.yaw+=(e.clientX-old.x)*.013;
+    orbit.tilt=THREE.MathUtils.clamp(orbit.tilt+(e.clientY-old.y)*.006,.18,1.25);
+    applyOrbit();
+  }else if(orbit.pointers.size===2){
+    const [a,b]=[...orbit.pointers.values()];
+    const distance=Math.hypot(a.x-b.x,a.y-b.y);
+    if(orbit.distance>0)orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*distance/orbit.distance,.65,2.1);
+    orbit.distance=distance;
+  }
+ });
+ const release=e=>{orbit.pointers.delete(e.pointerId);orbit.distance=0;};
+ surface.addEventListener('pointerup',release);
+ surface.addEventListener('pointercancel',release);
+ surface.addEventListener('wheel',e=>{
+  if(!running)return;e.preventDefault();
+  orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*Math.exp(-e.deltaY*.001),.65,2.1);
+ },{passive:false});
+ document.querySelector('#resetViewButton')?.addEventListener('click',()=>{
+  orbit.yaw=0;orbit.tilt=.62;orbit.zoom=1;applyOrbit();
+ });
+}
 
 function panelTexture(lines, fontSize=76) {
   const cv=document.createElement('canvas');cv.width=1024;cv.height=256;
@@ -44,6 +83,7 @@ function createStage(root){
   stage=new THREE.Group();
   stage.position.set(0,-.10,.33);
   stage.rotation.x=.62;
+  applyOrbit();
   stage.scale.setScalar(.083);
   root.add(stage);
   stageWorld=stage;
@@ -176,11 +216,12 @@ function setup() {
  warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
  createStage(root);
+ bindOrbitControls();
  title=textMesh(['NADANU 3.0','GRAND FINALE'],1.1,.32,0,.75,.04,83);root.add(title);
  subtitle=textMesh(['YOU ARE CORDIALLY INVITED'],1.05,.22,0,-.50,.17,52);root.add(subtitle);
  label=textMesh(['SOLO SINGING'],.77,.16,0,.62,.10,67);root.add(label);
  root.visible=false;
- anchor.onTargetFound=()=>{tracked=true;trackingTime=clock.getElapsedTime();root.visible=true;status.textContent='Grand Finale stage detected — watch the performers!';};
+ anchor.onTargetFound=()=>{tracked=true;trackingTime=clock.getElapsedTime();root.visible=true;status.textContent='Stage detected · drag to orbit · pinch to zoom';};
  anchor.onTargetLost=()=>{tracked=false;root.visible=false;status.textContent='Point your camera at the printed Grand Finale invitation';};
  renderer.setAnimationLoop(()=>{
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
@@ -197,7 +238,7 @@ function setup() {
     }
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
     performers[2].rotation.y=Math.sin(now*.65)*.10;
-    stage.scale.setScalar(.083*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
+    stage.scale.setScalar(BASE_SCALE*orbit.zoom*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
     title.position.y=.75+.012*Math.sin(now*1.5);
