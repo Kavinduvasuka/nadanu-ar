@@ -22,7 +22,7 @@ const mixers = [];
 let lastFrame=0, trackingTime=0, sequenceTime=0;
 // Camera remains controlled by MindAR; gestures orbit/zoom the virtual stage.
 const orbit={yaw:0,tilt:.62,zoom:1,pointers:new Map(),distance:0};
-const BASE_SCALE=.083;
+const BASE_SCALE=.096;
 function applyOrbit(){if(stage)stage.rotation.set(orbit.tilt,orbit.yaw,0,'YXZ');}
 function bindOrbitControls(){
  const surface=document.querySelector('#arContainer');
@@ -84,7 +84,7 @@ function createStage(root){
   stage.position.set(0,-.10,.33);
   stage.rotation.x=.62;
   applyOrbit();
-  stage.scale.setScalar(.083);
+  stage.scale.setScalar(BASE_SCALE);
   root.add(stage);
   stageWorld=stage;
   const colors=[0xff3d9a,0x33e1ff,0xffc857];
@@ -127,7 +127,7 @@ function createStage(root){
   // Original procedural human figures are replaced by the three supplied GLBs.
   performers.forEach((group,i)=>{
     group.position.set(0,0,i===2?0:1);
-    group.scale.setScalar(i===2?1.65:3.05);
+    group.scale.setScalar(i===2?1.80:3.35);
     stage.add(group);
   });
   const chars=['♪','♫','♪','♬'];
