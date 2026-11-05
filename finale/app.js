@@ -40,23 +40,53 @@ let stageWorld, halo, noteSprites=[], noteCooldown=0;
 const stageV=new THREE.Vector3(), stageQ=new THREE.Quaternion(), stageUp=new THREE.Vector3(0,1,0);
 function createStage(root){
   stage=new THREE.Group();
-  stage.position.set(0,-.10,.16);
-  stage.scale.setScalar(.055);
+  // Angle the physical stage toward the invitation viewer so the circular
+  // floor reads as a 3D platform rather than a thin horizontal stripe.
+  stage.position.set(0,-.12,.18);
+  stage.rotation.x=.38;
+  stage.scale.setScalar(.059);
   root.add(stage);
   stageWorld=stage;
   const colors=[0xff3d9a,0x33e1ff,0xffc857];
-  const floor=new THREE.Mesh(new THREE.CircleGeometry(10,64),new THREE.MeshStandardMaterial({color:0x140a28,metalness:.75,roughness:.22,side:THREE.DoubleSide}));
-  floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
-  neonRings=colors.concat([0xff3d9a]).map((c,i)=>{
-    const mesh=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
-    mesh.rotation.x=-Math.PI/2;mesh.position.y=.01;stage.add(mesh);return mesh;
+  // A substantial circular stage with real visible side walls, not a flat plane.
+  const baseMat=new THREE.MeshStandardMaterial({color:0x1c1036,metalness:.48,roughness:.32});
+  const deckMat=new THREE.MeshStandardMaterial({color:0x281245,metalness:.35,roughness:.4});
+  const rimMat=new THREE.MeshBasicMaterial({color:0xff3d9a});
+  const platform=new THREE.Mesh(new THREE.CylinderGeometry(6.55,6.9,.82,96,1),baseMat);
+  platform.position.y=.12;platform.receiveShadow=true;stage.add(platform);
+  const top=new THREE.Mesh(new THREE.CylinderGeometry(6.5,6.5,.10,96),deckMat);
+  top.position.y=.57;top.receiveShadow=true;stage.add(top);
+  const underside=new THREE.Mesh(new THREE.CylinderGeometry(6.85,6.85,.13,96),new THREE.MeshStandardMaterial({color:0x10081e,metalness:.55,roughness:.4}));
+  underside.position.y=-.32;stage.add(underside);
+  const makeRim=(radius,tube,y,color)=>{
+    const edge=new THREE.Mesh(new THREE.TorusGeometry(radius,tube,10,96),new THREE.MeshBasicMaterial({color}));
+    edge.rotation.x=Math.PI/2;edge.position.y=y;stage.add(edge);return edge;
+  };
+  makeRim(6.56,.09,.63,0xff3d9a);
+  makeRim(6.87,.07,-.26,0x33e1ff);
+  // Visible luminous circles across the top deck.
+  neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((c,i)=>{
+    const mesh=new THREE.Mesh(new THREE.RingGeometry(1.25+i*1.22,1.33+i*1.22,96),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
+    mesh.rotation.x=-Math.PI/2;mesh.position.y=.637+i*.002;stage.add(mesh);return mesh;
   });
+  // Low rear equalizer columns: atmospheric backdrop, not a huge flat wall.
   eqBars=[];
-  for(let i=0;i<40;i++){
-    const a=i/40*Math.PI*2;
-    const bar=new THREE.Mesh(new THREE.BoxGeometry(.16,1,.16),new THREE.MeshBasicMaterial({color:0xffffff}));
-    bar.position.set(Math.sin(a)*9,0,Math.cos(a)*9);stage.add(bar);eqBars.push(bar);
+  for(let i=0;i<28;i++){
+    const a=Math.PI*.12+i/27*Math.PI*.76;
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(.17,1,.17),new THREE.MeshBasicMaterial({color:0xffffff}));
+    bar.position.set(Math.cos(a)*7.1,0,-Math.sin(a)*7.1);
+    stage.add(bar);eqBars.push(bar);
   }
+  // Compact raised rear truss and neon fixtures give the stage depth.
+  const trussMat=new THREE.MeshStandardMaterial({color:0x4d336f,metalness:.6,roughness:.26});
+  for(const px of [-6.1,6.1]){
+    const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,4.9,10),trussMat);
+    post.position.set(px,2.6,-4.6);stage.add(post);
+    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.24,12,8),new THREE.MeshBasicMaterial({color:px<0?0xff3d9a:0x33e1ff}));
+    lamp.position.set(px,4.8,-4.6);stage.add(lamp);
+  }
+  const bridge=new THREE.Mesh(new THREE.BoxGeometry(12.4,.2,.2),trussMat);
+  bridge.position.set(0,5,-4.6);stage.add(bridge);
   halo=new THREE.Mesh(new THREE.TorusGeometry(2.4,.04,12,96),new THREE.MeshBasicMaterial({color:0xff3d9a}));
   halo.position.set(0,2.2,-2.6);stage.add(halo);
   // Same 3-spot rotating lights and translucent beam cones from the uploaded HTML.
@@ -73,7 +103,7 @@ function createStage(root){
   const geom=new THREE.BufferGeometry();geom.setAttribute('position',new THREE.BufferAttribute(positions,3));
   particles=new THREE.Points(geom,new THREE.PointsMaterial({size:.07,color:0xffd9f5,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false}));stage.add(particles);
   // Real GLBs only: no generated human geometry.
-  for(const group of performers)stage.add(group);
+  for(const group of performers){group.position.y=.68;stage.add(group);}
   // Stage Lights musical notes are mounted to the singer's group.
   const chars=['♪','♫','♪','♬'];
   chars.forEach((letter,i)=>{
@@ -99,7 +129,7 @@ function updateStageEffects(t,dt,index){
     beam.scale.y=length/10;beam.material.opacity=.05+pulse*.05;
   });
   neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.04*(i+1));r.material.opacity=.22+pulse*.45;});
-  eqBars.forEach((bar,i)=>{const height=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;bar.scale.y=height;bar.position.y=height/2;bar.material.color.setHSL((i/40+t*.05)%1,.9,.55);});
+  eqBars.forEach((bar,i)=>{const height=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;bar.scale.y=height*.62;bar.position.y=.65+height*.31;bar.material.color.setHSL((i/40+t*.05)%1,.9,.55);});
   halo.material.color.setHSL((t*.08)%1,.9,.6);halo.scale.setScalar(1+pulse*.05);
   const positions=particles.geometry.attributes.position;
   for(let i=0;i<positions.count;i++){let y=positions.getY(i)+dt*(.2+(i%5)*.06);if(y>8)y=0;positions.setY(i,y);}positions.needsUpdate=true;
@@ -156,7 +186,7 @@ function setup() {
  const {scene,renderer,camera}=mindarThree;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
  const anchor=mindarThree.addAnchor(0),root=anchor.group;
- scene.add(new THREE.HemisphereLight(0xffffff,0x34132a,2.0));
+ scene.add(new THREE.HemisphereLight(0xffffff,0x34132a,2.8));
  warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
  createStage(root);
@@ -181,7 +211,7 @@ function setup() {
     }
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
     performers[2].rotation.y=Math.sin(now*.65)*.10;
-    stage.scale.setScalar(.055*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
+    stage.scale.setScalar(.059*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
     title.position.y=.53+.012*Math.sin(now*1.5);
