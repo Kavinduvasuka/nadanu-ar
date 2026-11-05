@@ -42,9 +42,11 @@ function createStage(root){
   stage=new THREE.Group();
   // Angle the physical stage toward the invitation viewer so the circular
   // floor reads as a 3D platform rather than a thin horizontal stripe.
-  stage.position.set(0,-.12,.18);
-  stage.rotation.x=.38;
-  stage.scale.setScalar(.059);
+  // Close-up concert framing: the circular deck fills the foreground, while
+  // the camera still tracks the printed invitation as before.
+  stage.position.set(0,-.20,.30);
+  stage.rotation.x=.72;
+  stage.scale.setScalar(.067);
   root.add(stage);
   stageWorld=stage;
   const colors=[0xff3d9a,0x33e1ff,0xffc857];
@@ -95,7 +97,7 @@ function createStage(root){
     const light=new THREE.SpotLight(c,2.4,32,.5,.55,1);
     light.position.set(Math.cos(i*2.1)*6,9,Math.sin(i*2.1)*6);
     light.target.position.set(0,1,0);stage.add(light,light.target);stageSpots.push(light);
-    const beam=new THREE.Mesh(new THREE.ConeGeometry(2.1,10,32,1,true),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    const beam=new THREE.Mesh(new THREE.ConeGeometry(1.65,9,32,1,true),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.045,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
     stage.add(beam);beamCones.push(beam);
   });
   const count=350,positions=new Float32Array(count*3);
@@ -103,7 +105,13 @@ function createStage(root){
   const geom=new THREE.BufferGeometry();geom.setAttribute('position',new THREE.BufferAttribute(positions,3));
   particles=new THREE.Points(geom,new THREE.PointsMaterial({size:.07,color:0xffd9f5,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false}));stage.add(particles);
   // Real GLBs only: no generated human geometry.
-  for(const group of performers){group.position.y=.68;stage.add(group);}
+  // Scale the actual GLB actors independently of the platform for a clear
+  // front-and-centre view; their feet stay on top of the deck.
+  performers.forEach((group,i)=>{
+    group.position.set(0,.68,i===2?0:1.0);
+    group.scale.setScalar(i===2?1.35:2.2);
+    stage.add(group);
+  });
   // Stage Lights musical notes are mounted to the singer's group.
   const chars=['♪','♫','♪','♬'];
   chars.forEach((letter,i)=>{
@@ -126,7 +134,7 @@ function updateStageEffects(t,dt,index){
     const beam=beamCones[i],d=stageV.copy(l.position).sub(l.target.position),length=d.length();
     beam.position.copy(l.position).add(l.target.position).multiplyScalar(.5);
     stageQ.setFromUnitVectors(stageUp,d.normalize());beam.quaternion.copy(stageQ);
-    beam.scale.y=length/10;beam.material.opacity=.05+pulse*.05;
+    beam.scale.y=length/10;beam.material.opacity=.025+pulse*.033;
   });
   neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.04*(i+1));r.material.opacity=.22+pulse*.45;});
   eqBars.forEach((bar,i)=>{const height=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;bar.scale.y=height*.62;bar.position.y=.65+height*.31;bar.material.color.setHSL((i/40+t*.05)%1,.9,.55);});
@@ -190,9 +198,9 @@ function setup() {
  warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
  createStage(root);
- title=textMesh(['NADANU 3.0','GRAND FINALE'],1.1,.32,0,.53,.20,83);root.add(title);
+ title=textMesh(['NADANU 3.0','GRAND FINALE'],1.1,.32,0,.69,.12,83);root.add(title);
  subtitle=textMesh(['YOU ARE CORDIALLY INVITED'],1.05,.22,0,-.50,.17,52);root.add(subtitle);
- label=textMesh(['SOLO SINGING'],.77,.16,0,.34,.35,67);root.add(label);
+ label=textMesh(['SOLO SINGING'],.77,.16,0,.55,.22,67);root.add(label);
  root.visible=false;
  anchor.onTargetFound=()=>{tracked=true;trackingTime=clock.getElapsedTime();root.visible=true;status.textContent='Grand Finale stage detected — watch the performers!';};
  anchor.onTargetLost=()=>{tracked=false;root.visible=false;status.textContent='Point your camera at the printed Grand Finale invitation';};
@@ -211,10 +219,10 @@ function setup() {
     }
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
     performers[2].rotation.y=Math.sin(now*.65)*.10;
-    stage.scale.setScalar(.059*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
+    stage.scale.setScalar(.067*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
-    title.position.y=.53+.012*Math.sin(now*1.5);
+    title.position.y=.69+.012*Math.sin(now*1.5);
   }
   renderer.render(scene,camera);
  });
