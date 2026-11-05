@@ -23,6 +23,7 @@
       <h2>GRAND FINALE</h2>
       <p>Scan your printed B5 invitation to see the original 3D Stage Lights concert, featuring your real singer, solo dancer, and group models.</p>
       <button id="startButton" type="button">START AR EXPERIENCE</button>
+      <a href="./stage.html" style="display:block;max-width:300px;margin:14px auto 0;padding:14px 18px;border:1px solid #ff3d9a;border-radius:999px;color:#fff;text-decoration:none;font:600 11px 'Unbounded',Arial,sans-serif;background:#a32167">FREE-MOVING 3D STAGE</a>
       <p class="hint">Camera permission is required · Best on Chrome or Safari</p>
       <p id="message" role="status" aria-live="polite"></p>
     </div>
@@ -30,7 +31,7 @@
   <div id="arContainer"></div>
   <div id="arUI" hidden>
     <div class="topbar"><strong>NADANU 3.0 · STAGE LIGHTS</strong><button id="stopButton" type="button">EXIT AR</button></div><div class="act-controls"><button class="active" data-act="auto">AUTO</button><button data-act="0">SINGER</button><button data-act="1">SOLO DANCE</button><button data-act="2">GROUP</button><button id="soundButton">SOUND OFF</button></div>
-    <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
+    <a href="./stage.html" style="position:absolute;top:calc(73px + env(safe-area-inset-top));right:12px;pointer-events:auto;text-decoration:none;color:white;background:#a32167;border-radius:30px;padding:10px;font:600 10px Arial,sans-serif">FREE 3D VIEW</a><div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
   </div>
   <script type="module" src="./app.js?v=stage-lights-html-20261105"></script>
 </body>
