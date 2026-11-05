@@ -22,7 +22,7 @@ const mixers = [];
 let lastFrame=0, trackingTime=0, sequenceTime=0;
 // Keep the stage fixed to the invitation; gestures rotate and zoom performers only.
 const orbit={yaw:0,zoom:1,pointers:new Map(),distance:0};
-const BASE_SCALE=0.288;
+const BASE_SCALE=0.192;
 function applyOrbit(){
  performers.forEach((group,i)=>{
    group.rotation.y=orbit.yaw+(i===2 ? Math.sin(clock.getElapsedTime()*.65)*.10 : 0);
