@@ -23,6 +23,14 @@ let lastFrame=0, trackingTime=0, sequenceTime=0;
 // Keep the stage fixed to the invitation; gestures rotate and zoom performers only.
 const orbit={yaw:0,zoom:1,pointers:new Map(),distance:0};
 const BASE_SCALE=0.17;
+// Smooth only the detected target's orientation. Keeping the stage under the
+// native image anchor preserves its exact centre position and avoids the
+// previous extra-world-pose smoothing regression.
+const targetRotation=new THREE.Quaternion();
+const stableRotation=new THREE.Quaternion();
+const inverseTargetRotation=new THREE.Quaternion();
+const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,0));
+let stageRotationReady=false;
 function applyOrbit(){
  performers.forEach((group,i)=>{
    group.rotation.y=orbit.yaw+(i===2 ? Math.sin(clock.getElapsedTime()*.65)*.10 : 0);
@@ -88,7 +96,7 @@ function createStage(root){
   // Fixed local offset from the centre of the printed invitation.
   // The parent MindAR anchor provides the image pose; do not modify its world pose.
   stage.position.set(0,0,.12);
-  stage.rotation.x=.62;
+  stage.rotation.x=.62; // Base presentation tilt, stabilized against tracker wobble below.
   stage.scale.setScalar(BASE_SCALE);
   root.add(stage);
   stageWorld=stage;
@@ -229,12 +237,15 @@ function setup() {
  anchor.onTargetFound=()=>{
   tracked=true;
   trackingTime=clock.getElapsedTime();
+  stageRotationReady=false;
+  stage.quaternion.copy(fixedStageTilt);
   stage.visible=false; // Wait for tracking to settle before first reveal.
   root.visible=true;
   status.textContent='Invitation centre detected · locking stage…';
  };
  anchor.onTargetLost=()=>{
   tracked=false;
+  stageRotationReady=false;
   stage.visible=false;
   root.visible=false;
   status.textContent='Point your camera at the printed Grand Finale invitation';
@@ -242,6 +253,24 @@ function setup() {
  renderer.setAnimationLoop(()=>{
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
   if(running&&tracked){
+    // Native MindAR anchor maintains the printed invitation centre. Compensate
+    // rapid angular jitter only: stage rotation follows a slowly filtered pose
+    // rather than every noisy tracking-frame angle.
+    root.updateMatrixWorld(true);
+    root.getWorldQuaternion(targetRotation);
+    if(!stageRotationReady){
+      stableRotation.copy(targetRotation);
+      stageRotationReady=true;
+    }else{
+      const delta=stableRotation.angleTo(targetRotation);
+      // Under 1 degree is sensor jitter: avoid moving the stage.
+      if(delta>THREE.MathUtils.degToRad(1)){
+        const alpha=1-Math.exp(-Math.max(dt,.001)*3.2);
+        stableRotation.slerp(targetRotation,alpha);
+      }
+    }
+    inverseTargetRotation.copy(targetRotation).invert();
+    stage.quaternion.copy(inverseTargetRotation).multiply(stableRotation).multiply(fixedStageTilt);
     sequenceTime+=dt;
     // 6s singer, 6s solo dancer, 6s group, then repeat.
     const index=selectedAct===null?Math.floor(sequenceTime/8)%3:selectedAct;
@@ -312,19 +341,24 @@ async function startAR(){
    // Do not stop an AR session that never reached the running state.
    running=false;
    tracked=false;
+   disableSound();
    console.info('MindAR startup did not complete. Reload before retrying; inspect the FIRST console error.');
  }
  finally{busy=false;startButton.disabled=false;}
 }
 async function stopAR(){
  if(busy||!running)return;busy=true;
- try{await mindarThree.stop();running=false;tracked=false;arUI.hidden=true;landing.style.display='grid';message.textContent='';}
+ try{await mindarThree.stop();running=false;tracked=false;disableSound();arUI.hidden=true;landing.style.display='grid';message.textContent='';}
  catch(e){console.error(e);status.textContent='Unable to stop camera. Refresh the page.';}
  finally{busy=false;}
 }
-startButton.addEventListener('click',startAR);
+startButton.addEventListener('click',()=>{
+ // Must unlock Web Audio in the direct tap gesture, before camera and network awaits.
+ enableSound().catch(e=>console.warn('Audio could not start:',e));
+ startAR();
+});
 stopButton.addEventListener('click',stopAR);
-window.addEventListener('pagehide',()=>{if(soundInterval)clearInterval(soundInterval);if(running&&mindarThree)mindarThree.stop().catch(()=>{});});
+window.addEventListener('pagehide',()=>{disableSound();if(running&&mindarThree)mindarThree.stop().catch(()=>{});});
 
 window.addEventListener('unhandledrejection',ev=>console.error('Unhandled promise rejection:',ev.reason));
 window.addEventListener('error',ev=>console.error('Browser script error:',ev.message,ev.filename,ev.lineno));
@@ -336,18 +370,31 @@ for(const button of document.querySelectorAll('[data-act]')){
   document.querySelectorAll('[data-act]').forEach(b=>b.classList.toggle('active',b===button));
  });
 }
-// Optional original in-browser instrumental beat; starts only on user click.
+// Original in-browser instrumental beat, enabled from the START AR tap.
+// iOS/Safari and Chrome require an explicit user gesture to unlock audio.
 function tone(frequency,duration=.14,volume=.035,type='triangle'){
- if(!musicContext)return;
+ if(!musicContext||musicContext.state!=='running')return;
  const now=musicContext.currentTime,o=musicContext.createOscillator(),g=musicContext.createGain();
  o.type=type;o.frequency.value=frequency;g.gain.setValueAtTime(volume,now);g.gain.exponentialRampToValueAtTime(.001,now+duration);
  o.connect(g);g.connect(musicContext.destination);o.start(now);o.stop(now+duration);
 }
 const soundButton=document.getElementById('soundButton');
-if(soundButton)soundButton.addEventListener('click',async()=>{
- if(soundEnabled){clearInterval(soundInterval);soundEnabled=false;soundButton.textContent='SOUND OFF';return;}
- musicContext ??= new (window.AudioContext||window.webkitAudioContext)();await musicContext.resume();
- soundEnabled=true;soundButton.textContent='SOUND ON';let step=0;
+function disableSound(){
+ if(soundInterval!==null){clearInterval(soundInterval);soundInterval=null;}
+ soundEnabled=false;
+ if(soundButton)soundButton.textContent='SOUND OFF';
+}
+async function enableSound(){
+ if(soundEnabled)return;
+ const AudioCtx=window.AudioContext||window.webkitAudioContext;
+ if(!AudioCtx){if(soundButton)soundButton.textContent='SOUND UNAVAILABLE';return;}
+ musicContext??=new AudioCtx();
+ // Invoked synchronously within START click; the resume call is made prior to await.
+ await musicContext.resume();
+ if(soundEnabled)return;
+ soundEnabled=true;
+ if(soundButton)soundButton.textContent='SOUND ON';
+ let step=0;
  soundInterval=setInterval(()=>{
   if(!running||!tracked)return;
   const bass=[110,110,146.83,98][Math.floor(step/8)%4];
@@ -355,4 +402,8 @@ if(soundButton)soundButton.addEventListener('click',async()=>{
   tone([329.63,392,440,523.25][step%4],.12,.018,'triangle');
   step++;
  },240);
+}
+if(soundButton)soundButton.addEventListener('click',()=>{
+ if(soundEnabled)disableSound();
+ else enableSound().catch(e=>console.warn('Audio could not start:',e));
 });
