@@ -32,3 +32,29 @@
 @media(max-width:600px){.masthead{padding:19px 6%;gap:14px}.brand{font-size:21px}.society{font-size:8px;letter-spacing:1px}.header-event{font-size:8px;letter-spacing:0}.hero{grid-template-columns:1fr;gap:40px;padding:36px 7% 45px}.hero h1{font-size:clamp(53px,12vw,75px);margin:22px 0}.intro{font-size:14px;max-width:380px}.hero-actions{flex-direction:row;max-width:none;gap:8px}.primary,.secondary{font-size:11px;gap:10px;padding:15px 13px;flex:1;min-width:0;white-space:normal}.camera-note{font-size:10px}.poster-display{width:83%;max-width:340px}.invitation-poster{min-height:490px;padding:20px 16px}.poster-logo-frame{height:237px}.poster-logo{max-height:235px}.poster-kicker{font-size:8px}.invitation-poster h2{font-size:42px}.poster-copy{font-size:8px}.poster-stamp{left:-24px;bottom:27px;font-size:9px;padding:10px}.vertical-note{right:-19px;font-size:7px}.categories{padding:28px 7%}.categories>p{font-size:10px}.category-row{gap:12px}.category-row>div{font-size:11px;gap:7px;padding:12px 7px 12px 0;margin:0}.category-row>div span{font-size:9px}.how{padding:34px 7%;gap:12px}.how small{font-size:8px;letter-spacing:1px}.how p{font-size:11px}.page-footer{padding:23px 7%;font-size:8px;line-height:1.5}}
 @media(max-width:375px){.header-event{display:none}.hero-actions{flex-direction:column}.invitation-poster h2{font-size:35px}.poster-display{width:85%}}
 @media(prefers-reduced-motion:reduce){.hero-copy,.poster-display{animation:none!important}.primary,.secondary{transition:none}}
+
+
+/* GRAND FINALE · ACT TITLES + POST-PERFORMANCE INVITATION */
+.act-banner{position:absolute;top:calc(115px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;align-items:center;flex-direction:column;gap:7px;min-width:min(92vw,440px);max-width:94vw;padding:14px 24px 12px;text-align:center;background:linear-gradient(110deg,#160c07c9,#3f1809db,#160c07c9);border:1px solid #ffc16b6b;border-radius:10px;box-shadow:0 10px 36px #0007,0 0 25px #ff63251e;backdrop-filter:blur(9px);pointer-events:none;z-index:5}
+.act-banner:before,.act-banner:after{content:'✦';position:absolute;top:50%;transform:translateY(-50%);font-size:15px;color:#f5b640}.act-banner:before{left:10px}.act-banner:after{right:10px}
+.act-banner-kicker{font:800 9px/1.3 Arial,sans-serif;letter-spacing:2px;color:#f5b640}
+.act-banner strong{font:900 clamp(21px,5.3vw,31px)/1.12 Impact,'Arial Narrow',Arial,sans-serif;letter-spacing:1px;color:#fff2d3;text-shadow:0 3px 17px #ff63254f}
+.act-banner-count{font:700 9px/1.2 Arial,sans-serif;letter-spacing:1.8px;color:#c6ac98}
+.finale-invitation{position:absolute;inset:0;z-index:6;display:flex;justify-content:center;align-items:center;padding:calc(75px + env(safe-area-inset-top)) 16px calc(90px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#160c07b0,#160c07ec);backdrop-filter:blur(7px);pointer-events:auto;overflow-y:auto}
+.finale-invitation[hidden],.act-banner[hidden]{display:none!important}
+.finale-invitation-card{width:min(100%,460px);max-height:100%;overflow-y:auto;text-align:center;position:relative;padding:clamp(22px,5vw,40px) clamp(21px,5vw,36px);border:1px solid #f5b640aa;outline:1px solid #ff63254d;outline-offset:5px;border-radius:9px;background:radial-gradient(ellipse at 50% -10%,#6d2919 0%,#33150f 35%,#160c07 95%);box-shadow:0 20px 80px #000e,0 0 60px #f5b64024,inset 0 0 48px #ff632512;animation:invitation-reveal .65s ease-out both}
+.finale-invitation-card:before,.finale-invitation-card:after{content:'✦';position:absolute;top:14px;color:#f5b640;font-size:20px}.finale-invitation-card:before{left:16px}.finale-invitation-card:after{right:16px}
+.finale-invitation-top{font:800 9px/1.7 Arial,sans-serif;letter-spacing:1.5px;color:#f5b640}
+.finale-invitation-rule{height:1px;margin:18px auto;max-width:220px;background:linear-gradient(90deg,transparent,#f5b640,transparent)}
+.finale-invitation-intro{font:700 10px/1.6 Arial,sans-serif;letter-spacing:1.6px;color:#dfbf9f;margin:0 0 11px}
+.finale-invitation h2{margin:0;font:900 clamp(34px,9vw,52px)/.98 Impact,'Arial Narrow',Arial,sans-serif;color:#fff2d3;letter-spacing:1px;text-shadow:0 5px 15px #0007}
+.finale-invitation h2 span{display:block;color:#ff6325}
+.finale-invitation-lead{font:900 14px Arial,sans-serif;letter-spacing:3.5px;color:#f5b640;margin:16px 0}
+.finale-invitation-body{font:400 clamp(12px,3.2vw,15px)/1.85 Arial,sans-serif;max-width:365px;margin:0 auto;color:#edd8c3}
+.finale-invitation-quote{font:800 11px/1.7 Arial,sans-serif;letter-spacing:1.2px;color:#f5b640;margin:20px auto}
+.finale-invitation-actions{border-top:1px solid #ffcc7540;padding-top:19px}
+#arUI #replayActsButton{border:1px solid #ffb642;background:#ff6325;color:#200d07;padding:13px 18px;font:900 11px Arial,sans-serif;letter-spacing:.7px;border-radius:5px}
+.finale-invitation-society{font:700 9px/1.5 Arial,sans-serif;letter-spacing:1px;color:#bb9e87;margin:18px 0 0}
+@keyframes invitation-reveal{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:480px){.act-banner{top:calc(92px + env(safe-area-inset-top));padding:11px 23px}.act-banner-kicker{font-size:8px}.finale-invitation{padding-top:calc(68px + env(safe-area-inset-top));padding-bottom:calc(105px + env(safe-area-inset-bottom))}.finale-invitation-card{padding:20px 20px}.finale-invitation-rule{margin:11px auto}.finale-invitation-lead{margin:12px auto}.finale-invitation-quote{margin:12px auto}.finale-invitation-actions{padding-top:13px}}
+@media(prefers-reduced-motion:reduce){.finale-invitation-card{animation:none}}
