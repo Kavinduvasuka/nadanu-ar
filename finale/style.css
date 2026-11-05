@@ -17,3 +17,23 @@ h1,h2{font-family:'Bungee',Impact,sans-serif;margin:14px 0;line-height:1.1}h1{fo
 .act-controls button{padding:9px 10px;font-size:9px;border-radius:99px;border:1px solid #ffffff44;background:#170b2bc9;backdrop-filter:blur(8px)}
 .act-controls button.active{background:#ff3d9a;border-color:#ff3d9a;color:#120918}
 .tracking{bottom:calc(10px + env(safe-area-inset-bottom));font-size:11px}
+
+/* Stage Lights: matching the actual supplied HTML interface */
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600&display=swap');
+#arUI,#arUI button,.frame,.frame button{
+  font-family:'Unbounded',system-ui,sans-serif;
+}
+#arUI .topbar{
+  color:#f6efff;font-size:clamp(12px,2.8vw,19px);
+  text-shadow:0 0 19px #ff3d9a;
+  background:linear-gradient(#07040fd9,transparent);
+}
+#arUI .topbar strong{font-weight:600}
+#arUI .act-controls{bottom:calc(52px + env(safe-area-inset-bottom));}
+#arUI .act-controls button{
+  background:rgba(20,12,40,.72);border:1px solid rgba(255,255,255,.22);
+  color:#f6efff;border-radius:99px;padding:11px 13px;
+  font-size:clamp(8px,2.2vw,11px);
+}
+#arUI .act-controls button.active{background:#ff3d9a;color:#1a0010;border-color:#ff3d9a}
+#arUI .tracking{background:rgba(7,4,15,.8);color:#b9a8d6;bottom:calc(5px + env(safe-area-inset-bottom))}
