@@ -20,10 +20,15 @@ let selectedAct=null, musicContext=null, soundInterval=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
 const mixers = [];
 let lastFrame=0, trackingTime=0, sequenceTime=0;
-// Camera remains controlled by MindAR; gestures orbit/zoom the virtual stage.
-const orbit={yaw:0,tilt:.62,zoom:1,pointers:new Map(),distance:0};
+// Keep the stage fixed to the invitation; gestures rotate and zoom performers only.
+const orbit={yaw:0,zoom:1,pointers:new Map(),distance:0};
 const BASE_SCALE=0.288;
-function applyOrbit(){if(stage)stage.rotation.set(orbit.tilt,orbit.yaw,0,'YXZ');}
+function applyOrbit(){
+ performers.forEach((group,i)=>{
+   group.rotation.y=orbit.yaw+(i===2 ? Math.sin(clock.getElapsedTime()*.65)*.10 : 0);
+   group.scale.setScalar((i===2?1.80:3.35)*orbit.zoom);
+ });
+}
 function bindOrbitControls(){
  const surface=document.querySelector('#arContainer');
  surface.style.touchAction='none';
@@ -39,7 +44,6 @@ function bindOrbitControls(){
   orbit.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(orbit.pointers.size===1){
     orbit.yaw+=(e.clientX-old.x)*.013;
-    orbit.tilt=THREE.MathUtils.clamp(orbit.tilt+(e.clientY-old.y)*.006,.18,1.25);
     applyOrbit();
   }else if(orbit.pointers.size===2){
     const [a,b]=[...orbit.pointers.values()];
@@ -56,7 +60,7 @@ function bindOrbitControls(){
   orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*Math.exp(-e.deltaY*.001),.65,2.1);
  },{passive:false});
  document.querySelector('#resetViewButton')?.addEventListener('click',()=>{
-  orbit.yaw=0;orbit.tilt=.62;orbit.zoom=1;applyOrbit();
+  orbit.yaw=0;orbit.zoom=1;applyOrbit();
  });
 }
 
@@ -83,7 +87,6 @@ function createStage(root){
   stage=new THREE.Group();
   stage.position.set(0,-.10,.33);
   stage.rotation.x=.62;
-  applyOrbit();
   stage.scale.setScalar(BASE_SCALE);
   root.add(stage);
   stageWorld=stage;
@@ -237,8 +240,8 @@ function setup() {
       label.material.needsUpdate=true;label.userData.index=index;
     }
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
-    performers[2].rotation.y=Math.sin(now*.65)*.10;
-    stage.scale.setScalar(BASE_SCALE*orbit.zoom*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
+    applyOrbit();
+    stage.scale.setScalar(BASE_SCALE*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
     title.position.y=.75+.012*Math.sin(now*1.5);
