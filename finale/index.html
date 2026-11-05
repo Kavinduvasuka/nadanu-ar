@@ -3,77 +3,71 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#100817">
-<meta name="description" content="An exclusive invitation to Nadanu 3.0 Grand Finale — presented by the Computing Society of ICBT.">
-<title>Nadanu 3.0 — Your Grand Finale Invitation</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=DM+Sans:wght@400;500;600;700&family=Unbounded:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style.css?v=finale-royal-invitation-20261106">
+<meta name="theme-color" content="#160c07">
+<meta name="description" content="Nadanu 3.0 Grand Finale — an immersive invitation from the Computing Society of ICBT.">
+<title>Nadanu 3.0 — Grand Finale Invitation</title>
+<link rel="stylesheet" href="./style.css?v=finale-retro-reference-20261106">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 </head>
 <body>
-<main id="landing" class="premiere-page">
-  <div class="premiere-backdrop" aria-hidden="true">
-    <div class="beam beam-left"></div><div class="beam beam-right"></div><div class="beam beam-center"></div>
-    <div class="orb orb-pink"></div><div class="orb orb-blue"></div>
-    <div class="stars stars-a"></div><div class="stars stars-b"></div>
-    <div class="stage-floor"></div>
-  </div>
-  <div class="premiere-content">
-    <header class="site-header">
-      <div class="society-brand"><span class="brand-emblem">✦</span><span><b>COMPUTING SOCIETY</b><small>ICBT CAMPUS</small></span></div>
-      <div class="event-label"><span class="event-pulse"></span> NADANU 3.0 <span class="event-separator">/</span> GRAND FINALE</div>
-    </header>
+<main id="landing" class="finale-landing">
+  <header class="masthead">
+    <a class="brand" href="./" aria-label="Nadanu 3.0 home">NADANU <span>3.0</span></a>
+    <span class="society">COMPUTING SOCIETY<br>OF ICBT</span>
+    <span class="header-event"><i></i> THE GRAND FINALE</span>
+  </header>
 
-    <section class="hero" aria-label="Exclusive Grand Finale Invitation">
-      <div class="hero-eyebrow"><span class="eyebrow-bar"></span>THE NIGHT WE'VE BEEN WAITING FOR<span class="eyebrow-bar"></span></div>
-      <div class="hero-logo-box">
-        <div class="logo-orbit logo-orbit-one" aria-hidden="true"></div><div class="logo-orbit logo-orbit-two" aria-hidden="true"></div>
-        <div class="logo-backlight" aria-hidden="true"></div>
-        <img class="hero-logo" src="./assets/nadanu-logo.png?v=original-logo-corrected-20261106" alt="Nadanu 3.0 — Feel the Beat. Own the Stage." onerror="this.hidden=true;document.querySelector('.hero-logo-fallback').hidden=false">
-        <div class="hero-logo-fallback" hidden>
-          <span class="logo-star" aria-hidden="true">★</span>
-          <span class="logo-wordmark">නැදූනූ</span>
-          <span class="logo-tag">FEEL THE BEAT. OWN THE STAGE.</span>
-          <span class="logo-version">3.0</span>
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow"><i></i> NADANU 3.0 / THE FINAL CHAPTER</p>
+      <h1>THE STAGE<br>IS SET.<br><em>YOU'RE<br>INVITED.</em></h1>
+      <p class="intro">The spotlight is ready. The finalists are set. Be part of a grand celebration of music, dance and unforgettable talent at the <strong>Nadanu 3.0 Grand Finale.</strong></p>
+      <div class="hero-actions">
+        <button id="startButton" type="button" class="primary">Start invitation AR <span>↗</span></button>
+        <a class="secondary" href="./world.html">Explore 3D stage <span>▷</span></a>
+      </div>
+      <p class="camera-note">On your phone, allow camera access and frame the printed Grand Finale invitation. The 3D performance appears when the artwork is recognized.</p>
+      <div class="invitation-note">
+        <div class="invitation-mark">✦</div>
+        <div><b>AN EXCLUSIVE INVITATION</b><span>Computing Society of ICBT proudly welcomes you to the Grand Finale.</span></div>
+      </div>
+    </div>
+
+    <div class="poster-display">
+      <div class="poster-glow" aria-hidden="true"></div>
+      <div class="invitation-poster">
+        <div class="poster-topline"><span>COMPUTING SOCIETY OF ICBT</span><span>✧</span></div>
+        <div class="poster-logo-frame">
+          <img src="./assets/nadanu-logo.png" alt="Nadanu 3.0 logo — Feel the Beat. Own the Stage." class="poster-logo" onerror="this.hidden=true;document.querySelector('.poster-fallback').hidden=false">
+          <div class="poster-fallback" hidden>NADANU <span>3.0</span></div>
         </div>
-        <div class="logo-spark spark-one">✦</div><div class="logo-spark spark-two">✧</div><div class="logo-spark spark-three">✦</div>
+        <div class="poster-rule"></div>
+        <p class="poster-kicker">YOU ARE CORDIALLY INVITED TO</p>
+        <h2>THE<br><em>GRAND FINALE</em></h2>
+        <p class="poster-copy">AN EVENING OF MUSIC, DANCE<br>AND EXTRAORDINARY TALENT</p>
+        <div class="poster-foot"><span>✦ FEEL THE BEAT. OWN THE STAGE.</span><span>3.0</span></div>
       </div>
+      <span class="poster-stamp">YOUR INVITATION.<br>YOUR FRONT ROW.</span>
+      <span class="vertical-note">GRAND FINALE / THE STAGE IS WAITING</span>
+    </div>
+  </section>
 
-      <p class="invitation-overline">WITH GREAT PLEASURE, WE INVITE YOU TO</p>
-      <h1 class="hero-title"><span class="hero-title-top">THE</span><span class="hero-title-main">GRAND <em>FINALE</em></span></h1>
-      <div class="gold-divider"><i></i><span>✦</span><i></i></div>
-      <p class="hero-description">Where the brightest talent meets the grandest stage. Join us for an unforgettable celebration of <strong>music, movement and the magic of performance.</strong></p>
-
-      <div class="invitation-ticket" aria-label="Your special invitation">
-        <div class="ticket-shine" aria-hidden="true"></div>
-        <div class="ticket-left">
-          <span class="ticket-label">YOUR INVITATION</span>
-          <strong>YOU'RE INVITED</strong>
-          <span class="ticket-sub">AN EXCLUSIVE GRAND FINALE EXPERIENCE</span>
-        </div>
-        <div class="ticket-perforation" aria-hidden="true"></div>
-        <div class="ticket-right"><span>ADMIT</span><strong>✦</strong><small>ONE<br>UNFORGETTABLE<br>EXPERIENCE</small></div>
-      </div>
-
-      <div class="primary-actions">
-        <button id="startButton" type="button" class="enter-ar"><span class="ar-icon">✧</span><span class="button-words"><b>ENTER THE AR EXPERIENCE</b><small>SCAN YOUR PRINTED INVITATION</small></span><span class="button-arrow">↗</span></button>
-        <a class="view-stage" href="./world.html"><span class="stage-icon">◈</span><span><b>EXPLORE THE 3D CONCERT</b><small>INTERACTIVE · ALL DEVICES</small></span><span class="button-arrow">↗</span></a>
-      </div>
-      <p class="scan-note">Point your camera at the printed Grand Finale invitation to reveal the 3D performance.</p>
-      <p id="message" role="status" aria-live="polite"></p>
-    </section>
-
-    <section class="experience-strip" aria-label="The evening awaits">
-      <div class="strip-line"></div>
-      <div class="strip-items"><span>✦ &nbsp; THE FINAL ACT</span><span>✦ &nbsp; ONE GRAND STAGE</span><span>✦ &nbsp; FEEL THE BEAT</span></div>
-      <div class="strip-line"></div>
-    </section>
-    <footer class="premiere-footer"><span>PROUDLY PRESENTED BY <b>COMPUTING SOCIETY OF ICBT</b></span><span>FEEL THE BEAT. OWN THE STAGE. <i>✦</i></span></footer>
-  </div>
+  <section class="categories" aria-label="Finale performances">
+    <p>THREE PERFORMANCES. ONE GRAND STAGE.</p>
+    <div class="category-row">
+      <div><span>01</span> Solo singing <i>↗</i></div>
+      <div><span>02</span> Solo dancing <i>↗</i></div>
+      <div><span>03</span> Group dancing <i>↗</i></div>
+    </div>
+  </section>
+  <section class="how" aria-label="Experience the invitation in AR">
+    <div><small>01 / OPEN</small><p>Start invitation AR.</p></div>
+    <div><small>02 / SCAN</small><p>Frame the printed invitation.</p></div>
+    <div><small>03 / EXPERIENCE</small><p>Watch the stage come alive.</p></div>
+  </section>
+  <footer class="page-footer"><span>FEEL THE BEAT. OWN THE STAGE.</span><span>COMPUTING SOCIETY OF ICBT · NADANU 3.0</span></footer>
+  <p id="message" role="status" aria-live="polite"></p>
 </main>
-
 <div id="arContainer"></div>
 <div id="arUI" hidden>
   <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><button id="stopButton" type="button">EXIT AR</button></div>
@@ -82,5 +76,4 @@
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script type="module" src="./app.js?v=angle-stable-sound-on-20261106"></script>
-</body>
-</html>
+</body></html>
