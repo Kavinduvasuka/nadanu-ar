@@ -211,7 +211,7 @@ async function loadPerformers() {
  return errors;
 }
 function setup() {
- mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind',maxTrack:1,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
+ mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind',maxTrack:1,filterMinCF:0.001,filterBeta:10,warmupTolerance:8,missTolerance:12,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
  const {scene,renderer,camera}=mindarThree;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
  const anchor=mindarThree.addAnchor(0),root=anchor.group;
