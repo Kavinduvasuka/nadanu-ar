@@ -39,84 +39,62 @@ function textMesh(lines,w,h,x,y,z,size=74){
 let stageWorld, halo, noteSprites=[], noteCooldown=0;
 const stageV=new THREE.Vector3(), stageQ=new THREE.Quaternion(), stageUp=new THREE.Vector3(0,1,0);
 function createStage(root){
+  // Recreated directly from stage-lights(2).html: open circular concert floor,
+  // four glowing rings, 40 moving columns, 3 colored spotlights and 500 stars.
   stage=new THREE.Group();
-  // Angle the physical stage toward the invitation viewer so the circular
-  // floor reads as a 3D platform rather than a thin horizontal stripe.
-  // Close-up concert framing: the circular deck fills the foreground, while
-  // the camera still tracks the printed invitation as before.
-  stage.position.set(0,-.20,.30);
-  stage.rotation.x=.72;
-  stage.scale.setScalar(.067);
+  stage.position.set(0,-.10,.33);
+  stage.rotation.x=.62;
+  stage.scale.setScalar(.083);
   root.add(stage);
   stageWorld=stage;
   const colors=[0xff3d9a,0x33e1ff,0xffc857];
-  // A substantial circular stage with real visible side walls, not a flat plane.
-  const baseMat=new THREE.MeshStandardMaterial({color:0x1c1036,metalness:.48,roughness:.32});
-  const deckMat=new THREE.MeshStandardMaterial({color:0x281245,metalness:.35,roughness:.4});
-  const rimMat=new THREE.MeshBasicMaterial({color:0xff3d9a});
-  const platform=new THREE.Mesh(new THREE.CylinderGeometry(6.55,6.9,.82,96,1),baseMat);
-  platform.position.y=.12;platform.receiveShadow=true;stage.add(platform);
-  const top=new THREE.Mesh(new THREE.CylinderGeometry(6.5,6.5,.10,96),deckMat);
-  top.position.y=.57;top.receiveShadow=true;stage.add(top);
-  const underside=new THREE.Mesh(new THREE.CylinderGeometry(6.85,6.85,.13,96),new THREE.MeshStandardMaterial({color:0x10081e,metalness:.55,roughness:.4}));
-  underside.position.y=-.32;stage.add(underside);
-  const makeRim=(radius,tube,y,color)=>{
-    const edge=new THREE.Mesh(new THREE.TorusGeometry(radius,tube,10,96),new THREE.MeshBasicMaterial({color}));
-    edge.rotation.x=Math.PI/2;edge.position.y=y;stage.add(edge);return edge;
-  };
-  makeRim(6.56,.09,.63,0xff3d9a);
-  makeRim(6.87,.07,-.26,0x33e1ff);
-  // Visible luminous circles across the top deck.
-  neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((c,i)=>{
-    const mesh=new THREE.Mesh(new THREE.RingGeometry(1.25+i*1.22,1.33+i*1.22,96),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
-    mesh.rotation.x=-Math.PI/2;mesh.position.y=.637+i*.002;stage.add(mesh);return mesh;
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(10,96),
+    new THREE.MeshStandardMaterial({color:0x140a28,metalness:.75,roughness:.22,side:THREE.DoubleSide}));
+  floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
+  neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((color,i)=>{
+    const ring=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),
+      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
+    ring.rotation.x=-Math.PI/2;ring.position.y=.012+i*.002;stage.add(ring);return ring;
   });
-  // Low rear equalizer columns: atmospheric backdrop, not a huge flat wall.
   eqBars=[];
-  for(let i=0;i<28;i++){
-    const a=Math.PI*.12+i/27*Math.PI*.76;
-    const bar=new THREE.Mesh(new THREE.BoxGeometry(.17,1,.17),new THREE.MeshBasicMaterial({color:0xffffff}));
-    bar.position.set(Math.cos(a)*7.1,0,-Math.sin(a)*7.1);
-    stage.add(bar);eqBars.push(bar);
+  for(let i=0;i<40;i++){
+    const a=i/40*Math.PI*2;
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(.16,1,.16),
+      new THREE.MeshBasicMaterial({color:0xffffff}));
+    bar.position.set(Math.sin(a)*9,0,Math.cos(a)*9);stage.add(bar);eqBars.push(bar);
   }
-  // Compact raised rear truss and neon fixtures give the stage depth.
-  const trussMat=new THREE.MeshStandardMaterial({color:0x4d336f,metalness:.6,roughness:.26});
-  for(const px of [-6.1,6.1]){
-    const post=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,4.9,10),trussMat);
-    post.position.set(px,2.6,-4.6);stage.add(post);
-    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.24,12,8),new THREE.MeshBasicMaterial({color:px<0?0xff3d9a:0x33e1ff}));
-    lamp.position.set(px,4.8,-4.6);stage.add(lamp);
-  }
-  const bridge=new THREE.Mesh(new THREE.BoxGeometry(12.4,.2,.2),trussMat);
-  bridge.position.set(0,5,-4.6);stage.add(bridge);
-  halo=new THREE.Mesh(new THREE.TorusGeometry(2.4,.04,12,96),new THREE.MeshBasicMaterial({color:0xff3d9a}));
+  halo=new THREE.Mesh(new THREE.TorusGeometry(2.4,.04,12,96),
+    new THREE.MeshBasicMaterial({color:0xff3d9a}));
   halo.position.set(0,2.2,-2.6);stage.add(halo);
-  // Same 3-spot rotating lights and translucent beam cones from the uploaded HTML.
   stageSpots=[];beamCones=[];
-  colors.forEach((c,i)=>{
-    const light=new THREE.SpotLight(c,2.4,32,.5,.55,1);
+  colors.forEach((color,i)=>{
+    const light=new THREE.SpotLight(color,2.4,32,.5,.55,1);
     light.position.set(Math.cos(i*2.1)*6,9,Math.sin(i*2.1)*6);
     light.target.position.set(0,1,0);stage.add(light,light.target);stageSpots.push(light);
-    const beam=new THREE.Mesh(new THREE.ConeGeometry(1.65,9,32,1,true),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.045,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    const beam=new THREE.Mesh(new THREE.ConeGeometry(2.1,10,32,1,true),
+      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
     stage.add(beam);beamCones.push(beam);
   });
-  const count=350,positions=new Float32Array(count*3);
-  for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,r=Math.random()*9;positions[i*3]=Math.cos(a)*r;positions[i*3+1]=Math.random()*8;positions[i*3+2]=Math.sin(a)*r;}
-  const geom=new THREE.BufferGeometry();geom.setAttribute('position',new THREE.BufferAttribute(positions,3));
-  particles=new THREE.Points(geom,new THREE.PointsMaterial({size:.07,color:0xffd9f5,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false}));stage.add(particles);
-  // Real GLBs only: no generated human geometry.
-  // Scale the actual GLB actors independently of the platform for a clear
-  // front-and-centre view; their feet stay on top of the deck.
+  const count=500,positions=new Float32Array(count*3);
+  for(let i=0;i<count;i++){
+    const angle=Math.random()*Math.PI*2,r=Math.random()*9;
+    positions[i*3]=Math.cos(angle)*r;positions[i*3+1]=Math.random()*8;positions[i*3+2]=Math.sin(angle)*r;
+  }
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
+  particles=new THREE.Points(geometry,new THREE.PointsMaterial({size:.07,color:0xffd9f5,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false}));
+  stage.add(particles);
+  // Original procedural human figures are replaced by the three supplied GLBs.
   performers.forEach((group,i)=>{
-    group.position.set(0,.68,i===2?0:1.0);
-    group.scale.setScalar(i===2?1.35:2.2);
+    group.position.set(0,0,i===2?0:1);
+    group.scale.setScalar(i===2?1.65:3.05);
     stage.add(group);
   });
-  // Stage Lights musical notes are mounted to the singer's group.
   const chars=['♪','♫','♪','♬'];
   chars.forEach((letter,i)=>{
     const canvas=document.createElement('canvas');canvas.width=canvas.height=64;
-    const c=canvas.getContext('2d');c.font='48px serif';c.fillStyle=['#33e1ff','#ff3d9a','#ffc857','#ffffff'][i];c.textAlign='center';c.textBaseline='middle';c.fillText(letter,32,34);
+    const c=canvas.getContext('2d');c.font='48px serif';c.fillStyle=['#33e1ff','#ff3d9a','#ffc857','#ffffff'][i];
+    c.textAlign='center';c.textBaseline='middle';c.fillText(letter,32,34);
     const tex=new THREE.CanvasTexture(canvas);
     for(let j=0;j<4;j++){
       const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
@@ -134,10 +112,10 @@ function updateStageEffects(t,dt,index){
     const beam=beamCones[i],d=stageV.copy(l.position).sub(l.target.position),length=d.length();
     beam.position.copy(l.position).add(l.target.position).multiplyScalar(.5);
     stageQ.setFromUnitVectors(stageUp,d.normalize());beam.quaternion.copy(stageQ);
-    beam.scale.y=length/10;beam.material.opacity=.025+pulse*.033;
+    beam.scale.y=length/10;beam.material.opacity=.05+pulse*.05;
   });
   neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.04*(i+1));r.material.opacity=.22+pulse*.45;});
-  eqBars.forEach((bar,i)=>{const height=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;bar.scale.y=height*.62;bar.position.y=.65+height*.31;bar.material.color.setHSL((i/40+t*.05)%1,.9,.55);});
+  eqBars.forEach((bar,i)=>{const height=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;bar.scale.y=height;bar.position.y=height/2;bar.material.color.setHSL((i/40+t*.05)%1,.9,.55);});
   halo.material.color.setHSL((t*.08)%1,.9,.6);halo.scale.setScalar(1+pulse*.05);
   const positions=particles.geometry.attributes.position;
   for(let i=0;i<positions.count;i++){let y=positions.getY(i)+dt*(.2+(i%5)*.06);if(y>8)y=0;positions.setY(i,y);}positions.needsUpdate=true;
@@ -198,9 +176,9 @@ function setup() {
  warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
  createStage(root);
- title=textMesh(['NADANU 3.0','GRAND FINALE'],1.1,.32,0,.69,.12,83);root.add(title);
+ title=textMesh(['NADANU 3.0','GRAND FINALE'],1.1,.32,0,.75,.04,83);root.add(title);
  subtitle=textMesh(['YOU ARE CORDIALLY INVITED'],1.05,.22,0,-.50,.17,52);root.add(subtitle);
- label=textMesh(['SOLO SINGING'],.77,.16,0,.55,.22,67);root.add(label);
+ label=textMesh(['SOLO SINGING'],.77,.16,0,.62,.10,67);root.add(label);
  root.visible=false;
  anchor.onTargetFound=()=>{tracked=true;trackingTime=clock.getElapsedTime();root.visible=true;status.textContent='Grand Finale stage detected — watch the performers!';};
  anchor.onTargetLost=()=>{tracked=false;root.visible=false;status.textContent='Point your camera at the printed Grand Finale invitation';};
@@ -209,7 +187,7 @@ function setup() {
   if(running&&tracked){
     sequenceTime+=dt;
     // 6s singer, 6s solo dancer, 6s group, then repeat.
-    const index=selectedAct===null?Math.floor(sequenceTime/6)%3:selectedAct;
+    const index=selectedAct===null?Math.floor(sequenceTime/8)%3:selectedAct;
     performers.forEach((p,i)=>p.visible=i===index);
     for(const mixer of mixers)mixer.update(dt);
     if(label.userData.index!==index){
@@ -219,10 +197,10 @@ function setup() {
     }
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
     performers[2].rotation.y=Math.sin(now*.65)*.10;
-    stage.scale.setScalar(.067*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
+    stage.scale.setScalar(.083*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
-    title.position.y=.69+.012*Math.sin(now*1.5);
+    title.position.y=.75+.012*Math.sin(now*1.5);
   }
   renderer.render(scene,camera);
  });
