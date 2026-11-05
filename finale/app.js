@@ -85,7 +85,9 @@ function createStage(root){
   // Recreated directly from stage-lights(2).html: open circular concert floor,
   // four glowing rings, 40 moving columns, 3 colored spotlights and 500 stars.
   stage=new THREE.Group();
-  stage.position.set(0,-.10,.33);
+  // Fixed local offset from the centre of the printed invitation.
+  // The parent MindAR anchor provides the image pose; do not modify its world pose.
+  stage.position.set(0,0,.12);
   stage.rotation.x=.62;
   stage.scale.setScalar(BASE_SCALE);
   root.add(stage);
@@ -224,8 +226,19 @@ function setup() {
  subtitle=textMesh(['YOU ARE CORDIALLY INVITED'],1.05,.22,0,-.50,.17,52);root.add(subtitle);
  label=textMesh(['SOLO SINGING'],.77,.16,0,.62,.10,67);root.add(label);
  root.visible=false;
- anchor.onTargetFound=()=>{tracked=true;trackingTime=clock.getElapsedTime();root.visible=true;status.textContent='Stage detected · drag to orbit · pinch to zoom';};
- anchor.onTargetLost=()=>{tracked=false;root.visible=false;status.textContent='Point your camera at the printed Grand Finale invitation';};
+ anchor.onTargetFound=()=>{
+  tracked=true;
+  trackingTime=clock.getElapsedTime();
+  stage.visible=false; // Wait for tracking to settle before first reveal.
+  root.visible=true;
+  status.textContent='Invitation centre detected · locking stage…';
+ };
+ anchor.onTargetLost=()=>{
+  tracked=false;
+  stage.visible=false;
+  root.visible=false;
+  status.textContent='Point your camera at the printed Grand Finale invitation';
+ };
  renderer.setAnimationLoop(()=>{
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
   if(running&&tracked){
@@ -241,7 +254,13 @@ function setup() {
     }
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
     applyOrbit();
-    stage.scale.setScalar(BASE_SCALE*(.35+.65*THREE.MathUtils.smoothstep(Math.min(1,(now-trackingTime)/1.2),0,1)));
+    // Lock to the invitation centre; delay the first reveal to avoid acquisition bounce.
+    // No stage orbit or dynamic resizing after lock.
+    if(!stage.visible&&now-trackingTime>=.4){
+      stage.visible=true;
+      status.textContent='Stage locked to invitation centre · drag actors · pinch to zoom';
+    }
+    stage.scale.setScalar(BASE_SCALE);
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
     title.position.y=.75+.012*Math.sin(now*1.5);
