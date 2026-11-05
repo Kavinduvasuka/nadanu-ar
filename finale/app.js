@@ -20,6 +20,34 @@ let selectedAct=null, musicContext=null, soundInterval=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
 const mixers = [];
 let lastFrame=0, trackingTime=0, sequenceTime=0;
+const ACT_SECONDS=8, TOTAL_ACTS=3;
+const actNames=['SOLO SINGING','SOLO DANCING','GROUP DANCING'];
+const actBanner=document.getElementById('actBanner');
+const actBannerTitle=document.getElementById('actBannerTitle');
+const actBannerCount=document.getElementById('actBannerCount');
+const finaleInvitation=document.getElementById('finaleInvitation');
+const replayActsButton=document.getElementById('replayActsButton');
+let showInvitation=false,lastPresentedAct=-1;
+function presentAct(index){
+ if(lastPresentedAct!==index){
+  actBannerTitle.textContent=actNames[index];
+  actBannerCount.textContent='ACT 0'+(index+1)+' / 03';
+  lastPresentedAct=index;
+ }
+}
+function resetPerformances(){
+ sequenceTime=0;
+ showInvitation=false;
+ lastPresentedAct=-1;
+ if(finaleInvitation)finaleInvitation.hidden=true;
+ if(actBanner)actBanner.hidden=false;
+ presentAct(selectedAct===null?0:selectedAct);
+}
+replayActsButton?.addEventListener('click',()=>{
+ selectedAct=null;
+ document.querySelectorAll('[data-act]').forEach(b=>b.classList.toggle('active',b.dataset.act==='auto'));
+ resetPerformances();
+});
 // Keep the stage fixed to the invitation; gestures rotate and zoom performers only.
 const orbit={yaw:0,zoom:1,pointers:new Map(),distance:0};
 const BASE_SCALE=0.17;
@@ -271,11 +299,21 @@ function setup() {
     }
     inverseTargetRotation.copy(targetRotation).invert();
     stage.quaternion.copy(inverseTargetRotation).multiply(stableRotation).multiply(fixedStageTilt);
-    sequenceTime+=dt;
-    // 6s singer, 6s solo dancer, 6s group, then repeat.
-    const index=selectedAct===null?Math.floor(sequenceTime/8)%3:selectedAct;
-    performers.forEach((p,i)=>p.visible=i===index);
+    if(!showInvitation&&selectedAct===null)sequenceTime+=dt;
+    // One complete three-act showcase, followed by the formal invitation.
+    if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
+      showInvitation=true;
+      finaleInvitation.hidden=false;
+      actBanner.hidden=true;
+      status.textContent='You are cordially invited to the Nadanu 3.0 Grand Finale';
+    }
+    const index=selectedAct===null
+      ? Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS))
+      : selectedAct;
+    performers.forEach((p,i)=>p.visible=!showInvitation && i===index);
+    if(!showInvitation)presentAct(index);
     for(const mixer of mixers)mixer.update(dt);
+    label.visible=!showInvitation;
     if(label.userData.index!==index){
       label.material.map.dispose();
       label.material.map=panelTexture([['SOLO SINGING','SOLO DANCING','GROUP DANCING'][index]],66);
@@ -322,6 +360,7 @@ async function startAR(){
     ]);
   } finally { clearTimeout(timer); }
   running=true;clock.start();lastFrame=clock.getElapsedTime();
+  resetPerformances();
   landing.style.display='none';arUI.hidden=false;
   status.textContent='Camera ready. Loading your 3D performers…';
   (performersPromise ??= loadPerformers()).then(errors=>{
@@ -348,7 +387,7 @@ async function startAR(){
 }
 async function stopAR(){
  if(busy||!running)return;busy=true;
- try{await mindarThree.stop();running=false;tracked=false;disableSound();arUI.hidden=true;landing.style.display='grid';message.textContent='';}
+ try{await mindarThree.stop();running=false;tracked=false;disableSound();resetPerformances();arUI.hidden=true;landing.style.display='grid';message.textContent='';}
  catch(e){console.error(e);status.textContent='Unable to stop camera. Refresh the page.';}
  finally{busy=false;}
 }
@@ -366,7 +405,9 @@ window.addEventListener('error',ev=>console.error('Browser script error:',ev.mes
 // Scene buttons: auto sequence by default, or choose a performance manually.
 for(const button of document.querySelectorAll('[data-act]')){
  button.addEventListener('click',()=>{
-  const value=button.dataset.act;selectedAct=value==='auto'?null:Number(value);
+  const value=button.dataset.act;
+  selectedAct=value==='auto'?null:Number(value);
+  resetPerformances();
   document.querySelectorAll('[data-act]').forEach(b=>b.classList.toggle('active',b===button));
  });
 }
