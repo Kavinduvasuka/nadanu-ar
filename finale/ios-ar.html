@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#090412">
+<title>Nadanu 3.0 · iPhone World AR</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#07040f;color:#f6efff;font-family:Unbounded,system-ui,sans-serif}
+body{display:flex;flex-direction:column}
+header{padding:calc(18px + env(safe-area-inset-top)) 18px 12px;text-align:center}
+h1{font-size:clamp(18px,5vw,29px);color:#ffc857;margin:0 0 10px;text-shadow:0 0 18px #ff3d9a}
+p{font-size:11px;line-height:1.75;color:#bfaed2;max-width:560px;margin:0 auto}
+nav{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+button,a{border:1px solid #8a578a;background:#20132a;color:#f6efff;padding:11px 12px;border-radius:99px;font:600 10px Unbounded,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+button.active{background:#ff3d9a;color:#21021b;border-color:#ff3d9a}
+#notice{padding:12px 16px;text-align:center;color:#33e1ff;font-size:11px;min-height:40px}
+model-viewer{width:100%;flex:1;min-height:250px;background:radial-gradient(ellipse,#311737,#07040f 72%)}
+#ar-button{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);white-space:nowrap;background:#ff3d9a;color:#200016;border:0;padding:16px 20px;box-shadow:0 0 26px #ff3d9a88}
+#ar-button:disabled{opacity:.5}
+footer{font-size:10px;text-align:center;color:#ac9ac3;padding:10px 10px calc(12px + env(safe-area-inset-bottom))}
+</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/"}}</script>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js"></script>
+</head><body>
+<header><h1>NADANU 3.0 · iPHONE WORLD AR</h1>
+<p>Choose an act, prepare the stage, then tap PLACE IN YOUR SPACE. Safari Quick Look will let you position the 3D stage on a real surface.</p>
+<nav><button data-act="0" class="active">SINGER</button><button data-act="1">SOLO DANCER</button><button data-act="2">GROUP DANCE</button><a href="./">INVITATION AR</a></nav>
+</header>
+<div id="notice" role="status">Preparing concert stage…</div>
+<model-viewer id="viewer" ar ar-modes="quick-look" camera-controls auto-rotate shadow-intensity="1" exposure="1.15" interaction-prompt="none" alt="Nadanu Grand Finale 3D concert stage">
+ <button id="ar-button" slot="ar-button" disabled>PLACE IN YOUR SPACE</button>
+</model-viewer>
+<footer>iPhone/iPad Safari · No invitation scan in this mode · Stage lighting effects and animation may be limited in Quick Look.</footer>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+const viewer=document.getElementById('viewer'),notice=document.getElementById('notice'),arButton=document.getElementById('ar-button');
+const loader=new GLTFLoader(),exporter=new GLTFExporter();
+const files=[
+ {url:'./assets/singer.glb',height:.48,maxWidth:.30,label:'Singer'},
+ {url:'./assets/solo-dancer.glb',height:.48,maxWidth:.32,label:'Solo dancer'},
+ {url:'./assets/group-dancers.glb',height:.38,maxWidth:.7,label:'Group dance'}
+];
+let requestId=0,oldUrl=null;
+function addMesh(parent,geometry,color,x=0,y=0,z=0,metalness=0){
+ const m=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,metalness,roughness:.32,side:THREE.DoubleSide}));
+ m.position.set(x,y,z);parent.add(m);return m;
+}
+function buildStage(){
+ const root=new THREE.Group();
+ const deck=addMesh(root,new THREE.CylinderGeometry(.52,.55,.085,80),0x1b0c32,0,.046,0,.48);
+ const top=addMesh(root,new THREE.CylinderGeometry(.51,.51,.014,80),0x2b1646,0,.093,0,.35);
+ for(const [i,color] of [0xff3d9a,0x33e1ff,0xffc857].entries()){
+  const ring=addMesh(root,new THREE.TorusGeometry(.18+i*.13,.006,8,96),color,0,.106+i*.001,0);
+  ring.rotation.x=Math.PI/2;
+ }
+ const edge=addMesh(root,new THREE.TorusGeometry(.52,.011,10,96),0xff3d9a,0,.099,0);edge.rotation.x=Math.PI/2;
+ for(let i=0;i<36;i++){
+  const a=i/36*Math.PI*2;
+  const bar=addMesh(root,new THREE.BoxGeometry(.008,.04+(Math.sin(i*2.1)+1)*.045,.008),
+   [0xff3d9a,0x33e1ff,0xffc857][i%3],Math.cos(a)*.505,.16,Math.sin(a)*.505);
+ }
+ for(const side of [-1,1]){
+  addMesh(root,new THREE.CylinderGeometry(.007,.007,.48,12),0x735294,side*.43,.34,-.26,.55);
+  addMesh(root,new THREE.SphereGeometry(.025,12,12),side<0?0xff3d9a:0x33e1ff,side*.43,.59,-.26);
+ }
+ addMesh(root,new THREE.BoxGeometry(.89,.014,.014),0x735294,0,.58,-.26,.55);
+ return root;
+}
+async function buildAct(index){
+ const token=++requestId,config=files[index];
+ arButton.disabled=true;notice.textContent='Preparing '+config.label+' with concert stage…';
+ try{
+  const gltf=await loader.loadAsync(config.url);
+  if(token!==requestId)return;
+  const actor=gltf.scene;actor.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(actor),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+  if(size.y<=0)throw Error('GLB has invalid dimensions.');
+  const scale=Math.min(config.height/size.y,config.maxWidth/Math.max(size.x,.0001));
+  actor.scale.multiplyScalar(scale);
+  actor.position.set(-center.x*scale,.108-box.min.y*scale,-center.z*scale);
+  const stage=buildStage();stage.add(actor);
+  const binary=await exporter.parseAsync(stage,{binary:true,onlyVisible:true,maxTextureSize:1024});
+  if(token!==requestId)return;
+  const url=URL.createObjectURL(new Blob([binary],{type:'model/gltf-binary'}));
+  viewer.src=url;
+  const prior=oldUrl;oldUrl=url;
+  if(prior)URL.revokeObjectURL(prior);
+  arButton.disabled=false;
+  notice.textContent=config.label+' stage ready. Tap PLACE IN YOUR SPACE.';
+ }catch(e){console.error(e);notice.textContent='Could not prepare stage: '+(e.message||String(e));}
+}
+document.querySelectorAll('[data-act]').forEach(button=>button.addEventListener('click',()=>{
+ document.querySelectorAll('[data-act]').forEach(b=>b.classList.toggle('active',b===button));
+ buildAct(Number(button.dataset.act));
+}));
+arButton.addEventListener('click',()=>{
+ if(!viewer.src){notice.textContent='Stage is still preparing.';return;}
+ // model-viewer owns the Quick Look launch; the slot button is handled by it.
+});
+buildAct(0);
+</script></body></html>
