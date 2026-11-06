@@ -203,4 +203,13 @@ if('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: red
   classicReveals.forEach(el=>observer.observe(el));
 }else classicReveals.forEach(el=>el.classList.add('visible'));
 </script>
+<script>
+/* Original 3D stage untouched. Only rotate the main landing poster on mouse hover. */
+(()=>{const box=document.querySelector('.poster-display');const poster=box?.querySelector('.actual-invitation-image');if(!poster||!matchMedia('(pointer:fine)').matches)return;
+const atRest='rotate(3deg)';poster.style.transform=atRest;poster.style.transition='transform .45s cubic-bezier(.2,.75,.2,1), box-shadow .45s ease';
+box.addEventListener('pointerenter',()=>{poster.style.transform='perspective(900px) rotate(0deg) scale(1.025)'});
+box.addEventListener('pointermove',e=>{const r=box.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;poster.style.transform=`perspective(900px) rotateX(${(-y*5).toFixed(2)}deg) rotateY(${(x*5).toFixed(2)}deg) scale(1.025)`});
+box.addEventListener('pointerleave',()=>{poster.style.transform=atRest});
+})();
+</script>
 </body></html>
