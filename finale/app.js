@@ -400,6 +400,7 @@ startButton.addEventListener('click',()=>{
  startAR();
 });
 stopButton.addEventListener('click',stopAR);
+document.getElementById('backToWebsiteButton')?.addEventListener('click',stopAR);
 window.addEventListener('pagehide',()=>{disableSound();if(running&&mindarThree)mindarThree.stop().catch(()=>{});});
 
 window.addEventListener('unhandledrejection',ev=>console.error('Unhandled promise rejection:',ev.reason));
