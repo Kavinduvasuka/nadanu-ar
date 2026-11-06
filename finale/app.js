@@ -277,7 +277,7 @@ async function loadPerformers() {
 function setup() {
  const generation=++trackerGeneration;
  tracked=false;
- mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
+ mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind?v=eaee01ad',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'no',uiScanning:'no',uiError:'yes'});
  const {scene,renderer,camera}=mindarThree;
  activeRenderer=renderer;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.2));
@@ -369,7 +369,7 @@ function ensurePerformersLoaded(){
  return performersPromise;
 }
 // Warm just the small tracking target through browser cache, without decoding GLBs.
-fetch('./assets/finale.mind',{priority:'high'}).then(r=>{
+fetch('./assets/finale.mind?v=eaee01ad',{priority:'high'}).then(r=>{
  if(!r.ok)throw new Error('Tracking target HTTP '+r.status);
  return r.arrayBuffer();
 }).catch(e=>console.warn('Invitation tracking target prefetch failed:',e));
@@ -383,7 +383,10 @@ async function startAR(){
 
   // Make the camera layer available before MindAR measures its dimensions.
   arContainer.style.display='block';
-  showScanner('preparing','Opening camera…');
+  // Show the custom scanner before MindAR starts; avoid blank loading screens.
+  landing.style.display='none';
+  arUI.hidden=false;
+  showScanner('preparing','Opening camera… allow camera access when prompted.');
   if(!initialized) setup();
   message.textContent='Preparing camera… (check browser permission prompt)';
   // Start MindAR before downloading GLBs. Note: Three.js pinned to r147 for compatibility.
@@ -398,7 +401,6 @@ async function startAR(){
   running=true;clock.start();lastFrame=clock.getElapsedTime();
   mixers.forEach(m=>m.setTime(0));
   resetPerformances();
-  landing.style.display='none';arUI.hidden=false;
   if(!tracked)showScanner('searching','Align the Grand Finale invitation inside the frame');
   else showScanner('locked','Invitation detected · stabilizing stage…');
   status.textContent='Camera ready. Point at the Grand Finale invitation';
@@ -424,6 +426,8 @@ async function startAR(){
    running=false;
    tracked=false;
    arContainer.style.display='none';
+   arUI.hidden=true;
+   landing.style.display='block';
    if(invitationScanner)invitationScanner.hidden=true;
    disableSound();
    await disposeARSession();
