@@ -6,19 +6,36 @@
 <meta name="theme-color" content="#160c07">
 <meta name="description" content="Nadanu 3.0 Grand Finale — an immersive invitation from the Computing Society of ICBT.">
 <title>Nadanu 3.0 — Grand Finale Invitation</title>
-<link rel="stylesheet" href="./style.css?v=actual-invitation-photo-20261106">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css?v=classic-nadanu-brand-20261106">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 <!-- Solo Dance optimized animated GLB deployed: Draco + WebP, 2026-11-06 -->
 </head>
 <body>
+<div class="concert-atmosphere" aria-hidden="true">
+  <div class="light-beam beam-left"></div>
+  <div class="light-beam beam-right"></div>
+  <div class="ambient-orb orb-one"></div>
+  <div class="ambient-orb orb-two"></div>
+  <div class="retro-grid"></div>
+  <div class="music-sparks"></div>
+</div>
 <main id="landing" class="finale-landing">
   <header class="masthead">
     <a class="brand" href="./" aria-label="Nadanu 3.0 home">NADANU <span>3.0</span></a>
     <span class="society">COMPUTING SOCIETY<br>OF ICBT</span>
-    <span class="header-event"><i></i> THE GRAND FINALE</span>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="#about">About</a>
+      <a href="#categories">Categories</a>
+      <a href="#journey">The Journey</a>
+      <a href="#ar-showcase">AR Experience</a>
+    </nav>
+    <button type="button" class="text-button" id="headerStartAR">START AR ↗</button>
   </header>
 
-  <section class="hero">
+  <section class="hero" id="about">
     <div class="hero-copy">
       <p class="eyebrow"><i></i> NADANU 3.0 / THE FINAL CHAPTER</p>
       <h1>THE STAGE<br>IS SET.<br><em>YOU'RE<br>INVITED.</em></h1>
@@ -40,7 +57,7 @@
     </div>
   </section>
 
-  <section class="categories" aria-label="Finale performances">
+  <section class="categories" id="categories" aria-label="Finale performances">
     <p>THREE PERFORMANCES. ONE GRAND STAGE.</p>
     <div class="category-row">
       <div><span>01</span> Solo singing <i>↗</i></div>
@@ -48,12 +65,52 @@
       <div><span>03</span> Group dancing <i>↗</i></div>
     </div>
   </section>
-  <section class="how" aria-label="Experience the invitation in AR">
+  <section class="how" id="journey" aria-label="Experience the invitation in AR">
     <div><small>01 / OPEN</small><p>Start invitation AR.</p></div>
     <div><small>02 / SCAN</small><p>Frame the printed invitation.</p></div>
     <div><small>03 / EXPERIENCE</small><p>Watch the stage come alive.</p></div>
   </section>
   <footer class="page-footer"><span>FEEL THE BEAT. OWN THE STAGE.</span><span>COMPUTING SOCIETY OF ICBT · NADANU 3.0</span></footer>
+  <section class="classic-ar-promo reveal" id="ar-showcase" aria-label="Grand Finale AR Experience">
+    <p class="eyebrow"><i></i> NADANU 3.0 / GRAND FINALE</p>
+    <h2>THE STAGE IS WAITING.<br><em>EXPERIENCE THE GRAND FINALE.</em></h2>
+    <p>Point your camera at the official Grand Finale invitation and watch the performers come alive in AR.</p>
+    <button type="button" id="footerStartAR" class="primary">START INVITATION AR <span>↗</span></button>
+  </section>
+  <footer class="site-footer" id="contact">
+    <div class="footer-main">
+      <div class="footer-brand-column">
+        <a class="footer-logo" href="#landing">NADANU <span>3.0</span></a>
+        <p class="footer-overline">THE ICBT TALENT SHOW EXPERIENCE</p>
+        <h2>Where Talent<br><em>Takes The Stage.</em></h2>
+        <p class="footer-description">A celebration of voices, movement and creativity, presented by the Computing Society of ICBT. From the auditions to the Grand Finale, every performance deserves a spotlight.</p>
+        <a class="footer-register" href="#ar-showcase">EXPLORE THE GRAND FINALE <span>↗</span></a>
+      </div>
+      <div class="footer-links-column">
+        <h3>EXPLORE</h3>
+        <a href="#about">About Nadanu</a>
+        <a href="#categories">Performance Categories</a>
+        <a href="#journey">The Journey</a>
+        <a href="#ar-showcase">AR Experience</a>
+      </div>
+      <div class="footer-links-column">
+        <h3>FOLLOW OUR SOCIETY</h3>
+        <a href="https://www.instagram.com/csoficbt/" target="_blank" rel="noopener noreferrer">Instagram <span>↗</span></a>
+        <a href="https://www.facebook.com/profile.php?id=61560469306166" target="_blank" rel="noopener noreferrer">Facebook <span>↗</span></a>
+        <a href="https://www.tiktok.com/@csoficbt" target="_blank" rel="noopener noreferrer">TikTok <span>↗</span></a>
+      </div>
+      <div class="footer-links-column">
+        <h3>GRAND FINALE</h3>
+        <p>The celebration of music, dance and talent continues.</p>
+        <a href="./assets/finale-invitation.png" target="_blank" rel="noopener noreferrer">View Official Invitation ↗</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 NADANU 3.0 · COMPUTING SOCIETY OF ICBT</span>
+      <span>Feel the Beat. Own the Stage.</span>
+      <a href="#landing">BACK TO TOP ↗</a>
+    </div>
+  </footer>
   <p id="message" role="status" aria-live="polite"></p>
 </main>
 <div id="arContainer"></div>
@@ -91,5 +148,14 @@
   }
  },true);
 })();
+</script>
+<script>
+document.getElementById('headerStartAR')?.addEventListener('click',()=>document.getElementById('startButton')?.click());
+document.getElementById('footerStartAR')?.addEventListener('click',()=>document.getElementById('startButton')?.click());
+const classicReveals=document.querySelectorAll('.classic-ar-promo.reveal');
+if('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+  const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}}),{threshold:.08});
+  classicReveals.forEach(el=>observer.observe(el));
+}else classicReveals.forEach(el=>el.classList.add('visible'));
 </script>
 </body></html>
