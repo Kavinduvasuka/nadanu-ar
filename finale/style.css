@@ -628,3 +628,8 @@ body{font-family:"Audiowide",Arial,sans-serif}
 @keyframes finale-shimmer{0%,15%{transform:translateX(-100%)}45%,100%{transform:translateX(100%)}}
 @media(max-width:760px){#landing .performance-art-grid{grid-template-columns:1fr;gap:16px}#landing .performance-art-canvas{aspect-ratio:1.6;min-height:170px}#landing .performance-art-label h3{font-size:21px}}
 @media(prefers-reduced-motion:reduce){#landing .performance-art-card,#landing .animated-hero-title>span,#landing .animated-hero-title em,#landing .eyebrow,#landing .performance-art-canvas::after{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}}
+
+/* Finale invitation hover perspective (AR stage unaffected). */
+.poster-display.actual-invitation-display{perspective:900px}
+.poster-display.actual-invitation-display .actual-invitation-image{transform:rotate(3deg);box-shadow:0 25px 80px #0009}
+@media(prefers-reduced-motion:reduce){.poster-display.actual-invitation-display .actual-invitation-image{transform:none!important;transition:none!important}}
