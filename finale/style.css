@@ -649,3 +649,19 @@ body{font-family:"Audiowide",Arial,sans-serif}
 @media(max-width:850px){.neon-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.neon-category-grid{grid-template-columns:1fr}.neon-category-card{padding:20px 16px}.category-illustration{height:135px}.category-illustration svg{width:110px;height:110px}}
 @media(prefers-reduced-motion:no-preference){.neon-category-card:hover .category-illustration svg{transform:scale(1.1) rotate(-3deg);filter:drop-shadow(0 0 12px #ff7527) drop-shadow(0 0 28px #ff6c26b0)}.neon-category-card .category-illustration svg{transition:transform .35s ease,filter .35s ease}}
+
+/* Three official ZIP neon illustrations: override legacy Finale category styles. */
+#landing .categories .category-row.neon-category-grid{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:stretch;
+}
+#landing .categories .neon-category-card{display:flex;flex-direction:column;min-width:0;min-height:285px;position:relative}
+#landing .categories .neon-category-card .category-illustration{display:grid;place-items:center;flex:0 0 145px;width:100%;color:#ff974d}
+#landing .categories .neon-category-card .category-illustration svg{
+ display:block;width:118px;height:118px;min-width:118px;min-height:118px;
+ stroke:currentColor;fill:none;overflow:visible;
+ filter:drop-shadow(0 0 8px #ff7527) drop-shadow(0 0 19px #ff6c2677)
+}
+#landing .categories .neon-category-card .category-kicker{color:#ffbd7b;font-size:10px}
+#landing .categories .neon-category-card .category-glint{color:#ffb060;font-size:14px}
+@media(max-width:850px){#landing .categories .category-row.neon-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){#landing .categories .category-row.neon-category-grid{grid-template-columns:1fr}}
