@@ -331,6 +331,28 @@
       document.getElementById('scrollPreview')?.addEventListener('click', () => document.getElementById('preview')?.click());
     });
   </script>
+  <script>
+    // Preserve original tilted poster and straighten it on pointer hover.
+    // Decorative interaction only; it does not modify the AR camera or artwork.
+    (() => {
+      const display = document.querySelector('.poster-display');
+      const poster = display?.querySelector('.poster');
+      if (!display || !poster || !matchMedia('(pointer:fine)').matches) return;
+      poster.style.transition = 'transform .42s cubic-bezier(.2,.75,.2,1), box-shadow .42s ease';
+      display.addEventListener('pointerenter', () => {
+        poster.style.transform = 'perspective(900px) rotate(0deg) rotateX(0deg) rotateY(0deg) scale(1.025)';
+      });
+      display.addEventListener('pointermove', event => {
+        const rect = display.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width - .5;
+        const y = (event.clientY - rect.top) / rect.height - .5;
+        poster.style.transform = `perspective(900px) rotate(0deg) rotateX(${(-y * 5).toFixed(2)}deg) rotateY(${(x * 5).toFixed(2)}deg) scale(1.025)`;
+      });
+      display.addEventListener('pointerleave', () => {
+        poster.style.transform = 'rotate(3deg)';
+      });
+    })();
+  </script>
 </body>
 
 </html>
