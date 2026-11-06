@@ -59,6 +59,34 @@ function presentAct(index){
 const finaleInvitation=document.getElementById('finaleInvitation');
 const replayActsButton=document.getElementById('replayActsButton');
 let showInvitation=false;
+// Confirm invitation with a logo reveal before any actors are visible.
+// If tracking is lost midway, replay the reveal on reacquisition.
+const recognitionIntro=document.getElementById('recognitionIntro');
+const INTRO_DURATION_MS=2700;
+let introStartedAt=0,introCompleted=false;
+function resetRecognitionIntro(){
+ introStartedAt=0;introCompleted=false;
+ if(recognitionIntro)recognitionIntro.hidden=true;
+}
+function startRecognitionIntro(){
+ if(introStartedAt||introCompleted||!tracked||!running)return;
+ introStartedAt=performance.now();
+ hideScanner();
+ if(recognitionIntro){
+  recognitionIntro.hidden=true;
+  void recognitionIntro.offsetWidth;
+  recognitionIntro.hidden=false;
+ }
+ if(actBanner)actBanner.hidden=true;
+ status.textContent='Invitation recognized · welcome to Nadanu 3.0';
+}
+function finishRecognitionIntro(){
+ if(introCompleted)return;
+ introCompleted=true;introStartedAt=0;
+ if(recognitionIntro)recognitionIntro.hidden=true;
+ hideScanner();
+ status.textContent='Welcome to Nadanu 3.0 · your AR show begins';
+}
 function resetPerformances(){
  lastPresentedAct=-1;
  actBanner.hidden=false;
@@ -304,6 +332,10 @@ function setup() {
   tracked=false;
   stage.visible=false;
   root.visible=false;
+  if(!introCompleted){
+   introStartedAt=0;
+   if(recognitionIntro)recognitionIntro.hidden=true;
+  }
   if(!showInvitation)showScanner('searching','Frame the printed Grand Finale invitation');
   status.textContent='Point camera at the printed Grand Finale invitation';
  };
@@ -313,10 +345,12 @@ function setup() {
   // MindAR can retain an old anchor matrix temporarily on iOS. Hide both the
   // complete stage and its lights until NEW invitation tracking has stabilized.
   const locked=tracked && performance.now()-trackingTime>=800;
-  root.visible=locked;
-  stage.visible=locked && !showInvitation;
-  if(locked && !showInvitation && invitationScanner && !invitationScanner.hidden)hideScanner();
-  if(locked){
+  if(locked && !introCompleted && !introStartedAt)startRecognitionIntro();
+  if(locked && introStartedAt && performance.now()-introStartedAt>=INTRO_DURATION_MS)finishRecognitionIntro();
+  const showStage=locked && introCompleted;
+  root.visible=showStage;
+  stage.visible=showStage && !showInvitation;
+  if(showStage){
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
     stage.quaternion.copy(fixedStageTilt);
@@ -383,6 +417,7 @@ async function startAR(){
 
   // Make the camera layer available before MindAR measures its dimensions.
   arContainer.style.display='block';
+  resetRecognitionIntro();
   // Show the custom scanner before MindAR starts; avoid blank loading screens.
   landing.style.display='none';
   arUI.hidden=false;
@@ -428,6 +463,7 @@ async function startAR(){
    arContainer.style.display='none';
    arUI.hidden=true;
    landing.style.display='block';
+   resetRecognitionIntro();
    if(invitationScanner)invitationScanner.hidden=true;
    disableSound();
    await disposeARSession();
@@ -474,6 +510,7 @@ async function stopAR(){
  tracked=false;
  arUI.hidden=true;
  if(invitationScanner)invitationScanner.hidden=true;
+ resetRecognitionIntro();
  arContainer.style.display='none';
  landing.style.display='block';
  disableSound();
