@@ -54,20 +54,14 @@ replayActsButton?.addEventListener('click',()=>{
  document.querySelectorAll('[data-act]').forEach(b=>b.classList.toggle('active',b.dataset.act==='auto'));
  resetPerformances();
 });
-// Keep the stage fixed to the invitation; gestures rotate and zoom performers only.
-const orbit={yaw:0,zoom:1,pointers:new Map(),distance:0};
+// The 3D performers remain fixed to the invitation, allowing natural side views.
+const orbit={zoom:1,pointers:new Map(),distance:0};
 const BASE_SCALE=0.17;
-// Smooth only the detected target's orientation. Keeping the stage under the
-// native image anchor preserves its exact centre position and avoids the
-// previous extra-world-pose smoothing regression.
-const targetRotation=new THREE.Quaternion();
-const stableRotation=new THREE.Quaternion();
-const inverseTargetRotation=new THREE.Quaternion();
+// The real image-anchor pose determines camera perspective in Three.js.
 const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,0));
-let stageRotationReady=false;
 function applyOrbit(){
  performers.forEach((group,i)=>{
-   group.rotation.y=orbit.yaw+(i===2 ? Math.sin(clock.getElapsedTime()*.65)*.10 : 0);
+   group.rotation.y=0; // No billboard effect or automatic performer rotation.
    group.scale.setScalar((i===2?1.80:3.35)*orbit.zoom);
  });
 }
@@ -84,10 +78,7 @@ function bindOrbitControls(){
   if(!running||!orbit.pointers.has(e.pointerId))return;
   const old=orbit.pointers.get(e.pointerId);
   orbit.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(orbit.pointers.size===1){
-    orbit.yaw+=(e.clientX-old.x)*.013;
-    applyOrbit();
-  }else if(orbit.pointers.size===2){
+  if(orbit.pointers.size===2){
     const [a,b]=[...orbit.pointers.values()];
     const distance=Math.hypot(a.x-b.x,a.y-b.y);
     if(orbit.distance>0)orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*distance/orbit.distance,.65,2.1);
@@ -102,7 +93,7 @@ function bindOrbitControls(){
   orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*Math.exp(-e.deltaY*.001),.65,2.1);
  },{passive:false});
  document.querySelector('#resetViewButton')?.addEventListener('click',()=>{
-  orbit.yaw=0;orbit.zoom=1;applyOrbit();
+  orbit.zoom=1;applyOrbit();
  });
 }
 
@@ -272,7 +263,6 @@ function setup() {
  anchor.onTargetFound=()=>{
   tracked=true;
   trackingTime=clock.getElapsedTime();
-  stageRotationReady=false;
   stage.quaternion.copy(fixedStageTilt);
   stage.visible=false; // Wait for tracking to settle before first reveal.
   root.visible=true;
@@ -280,7 +270,6 @@ function setup() {
  };
  anchor.onTargetLost=()=>{
   tracked=false;
-  stageRotationReady=false;
   stage.visible=false;
   root.visible=false;
   status.textContent='Point your camera at the printed Grand Finale invitation';
@@ -288,24 +277,9 @@ function setup() {
  renderer.setAnimationLoop(()=>{
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
   if(running&&tracked){
-    // Native MindAR anchor maintains the printed invitation centre. Compensate
-    // rapid angular jitter only: stage rotation follows a slowly filtered pose
-    // rather than every noisy tracking-frame angle.
-    root.updateMatrixWorld(true);
-    root.getWorldQuaternion(targetRotation);
-    if(!stageRotationReady){
-      stableRotation.copy(targetRotation);
-      stageRotationReady=true;
-    }else{
-      const delta=stableRotation.angleTo(targetRotation);
-      // Under 1 degree is sensor jitter: avoid moving the stage.
-      if(delta>THREE.MathUtils.degToRad(1)){
-        const alpha=1-Math.exp(-Math.max(dt,.001)*3.2);
-        stableRotation.slerp(targetRotation,alpha);
-      }
-    }
-    inverseTargetRotation.copy(targetRotation).invert();
-    stage.quaternion.copy(inverseTargetRotation).multiply(stableRotation).multiply(fixedStageTilt);
+    // Keep local stage orientation constant while MindAR tracks the invitation.
+    // Moving around the invitation creates genuine perspective and parallax.
+    stage.quaternion.copy(fixedStageTilt);
     // Preserve each 8-second act until its GLB has fully loaded.
     // A slow first download must never silently skip the solo dancer.
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
@@ -336,7 +310,7 @@ function setup() {
     if(!stage.visible&&now-trackingTime>=.4){
       stage.visible=true;
       status.textContent=performerReady[index]
-       ? 'Stage ready · drag performers · pinch to zoom'
+       ? 'Stage ready · move sideways for a real 3D stage view · pinch to zoom'
        : `Preparing ${performerNames[index]} 3D model…`;
     }
     stage.scale.setScalar(BASE_SCALE);
