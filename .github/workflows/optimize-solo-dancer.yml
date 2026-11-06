@@ -1,0 +1,67 @@
+name: Optimize Solo Dancing GLB
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/optimize-solo-dancer.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nadanu-solo-glb-optimize
+  cancel-in-progress: false
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install glTF Transform
+        run: npm install --global @gltf-transform/cli@4.5.1
+      - name: Optimize mesh and textures, preserving the dance animation
+        run: |
+          gltf-transform optimize finale/assets/solo-dancer.glb /tmp/solo-dancer-optimized.glb \
+            --compress draco \
+            --texture-compress webp \
+            --texture-size 768 \
+            --simplify true \
+            --simplify-ratio 0.7
+      - name: Check GLB format, animation and output size
+        run: |
+          python3 - <<'PY'
+          import json,struct,os
+          def info(p):
+              b=open(p,'rb').read()
+              magic,version,length=struct.unpack_from('<III',b)
+              assert magic==0x46546c67 and version==2 and length==len(b),p
+              n,t=struct.unpack_from('<II',b,12)
+              assert t==0x4e4f534a
+              d=json.loads(b[20:20+n])
+              return len(b),len(d.get('animations',[])),len(d.get('meshes',[]))
+          original=info('finale/assets/solo-dancer.glb')
+          optimized=info('/tmp/solo-dancer-optimized.glb')
+          print('Original bytes / animations / meshes:',original)
+          print('Optimized bytes / animations / meshes:',optimized)
+          assert original[1]>0 and optimized[1]>=original[1], 'Dance animation missing'
+          assert optimized[2]>0, 'No meshes in optimized model'
+          assert optimized[0]<original[0]*0.85, 'Compression not significant; original retained'
+          PY
+      - name: Replace model and publish
+        run: |
+          cp /tmp/solo-dancer-optimized.glb finale/assets/solo-dancer.glb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add finale/assets/solo-dancer.glb
+          git commit -m "Optimize animated Solo Dancing GLB with Draco and WebP"
+          git push origin HEAD:main
