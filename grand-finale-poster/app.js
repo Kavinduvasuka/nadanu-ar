@@ -4,10 +4,10 @@ import { createVideoStage } from './video-stage.js';
 import { createJudgesStage } from './judges-stage.js?v=invitation-only-3';
 const PAGE_KIND = 'auditions';
 const { ACTS, TOTAL, startOf, position } = await import(PAGE_KIND === 'judges' ? './judges-timeline.js?v=invitation-only-3' : './timeline.js');
-const TARGETS = [{ src: 'assets/post 10.webp', kind: 'auditions' }, { src: 'assets/judges-invitation.webp', kind: 'judges' }, { src: 'assets/judges-invitation-ar-qr.webp', kind: 'judges' }].filter(target => target.kind === PAGE_KIND);
+const TARGETS = [{ src: 'assets/grand-finale-poster.png', kind: 'auditions' }, { src: 'assets/judges-invitation.webp', kind: 'judges' }, { src: 'assets/judges-invitation-ar-qr.webp', kind: 'judges' }].filter(target => target.kind === PAGE_KIND);
 // One .mind per experience. Judges .mind must contain both images in TARGETS order.
-const MIND_FILE = PAGE_KIND === 'judges' ? 'assets/judges.mind' : 'assets/auditions.mind';
-const CACHE_KEY = `nadanu-${PAGE_KIND}-targets-v4`;
+const MIND_FILE = PAGE_KIND === 'judges' ? 'assets/judges.mind' : 'assets/grand-finale-poster.mind';
+const CACHE_KEY = 'nadanu-grand-finale-poster-target-v1';
 let stages = [], activeTarget = -1, activeKind = PAGE_KIND;
 import { createScanGate } from './scan-state.js';
 import { createScanCue } from './scan-cue.js';
@@ -54,7 +54,7 @@ $('startAR').onclick = () => begin('ar'); $('preview').onclick = () => begin('pr
 $('sound').onclick = async () => { soundOn = !soundOn; updateSound(); if (!soundOn) cue.stop(); if (soundOn && !mediaUnlocked) { try { await unlockMovie(); syncMedia(true); } catch { notice('Tap Play to start the music.'); } } };
 $('pause').onclick = () => { if (ended) { jump(0); return; } playing = !playing; $('pause').textContent = playing ? 'Ⅱ Pause' : '▶ Play'; last = performance.now(); syncMedia(); }; $('replay').onclick = () => jump(0);
 document.querySelectorAll('[data-act]').forEach(b => b.onclick = () => begin('preview', Number(b.dataset.act)));
-function configureFinalAction() { const judges = activeKind === 'judges'; $('register').textContent = judges ? 'Contact organizers ↗' : 'Register now ↗'; $('register').href = judges ? 'tel:+94758999638' : 'https://luma.com/vofdxmeh'; $('modeTag').textContent = judges ? 'JUDGES’ INVITATION AR' : 'POSTER VIDEO AR'; }
+function configureFinalAction() { const judges = activeKind === 'judges'; $('register').textContent = judges ? 'Contact organizers ↗' : 'Event details ↗'; $('register').href = judges ? 'tel:+94758999638' : '#contact'; $('modeTag').textContent = judges ? 'JUDGES’ INVITATION AR' : 'POSTER VIDEO AR'; }
 function registration() { movie.pause(); playing = false; $('pause').textContent = '▶ Play'; const judges = activeKind === 'judges', dialog = $('registration'); dialog.querySelector('h2').textContent = judges ? 'Join our judging panel.' : 'Your stage is waiting.'; dialog.querySelector('a.primary').hidden = judges; dialog.querySelector('.contact-intro').textContent = judges ? 'We would be honoured by your presence. Please contact the organizers to respond.' : 'For more details, contact the organizers.'; dialog.showModal(); }
 document.querySelectorAll('[data-register]').forEach(b => b.onclick = registration); $('register').addEventListener('click', event => { movie.pause(); playing = false; $('pause').textContent = '▶ Play'; if (activeKind === 'judges') { event.preventDefault(); registration(); } }); $('closeRegistration').onclick = () => $('registration').close(); $('registration').addEventListener('click', e => { if (e.target === $('registration')) $('registration').close(); });
 document.addEventListener('visibilitychange', () => { visible = !document.hidden; last = performance.now(); if (mode) syncMedia(); }); window.addEventListener('resize', resize); window.addEventListener('pagehide', () => { movie.pause(); mindar?.stop(); });
