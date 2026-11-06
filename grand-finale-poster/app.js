@@ -15,7 +15,7 @@ const arUI = document.querySelector('#arUI');
 const status = document.querySelector('#trackingStatus');
 const invitationScanner=document.getElementById('invitationScanner');
 const scannerMessage=document.getElementById('scannerMessage');
-function showScanner(state='searching',text='Frame the printed Grand Finale invitation'){
+function showScanner(state='searching',text='Frame the printed Grand Finale poster'){
  if(!invitationScanner)return;
  invitationScanner.hidden=false;
  invitationScanner.dataset.scanState=state;
@@ -305,7 +305,7 @@ async function loadPerformers() {
 function setup() {
  const generation=++trackerGeneration;
  tracked=false;
- mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind?v=eaee01ad',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'no',uiScanning:'no',uiError:'yes'});
+ mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/grand-finale-poster.mind?v=poster-20261107',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'no',uiScanning:'no',uiError:'yes'});
  const {scene,renderer,camera}=mindarThree;
  activeRenderer=renderer;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.2));
@@ -336,8 +336,8 @@ function setup() {
    introStartedAt=0;
    if(recognitionIntro)recognitionIntro.hidden=true;
   }
-  if(!showInvitation)showScanner('searching','Frame the printed Grand Finale invitation');
-  status.textContent='Point camera at the printed Grand Finale invitation';
+  if(!showInvitation)showScanner('searching','Frame the printed Grand Finale poster');
+  status.textContent='Point camera at the printed Grand Finale poster';
  };
  renderer.setAnimationLoop(()=>{
   if(generation!==trackerGeneration||!running)return;
@@ -403,7 +403,7 @@ function ensurePerformersLoaded(){
  return performersPromise;
 }
 // Warm just the small tracking target through browser cache, without decoding GLBs.
-fetch('./assets/finale.mind?v=eaee01ad',{priority:'high'}).then(r=>{
+fetch('./assets/grand-finale-poster.mind?v=poster-20261107',{priority:'high'}).then(r=>{
  if(!r.ok)throw new Error('Tracking target HTTP '+r.status);
  return r.arrayBuffer();
 }).catch(e=>console.warn('Invitation tracking target prefetch failed:',e));
