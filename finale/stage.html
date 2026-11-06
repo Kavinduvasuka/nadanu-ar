@@ -50,7 +50,7 @@ const acts=[new THREE.Group(),new THREE.Group(),new THREE.Group()];acts.forEach(
 const mixers=[];const loader=new GLTFLoader();
 const dracoDecoder=new DRACOLoader();dracoDecoder.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');loader.setDRACOLoader(dracoDecoder);
 let loaded=0;
-const source=[{url:'./assets/solo-dancer.glb',height:2.5,width:3},{url:'./assets/singer.glb',height:2.5,width:3},{url:'./assets/group_dancers.glb',height:3,width:7}];
+const source=[{url:'./assets/solo-dancer.glb?v=optimized-20261106',height:2.5,width:3},{url:'./assets/singer.glb',height:2.5,width:3},{url:'./assets/group_dancers.glb',height:3,width:7}];
 source.forEach((cfg,i)=>loader.load(cfg.url,gltf=>{
 const model=gltf.scene;model.updateMatrixWorld(true);
 const bb=new THREE.Box3().setFromObject(model),size=bb.getSize(new THREE.Vector3()),center=bb.getCenter(new THREE.Vector3());
