@@ -14,7 +14,7 @@ const status = document.querySelector('#trackingStatus');
 const clock = new THREE.Clock();
 const gltfLoader = new GLTFLoader();
 let mindarThree, initialized = false, running = false, busy = false, tracked = false;
-let stage, title, subtitle, label, warmLight, violetLight;
+let stage, label, warmLight, violetLight;
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
 let selectedAct=null, musicContext=null, soundInterval=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
@@ -231,23 +231,25 @@ async function loadPerformers() {
   {path:'./assets/solo-dancer.glb',index:1,height:2.25,x:0,z:0,maxWidth:3,name:'Solo dancer'},
   {path:'./assets/group_dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
  ];
- const errors=[];
- for(const a of assets){
-  try{
-   const gltf=await gltfLoader.loadAsync(a.path);
-   const {wrap,object}=normalizeGLB(gltf,a.height,a.x,a.z,a.maxWidth);
-   performers[a.index].add(wrap);
-   if(gltf.animations.length){
-    const mixer=new THREE.AnimationMixer(object);
-    const chosen=gltf.animations[0];
-    const action=mixer.clipAction(chosen);action.setLoop(THREE.LoopRepeat,Infinity);action.play();
-    mixers.push(mixer);
-   }
-   console.info(`${a.name}: ${gltf.animations.length} animation clip(s)`);
-  }catch(e){errors.push(`${a.name}: ${e.message}`);console.error(e);}
- }
- return errors;
+ // Download all three assets concurrently as soon as the landing page opens.
+ const results=await Promise.allSettled(assets.map(async a=>{
+  const gltf=await gltfLoader.loadAsync(a.path);
+  const {wrap,object}=normalizeGLB(gltf,a.height,a.x,a.z,a.maxWidth);
+  performers[a.index].add(wrap);
+  if(gltf.animations.length){
+   const mixer=new THREE.AnimationMixer(object);
+   const action=mixer.clipAction(gltf.animations[0]);
+   action.setLoop(THREE.LoopRepeat,Infinity);action.play();mixers.push(mixer);
+  }
+  console.info(`${a.name}: ${gltf.animations.length} animation clip(s)`);
+ }));
+ return results.flatMap((r,i)=>{
+  if(r.status==='fulfilled')return [];
+  console.error(`Failed to load ${assets[i].name}:`,r.reason);
+  return [`${assets[i].name}: ${r.reason?.message||String(r.reason)}`];
+ });
 }
+
 function setup() {
  mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
  const {scene,renderer,camera}=mindarThree;
@@ -258,8 +260,6 @@ function setup() {
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
  createStage(root);
  bindOrbitControls();
- title=textMesh(['NADANU 3.0','GRAND FINALE'],1.1,.32,0,.75,.04,83);root.add(title);
- subtitle=textMesh(['YOU ARE CORDIALLY INVITED'],1.05,.22,0,-.50,.17,52);root.add(subtitle);
  label=textMesh(['SOLO SINGING'],.77,.16,0,.62,.10,67);root.add(label);
  root.visible=false;
  anchor.onTargetFound=()=>{
@@ -330,21 +330,19 @@ function setup() {
     stage.scale.setScalar(BASE_SCALE);
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
-    title.position.y=.75+.012*Math.sin(now*1.5);
   }
   renderer.render(scene,camera);
  });
  initialized=true;
 }
-let modelErrors=[];let performersPromise=null;
+let modelErrors=[];
+// Begin loading in the background on initial page open, before START AR.
+const performersPromise=loadPerformers();
+fetch('./assets/finale.mind').catch(e=>console.warn('Target prefetch failed:',e));
 async function startAR(){
  if(busy||running)return;busy=true;startButton.disabled=true;message.textContent='Checking invitation target and 3D models…';
  try{
-  const res=await fetch('./assets/finale.mind',{cache:'no-store'});
-  if(!res.ok)throw new Error(`Target file HTTP ${res.status}. Check assets/finale.mind`);
-  const targetBytes = await res.arrayBuffer();
-  if(targetBytes.byteLength < 100) throw new Error('finale.mind is empty or too small. Compile it again.');
-  console.info('MindAR target loaded:',targetBytes.byteLength,'bytes');
+  // No duplicate blocking fetch here: MindAR uses the browser-cached target.
   const cam = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
   if(!window.isSecureContext || !cam) throw new Error('Camera requires localhost or HTTPS in a compatible browser.');
   console.info('Secure context:',window.isSecureContext,'Three revision:',THREE.REVISION);
@@ -362,8 +360,8 @@ async function startAR(){
   running=true;clock.start();lastFrame=clock.getElapsedTime();
   resetPerformances();
   landing.style.display='none';arUI.hidden=false;
-  status.textContent='Camera ready. Loading your 3D performers…';
-  (performersPromise ??= loadPerformers()).then(errors=>{
+  status.textContent='Camera ready. Point at the Grand Finale invitation';
+  performersPromise.then(errors=>{
     modelErrors=errors;
     if(!running) return;
     status.textContent=errors.length
