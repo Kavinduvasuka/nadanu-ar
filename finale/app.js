@@ -4,7 +4,7 @@ import { MindARThree } from 'mindar-image-three';
 
 // Nadanu 3.0: ORIGINAL Stage Lights concert geometry + real GLB actors, anchored to the invitation.
 // Animations: singer.glb and solo-dancer.glb have embedded animation clips.
-// group-dancers.glb is a STATIC mesh; it moves as a whole, not as rigged individuals.
+// group_dancers.glb is a STATIC mesh; it moves as a whole, not as rigged individuals.
 const landing = document.querySelector('#landing');
 const startButton = document.querySelector('#startButton');
 const stopButton = document.querySelector('#stopButton');
@@ -229,7 +229,7 @@ async function loadPerformers() {
  const assets=[
   {path:'./assets/singer.glb',index:0,height:2.25,x:0,z:0,maxWidth:3,name:'Singer'},
   {path:'./assets/solo-dancer.glb',index:1,height:2.25,x:0,z:0,maxWidth:3,name:'Solo dancer'},
-  {path:'./assets/group-dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
+  {path:'./assets/group_dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
  ];
  const errors=[];
  for(const a of assets){
