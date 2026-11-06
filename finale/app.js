@@ -20,6 +20,7 @@ dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
 gltfLoader.setDRACOLoader(dracoLoader);
 let mindarThree, initialized = false, running = false, busy = false, tracked = false;
 let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
+let trackerGeneration=0; // Invalidate late tracking events from a previous camera session.
 let stage, warmLight, violetLight;
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
 let selectedAct=null, soundEnabled=false;
@@ -232,8 +233,11 @@ async function loadPerformers() {
   {path:'./assets/solo-dancer.glb?v=optimized-20261106',index:1,height:2.25,x:0,z:0,maxWidth:3,name:'Solo dancer'},
   {path:'./assets/group_dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
  ];
- // Download all three assets concurrently as soon as the landing page opens.
- const results=await Promise.allSettled(assets.map(async a=>{
+ // Load performers one at a time after the live camera opens. Concurrent
+ // Draco decode on mobile can block video rendering and look like a frozen stage.
+ const results=[];
+ for(const a of assets){
+  try{
   const gltf=await gltfLoader.loadAsync(a.path);
   const {wrap,object}=normalizeGLB(gltf,a.height,a.x,a.z,a.maxWidth);
   performers[a.index].add(wrap);
@@ -244,20 +248,24 @@ async function loadPerformers() {
    action.setLoop(THREE.LoopRepeat,Infinity);action.play();mixers.push(mixer);
   }
   console.info(`${a.name}: ${gltf.animations.length} animation clip(s)`);
- }));
- return results.flatMap((r,i)=>{
-  if(r.status==='fulfilled')return [];
-  performerFailed[assets[i].index]=true;
-  console.error(`Failed to load ${assets[i].name}:`,r.reason);
-  return [`${assets[i].name}: ${r.reason?.message||String(r.reason)}`];
- });
+  }catch(err){
+   performerFailed[a.index]=true;
+   console.error(`Failed to load ${a.name}:`,err);
+   results.push(`${a.name}: ${err?.message||String(err)}`);
+  }
+  // Allow camera rendering and target tracking to process between models.
+  await new Promise(resolve=>setTimeout(resolve,300));
+ }
+ return results;
 }
 
 function setup() {
+ const generation=++trackerGeneration;
+ tracked=false;
  mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
  const {scene,renderer,camera}=mindarThree;
  activeRenderer=renderer;
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.2));
  const anchor=mindarThree.addAnchor(0),root=anchor.group;
  activeAnchor=anchor;activeRoot=root;
  scene.add(new THREE.HemisphereLight(0xffffff,0x34132a,2.8));
@@ -267,23 +275,30 @@ function setup() {
  bindOrbitControls();
  root.visible=false;
  anchor.onTargetFound=()=>{
+  if(generation!==trackerGeneration)return; // Ignore callbacks from disposed camera.
   tracked=true;
   trackingTime=clock.getElapsedTime();
   stage.quaternion.copy(fixedStageTilt);
-  stage.visible=false; // Wait for tracking to settle before first reveal.
-  root.visible=true;
-  status.textContent='Invitation centre detected · locking stage…';
+  stage.visible=false;
+  root.visible=false; // Never show an old anchor pose during acquisition.
+  status.textContent='Invitation detected · stabilizing tracking…';
  };
  anchor.onTargetLost=()=>{
+  if(generation!==trackerGeneration)return;
   tracked=false;
   stage.visible=false;
   root.visible=false;
-  status.textContent='Point your camera at the printed Grand Finale invitation';
+  status.textContent='Point camera at the printed Grand Finale invitation';
  };
  renderer.setAnimationLoop(()=>{
-  if(!running)return; // Do not render a stale 3D stage after leaving AR.
+  if(generation!==trackerGeneration||!running)return;
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
-  if(running&&tracked){
+  // MindAR can retain an old anchor matrix temporarily on iOS. Hide both the
+  // complete stage and its lights until NEW invitation tracking has stabilized.
+  const locked=tracked && now-trackingTime>=.8;
+  root.visible=locked;
+  stage.visible=locked && !showInvitation;
+  if(locked){
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
     stage.quaternion.copy(fixedStageTilt);
@@ -314,11 +329,8 @@ function setup() {
     applyOrbit();
     // Lock to the invitation centre; delay the first reveal to avoid acquisition bounce.
     // No stage orbit or dynamic resizing after lock.
-    if(!stage.visible&&now-trackingTime>=.4){
-      stage.visible=true;
-      status.textContent=performerReady[index]
-       ? 'Stage ready · move sideways for a real 3D stage view · pinch to zoom'
-       : `Preparing ${performerNames[index]} 3D model…`;
+    if(performerReady[index] && status.textContent.startsWith('Invitation detected')){
+      status.textContent='Stage ready · move sideways for a 3D view · pinch to zoom';
     }
     stage.scale.setScalar(BASE_SCALE);
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
@@ -362,20 +374,23 @@ async function startAR(){
       new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Camera start timed out after 25 seconds. Close other camera apps, check the browser console, and refresh.')),25000);})
     ]);
   } finally { clearTimeout(timer); }
-  // Preserve any invitation lock acquired during the camera start promise.
+  // Begin this session at Act 1 and a fresh animation clock.
   running=true;clock.start();lastFrame=clock.getElapsedTime();
+  mixers.forEach(m=>m.setTime(0));
   resetPerformances();
   landing.style.display='none';arUI.hidden=false;
   status.textContent='Camera ready. Point at the Grand Finale invitation';
   // Models now load after the camera starts, so video startup is not blocked
   // by Draco / WebP decoding or multiple concurrent model downloads.
-  ensurePerformersLoaded().then(errors=>{
-    modelErrors=errors;
-    if(!running) return;
-    status.textContent=errors.length
-      ? 'Camera ready. Some 3D files failed; see Console (F12).'
-      : 'Point at the Grand Finale invitation';
-  }).catch(err=>{console.error('Model loading failed:',err);if(running)status.textContent='3D loading failed — see Console (F12).';});
+  // Give the camera a few live frames before downloading/decoding models.
+  setTimeout(()=>{
+   if(!running)return;
+   ensurePerformersLoaded().then(errors=>{
+     modelErrors=errors;
+     if(!running)return;
+     if(errors.length)console.warn('3D models unavailable:',errors);
+   }).catch(err=>{console.error('Model loading failed:',err);});
+  },650);
  }catch(e){
    console.error('MindAR startup failure (original value):', e);
    const detail = e instanceof Error ? `${e.name}: ${e.message}` :
@@ -396,6 +411,7 @@ async function startAR(){
 // Rebuild the MindAR controller after exit: a reused iOS camera tracker can
 // leave its old anchor transform visible even when the invitation is absent.
 async function disposeARSession(){
+ ++trackerGeneration; // Old tracker must never re-show the stage on callbacks.
  const instance=mindarThree,renderer=activeRenderer,anchor=activeAnchor,root=activeRoot;
  if(anchor){anchor.onTargetFound=null;anchor.onTargetLost=null;}
  if(root)root.visible=false;
@@ -408,6 +424,12 @@ async function disposeARSession(){
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
    try{renderer.dispose();}catch(_){}
+  }
+  // Explicitly release camera tracks if the library retained the video.
+  for(const video of arContainer.querySelectorAll('video')){
+   try{video.pause();}catch(_){}
+   try{video.srcObject?.getTracks().forEach(track=>track.stop());}catch(_){}
+   try{video.srcObject=null;}catch(_){}
   }
   arContainer.replaceChildren();
   arContainer.style.display='none';
