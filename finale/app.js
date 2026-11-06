@@ -234,7 +234,7 @@ function normalizeGLB(gltf, desiredHeight, targetX=0, targetZ=0, maxWidth=6.7){
 async function loadPerformers() {
  const assets=[
   {path:'./assets/singer.glb',index:0,height:2.25,x:0,z:0,maxWidth:3,name:'Singer'},
-  {path:'./assets/solo-dancer.glb',index:1,height:2.25,x:0,z:0,maxWidth:3,name:'Solo dancer'},
+  {path:'./assets/solo-dancer.glb?v=optimized-20261106',index:1,height:2.25,x:0,z:0,maxWidth:3,name:'Solo dancer'},
   {path:'./assets/group_dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
  ];
  // Download all three assets concurrently as soon as the landing page opens.
