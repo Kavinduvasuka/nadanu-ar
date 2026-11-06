@@ -212,3 +212,30 @@ html,body{max-width:100%;overflow-x:clip}
  .finale-poster-image{max-height:calc(100dvh - 120px)}
  .finale-invitation .finale-poster-card .finale-invitation-actions{padding:6px}
 }
+
+
+/* Display the real invitation artwork without stretching or clipping it. */
+.poster-display.actual-invitation-display{
+  width:min(100%,460px);
+  max-width:100%;
+  margin-inline:auto;
+  isolation:isolate;
+}
+.actual-invitation-image{
+  display:block;
+  position:relative;
+  z-index:1;
+  width:100%;
+  height:auto;
+  object-fit:contain;
+  border:1px solid #d6a15e;
+  border-radius:5px;
+  box-shadow:0 26px 60px #0009,0 0 0 6px #572a1647;
+}
+@media(max-width:750px){
+ .poster-display.actual-invitation-display{width:min(85vw,390px)}
+}
+@media(max-width:480px){
+ .poster-display.actual-invitation-display{width:min(88vw,350px);max-width:100%}
+ .actual-invitation-image{height:auto;max-height:none}
+}
