@@ -324,30 +324,21 @@ function setup() {
  initialized=true;
 }
 let modelErrors=[];
-// Begin loading in the background on initial page open, before START AR.
-// The user can open the camera immediately; large GLBs preload in the background.
-message.textContent='3D performances are preparing in the background. Tap Start Invitation AR.';
-const performersPromise=loadPerformers();
-const targetPreload=fetch('./assets/finale.mind').then(response=>{
- if(!response.ok)throw new Error('Invitation tracking target unavailable (HTTP '+response.status+').');
- return response.arrayBuffer();
-}).then(buffer=>{
- if(buffer.byteLength<100)throw new Error('Invitation tracking target is empty.');
- return buffer.byteLength;
-}).catch(e=>{console.warn('Target prefetch failed:',e);return null;});
-Promise.all([performersPromise,targetPreload]).then(([errors,targetBytes])=>{
- modelErrors=errors;
- if(!busy&&!running)message.textContent=errors.length
-  ? 'Some 3D models could not preload. You can still try AR.'
-  : targetBytes===null
-   ? 'Tracking target could not preload. You can still try AR.'
-   : '3D performances ready — tap Start Invitation AR.';
-}).catch(err=>{
- console.error('AR preload error:',err);
- if(!busy&&!running)message.textContent='Preload failed. You can still tap Start Invitation AR.';
-});
+// Camera-first startup: do not download/decode the large GLB performers while
+// MindAR opens the camera and compiles the tracking target on mobile phones.
+message.textContent='Tap Start Invitation AR to open your camera.';
+let performersPromise=null;
+function ensurePerformersLoaded(){
+ if(!performersPromise)performersPromise=loadPerformers();
+ return performersPromise;
+}
+// Warm just the small tracking target through browser cache, without decoding GLBs.
+fetch('./assets/finale.mind',{priority:'high'}).then(r=>{
+ if(!r.ok)throw new Error('Tracking target HTTP '+r.status);
+ return r.arrayBuffer();
+}).catch(e=>console.warn('Invitation tracking target prefetch failed:',e));
 async function startAR(){
- if(busy||running)return;busy=true;startButton.disabled=true;message.textContent='Checking invitation target and 3D models…';
+ if(busy||running)return;busy=true;startButton.disabled=true;message.textContent='Opening camera… allow camera access when prompted.';
  try{
   // No duplicate blocking fetch here: MindAR uses the browser-cached target.
   const cam = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
@@ -370,7 +361,9 @@ async function startAR(){
   resetPerformances();
   landing.style.display='none';arUI.hidden=false;
   status.textContent='Camera ready. Point at the Grand Finale invitation';
-  performersPromise.then(errors=>{
+  // Models now load after the camera starts, so video startup is not blocked
+  // by Draco / WebP decoding or multiple concurrent model downloads.
+  ensurePerformersLoaded().then(errors=>{
     modelErrors=errors;
     if(!running) return;
     status.textContent=errors.length
