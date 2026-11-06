@@ -58,3 +58,41 @@
 @keyframes invitation-reveal{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:480px){.act-banner{top:calc(92px + env(safe-area-inset-top));padding:11px 23px}.act-banner-kicker{font-size:8px}.finale-invitation{padding-top:calc(68px + env(safe-area-inset-top));padding-bottom:calc(105px + env(safe-area-inset-bottom))}.finale-invitation-card{padding:20px 20px}.finale-invitation-rule{margin:11px auto}.finale-invitation-lead{margin:12px auto}.finale-invitation-quote{margin:12px auto}.finale-invitation-actions{padding-top:13px}}
 @media(prefers-reduced-motion:reduce){.finale-invitation-card{animation:none}}
+
+
+/* Grand Finale poster reveal: the full artwork fits in the AR viewport. */
+.finale-invitation .finale-poster-card{
+  width:min(100%,440px);
+  max-height:100%;
+  padding:0;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  border:1px solid #f5b640;
+  border-radius:10px;
+  background:#180904;
+}
+.finale-invitation .finale-poster-card::before,
+.finale-invitation .finale-poster-card::after{content:none}
+.finale-poster-image{
+  display:block;
+  width:auto;
+  max-width:100%;
+  max-height:calc(100dvh - 220px);
+  min-height:0;
+  object-fit:contain;
+  flex:0 1 auto;
+}
+.finale-invitation .finale-poster-card .finale-invitation-actions{
+  width:100%;
+  flex:0 0 auto;
+  margin:0;
+  padding:12px 10px;
+  border:0;
+  background:#210d07;
+}
+@media(max-width:480px){
+ .finale-poster-image{max-height:calc(100dvh - 215px)}
+ .finale-invitation .finale-poster-card .finale-invitation-actions{padding:10px 8px}
+}
