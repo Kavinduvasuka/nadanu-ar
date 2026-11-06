@@ -32,6 +32,7 @@ button,a{cursor:pointer;color:white;text-decoration:none;font:600 11px Unbounded
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 const intro=document.getElementById('intro'),status=document.getElementById('status'),
 overlay=document.getElementById('overlay'),hint=document.getElementById('hint');
 const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.01,50);
@@ -62,6 +63,7 @@ const particles=(()=>{const p=new Float32Array(270*3);for(let i=0;i<270;i++){let
 const acts=[new THREE.Group(),new THREE.Group(),new THREE.Group()],mixers=[];
 acts.forEach(group=>{group.position.y=.075;stage.add(group)});
 const loader=new GLTFLoader();
+const dracoDecoder=new DRACOLoader();dracoDecoder.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');loader.setDRACOLoader(dracoDecoder);
 const files=[
  {path:'./assets/singer.glb',height:.42,width:.3},
  {path:'./assets/solo-dancer.glb',height:.42,width:.3},
