@@ -10,12 +10,20 @@ h1{font-size:clamp(18px,3.2vw,29px);margin:0 0 8px}header p{font-size:11px;color
 nav{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));left:8px;right:8px;display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
 button,a.action{font:600 11px Unbounded,system-ui,sans-serif;cursor:pointer;background:#21152cbb;color:#f6efff;border:1px solid #ffffff55;border-radius:99px;padding:12px 15px;text-decoration:none;backdrop-filter:blur(9px)}
 button.active{background:#ff3d9a;color:#24001b;border-color:#ff3d9a}
-#status{position:fixed;top:calc(95px + env(safe-area-inset-top));left:15px;right:15px;color:#ffc857;font-size:11px;pointer-events:none}
+#actDisplay{position:fixed;top:calc(97px + env(safe-area-inset-top));left:15px;right:15px;pointer-events:none;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#actDisplay strong{font-size:clamp(12px,3vw,17px);color:#ffe1a3;text-shadow:0 0 14px #ef469b}
+#actDisplay span{font-size:10px;color:#bca6cb;letter-spacing:.08em}
+#actTimeline{position:fixed;top:calc(139px + env(safe-area-inset-top));left:15px;right:15px;max-width:420px;height:3px;background:#a463a04b;border-radius:5px;overflow:hidden}
+#actTimeline>span{display:block;width:100%;height:100%;transform:scaleX(0);transform-origin:left;background:linear-gradient(90deg,#ff3d9a,#ffc857)}
+@media(max-width:600px){#actDisplay{top:calc(105px + env(safe-area-inset-top))}#actTimeline{top:calc(149px + env(safe-area-inset-top))}}
+#status{position:fixed;top:calc(164px + env(safe-area-inset-top));left:15px;right:15px;color:#ffc857;font-size:11px;pointer-events:none}
 </style>
 </head><body>
-<header><h1>Nadanu 3.0 · Stage Lights</h1><p>Drag to rotate · Scroll or pinch to zoom · Free-moving 3D concert view</p></header>
+<header><h1>Nadanu 3.0 · Stage Lights</h1><p>Auto-playing live acts · Drag to rotate · Pinch to zoom</p></header>
+<div id="actDisplay" aria-live="polite"><strong id="actName">SOLO SINGING</strong><span id="actNumber">ACT 01 / 03 · AUTO PLAY</span></div>
+<div id="actTimeline" aria-hidden="true"><span id="actProgress"></span></div>
 <div id="status">Loading your 3D performers…</div>
-<nav><button data-act="0" class="active">Solo dancer</button><button data-act="1">Solo singer</button><button data-act="2">Group dance</button><button id="sound">Sound off</button><a class="action" href="./">Back to AR</a></nav>
+<nav><button id="sound">Sound off</button><a class="action" href="./">Back to AR</a></nav>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
@@ -50,7 +58,10 @@ const acts=[new THREE.Group(),new THREE.Group(),new THREE.Group()];acts.forEach(
 const mixers=[];const loader=new GLTFLoader();
 const dracoDecoder=new DRACOLoader();dracoDecoder.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');loader.setDRACOLoader(dracoDecoder);
 let loaded=0;
-const source=[{url:'./assets/solo-dancer.glb?v=optimized-20261106',height:2.5,width:3},{url:'./assets/singer.glb',height:2.5,width:3},{url:'./assets/group_dancers.glb',height:3,width:7}];
+const ready=[false,false,false],failed=[false,false,false];
+const actNames=['SOLO SINGING','SOLO DANCING','GROUP DANCING'];
+const ACT_DURATION=8;
+const source=[{url:'./assets/singer.glb',height:2.5,width:3},{url:'./assets/solo-dancer.glb?v=optimized-20261106',height:2.5,width:3},{url:'./assets/group_dancers.glb',height:3,width:7}];
 source.forEach((cfg,i)=>loader.load(cfg.url,gltf=>{
 const model=gltf.scene;model.updateMatrixWorld(true);
 const bb=new THREE.Box3().setFromObject(model),size=bb.getSize(new THREE.Vector3()),center=bb.getCenter(new THREE.Vector3());
@@ -60,10 +71,18 @@ model.scale.multiplyScalar(scale);model.position.set(-center.x*scale,-bb.min.y*s
 model.traverse(o=>{if(o.isMesh||o.isSkinnedMesh){o.castShadow=true;o.frustumCulled=false}});
 acts[i].add(model);
 if(gltf.animations.length){const mixer=new THREE.AnimationMixer(model);mixer.clipAction(gltf.animations[0]).play();mixers.push(mixer);}
-loaded++;document.getElementById('status').textContent=loaded===3?'Drag to rotate · pinch to zoom':loaded+' of 3 performers loaded';
-},undefined,e=>{console.error(cfg.url,e);document.getElementById('status').textContent='Could not load '+cfg.url+' — check files';}));
-let mode=0,t=0,angle=0,radius=6,height=2.3,look=1.1,drag=false,px=0,pinch=0;
-document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{mode=+b.dataset.act;document.querySelectorAll('[data-act]').forEach(x=>x.classList.toggle('active',b===x));});
+ready[i]=true;loaded++;document.getElementById('status').textContent=loaded===3?'Auto-playing all performances · drag to explore':loaded+' of 3 performers loaded';
+},undefined,e=>{console.error(cfg.url,e);failed[i]=true;document.getElementById('status').textContent='A performer could not load; continuing the show';}));
+let mode=0,t=0,actElapsed=0,angle=0,radius=6,height=2.3,look=1.1,drag=false,px=0,pinch=0;
+const actName=document.getElementById('actName'),actNumber=document.getElementById('actNumber'),actProgress=document.getElementById('actProgress');
+function setAct(index){
+ mode=index;actElapsed=0;
+ actName.textContent=actNames[index];
+ actNumber.textContent='ACT 0'+(index+1)+' / 03 · AUTO PLAY';
+ actProgress.style.transform='scaleX(0)';
+ // Let the camera gently reframe the incoming act while preserving drag controls.
+ document.getElementById('status').textContent=ready[index]?'Now showing '+actNames[index]:'Preparing '+actNames[index]+'…';
+}
 const canvas=renderer.domElement;
 canvas.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;canvas.setPointerCapture(e.pointerId)});
 canvas.addEventListener('pointermove',e=>{if(drag){angle-=(e.clientX-px)*.008;px=e.clientX}});
@@ -83,7 +102,11 @@ oscTimer=setInterval(()=>{const o=ctx.createOscillator(),g=ctx.createGain(),now=
 };
 const vector=new THREE.Vector3(),quat=new THREE.Quaternion(),up=new THREE.Vector3(0,1,0),clock=new THREE.Clock();
 function frame(){requestAnimationFrame(frame);const dt=Math.min(clock.getDelta(),.05);t+=dt;
-acts.forEach((g,i)=>g.visible=i===mode);mixers.forEach(m=>m.update(dt));
+// Keep each act visible for its full duration; do not skip a slow-loading model.
+if(ready[mode]||failed[mode])actElapsed+=dt;
+if(actElapsed>=ACT_DURATION)setAct((mode+1)%acts.length);
+actProgress.style.transform='scaleX('+Math.min(1,actElapsed/ACT_DURATION)+')';
+acts.forEach((g,i)=>g.visible=i===mode&&ready[i]);mixers.forEach(m=>m.update(dt));
 lights.forEach((l,i)=>{const a=t*.4+i*2.1;l.position.set(Math.cos(a)*6,9,Math.sin(a)*6);
 l.target.position.set(Math.sin(t*.7+i)*1.5,1,Math.cos(t*.6+i)*1.5);
 const beam=cones[i],v=vector.copy(l.position).sub(l.target.position),len=v.length();
@@ -93,7 +116,7 @@ rings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.04*(i+1));r.material.opacity=.3
 bars.forEach((b,i)=>{const h=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;b.scale.y=h;b.position.y=h/2;b.material.color.setHSL((i/40+t*.05)%1,.9,.55)});
 halo.material.color.setHSL((t*.08)%1,.9,.6);halo.scale.setScalar(1+pulse*.05);
 const p=geom.attributes.position;for(let i=0;i<particleCount;i++){let y=p.array[i*3+1]+dt*(.2+(i%5)*.06);if(y>8)y=0;p.array[i*3+1]=y;}p.needsUpdate=true;
-const targetR=[6,5.2,11.5][mode],targetH=[2.2,1.9,5.5][mode],targetLook=[1.1,1.35,.9][mode];
+const targetR=[5.2,6,11.5][mode],targetH=[1.9,2.2,5.5][mode],targetLook=[1.35,1.1,.9][mode];
 // Automatically frame different acts on the first selection, then allow free orbit and zoom.
 if(!drag&&!pinch){radius+=(targetR-radius)*.002;height+=(targetH-height)*.013;look+=(targetLook-look)*.013;}
 camera.position.set(Math.sin(angle)*radius,height,Math.cos(angle)*radius);camera.lookAt(0,look,0);renderer.render(scene,camera)}
