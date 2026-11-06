@@ -27,27 +27,13 @@ const performerNames=['Solo Singing','Solo Dancing','Group Dancing'];
 const mixers = [];
 let lastFrame=0, trackingTime=0, sequenceTime=0;
 const ACT_SECONDS=8, TOTAL_ACTS=3;
-const actNames=['SOLO SINGING','SOLO DANCING','GROUP DANCING'];
-const actBanner=document.getElementById('actBanner');
-const actBannerTitle=document.getElementById('actBannerTitle');
-const actBannerCount=document.getElementById('actBannerCount');
 const finaleInvitation=document.getElementById('finaleInvitation');
 const replayActsButton=document.getElementById('replayActsButton');
-let showInvitation=false,lastPresentedAct=-1;
-function presentAct(index){
- if(lastPresentedAct!==index){
-  actBannerTitle.textContent=actNames[index];
-  actBannerCount.textContent='ACT 0'+(index+1)+' / 03';
-  lastPresentedAct=index;
- }
-}
+let showInvitation=false;
 function resetPerformances(){
  sequenceTime=0;
  showInvitation=false;
- lastPresentedAct=-1;
  if(finaleInvitation)finaleInvitation.hidden=true;
- if(actBanner)actBanner.hidden=false;
- presentAct(selectedAct===null?0:selectedAct);
 }
 replayActsButton?.addEventListener('click',()=>{
  selectedAct=null;
@@ -289,7 +275,6 @@ function setup() {
     if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
       showInvitation=true;
       finaleInvitation.hidden=false;
-      actBanner.hidden=true;
       status.textContent='You are cordially invited to the Nadanu 3.0 Grand Finale';
     }
     const index=selectedAct===null
@@ -301,7 +286,6 @@ function setup() {
         ? `${performerNames[index]} model unavailable — try refreshing the page.`
         : `Preparing ${performerNames[index]} 3D model…`;
     }
-    if(!showInvitation)presentAct(index);
     for(const mixer of mixers)mixer.update(dt);
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
     applyOrbit();
