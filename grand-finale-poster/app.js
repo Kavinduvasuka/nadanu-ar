@@ -15,7 +15,7 @@ const arUI = document.querySelector('#arUI');
 const status = document.querySelector('#trackingStatus');
 const invitationScanner=document.getElementById('invitationScanner');
 const scannerMessage=document.getElementById('scannerMessage');
-function showScanner(state='searching',text='Frame the printed Grand Finale invitation'){
+function showScanner(state='searching',text='Frame the printed Grand Finale poster'){
  if(!invitationScanner)return;
  invitationScanner.hidden=false;
  invitationScanner.dataset.scanState=state;
@@ -78,7 +78,7 @@ function startRecognitionIntro(){
   recognitionIntro.hidden=false;
  }
  if(actBanner)actBanner.hidden=true;
- status.textContent='Invitation recognized · welcome to Nadanu 3.0';
+ status.textContent='Poster recognized · welcome to Nadanu 3.0';
 }
 function finishRecognitionIntro(){
  if(introCompleted)return;
@@ -305,7 +305,7 @@ async function loadPerformers() {
 function setup() {
  const generation=++trackerGeneration;
  tracked=false;
- mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind?v=eaee01ad',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'no',uiScanning:'no',uiError:'yes'});
+ mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/grand-finale-poster.mind?v=poster-20261107',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'no',uiScanning:'no',uiError:'yes'});
  const {scene,renderer,camera}=mindarThree;
  activeRenderer=renderer;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.2));
@@ -324,8 +324,8 @@ function setup() {
   stage.quaternion.copy(fixedStageTilt);
   stage.visible=false;
   root.visible=false; // Never show an old anchor pose during acquisition.
-  showScanner('locked','Invitation detected · stabilizing stage…');
-  status.textContent='Invitation detected · stabilizing tracking…';
+  showScanner('locked','Poster detected · stabilizing stage…');
+  status.textContent='Poster detected · stabilizing tracking…';
  };
  anchor.onTargetLost=()=>{
   if(generation!==trackerGeneration)return;
@@ -336,8 +336,8 @@ function setup() {
    introStartedAt=0;
    if(recognitionIntro)recognitionIntro.hidden=true;
   }
-  if(!showInvitation)showScanner('searching','Frame the printed Grand Finale invitation');
-  status.textContent='Point camera at the printed Grand Finale invitation';
+  if(!showInvitation)showScanner('searching','Frame the printed Grand Finale poster');
+  status.textContent='Point camera at the printed Grand Finale poster';
  };
  renderer.setAnimationLoop(()=>{
   if(generation!==trackerGeneration||!running)return;
@@ -382,7 +382,7 @@ function setup() {
     applyOrbit();
     // Lock to the invitation centre; delay the first reveal to avoid acquisition bounce.
     // No stage orbit or dynamic resizing after lock.
-    if(performerReady[index] && status.textContent.startsWith('Invitation detected')){
+    if(performerReady[index] && status.textContent.startsWith('Poster detected')){
       status.textContent='Stage ready · move sideways for a 3D view · pinch to zoom';
     }
     stage.scale.setScalar(BASE_SCALE);
@@ -403,14 +403,17 @@ function ensurePerformersLoaded(){
  return performersPromise;
 }
 // Warm just the small tracking target through browser cache, without decoding GLBs.
-fetch('./assets/finale.mind?v=eaee01ad',{priority:'high'}).then(r=>{
+fetch('./assets/grand-finale-poster.mind?v=poster-20261107',{priority:'high'}).then(r=>{
  if(!r.ok)throw new Error('Tracking target HTTP '+r.status);
  return r.arrayBuffer();
 }).catch(e=>console.warn('Invitation tracking target prefetch failed:',e));
 async function startAR(){
  if(busy||running)return;busy=true;startButton.disabled=true;message.textContent='Opening camera… allow camera access when prompted.';
  try{
-  // No duplicate blocking fetch here: MindAR uses the browser-cached target.
+  // Do not reuse the unrelated invitation image-target file.
+  const posterTarget=await fetch('./assets/grand-finale-poster.mind?v=poster-20261107',{cache:'no-cache'});
+  if(!posterTarget.ok)throw new Error('Poster AR needs assets/grand-finale-poster.mind compiled from the actual Grand Finale poster. The Explore 3D Stage option works without scanning.');
+  // Original GLB stage, actor animations, camera and recognition lifecycle preserved.
   const cam = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
   if(!window.isSecureContext || !cam) throw new Error('Camera requires localhost or HTTPS in a compatible browser.');
   console.info('Secure context:',window.isSecureContext,'Three revision:',THREE.REVISION);
@@ -436,9 +439,9 @@ async function startAR(){
   running=true;clock.start();lastFrame=clock.getElapsedTime();
   mixers.forEach(m=>m.setTime(0));
   resetPerformances();
-  if(!tracked)showScanner('searching','Align the Grand Finale invitation inside the frame');
-  else showScanner('locked','Invitation detected · stabilizing stage…');
-  status.textContent='Camera ready. Point at the Grand Finale invitation';
+  if(!tracked)showScanner('searching','Align the Grand Finale poster inside the frame');
+  else showScanner('locked','Poster detected · stabilizing stage…');
+  status.textContent='Camera ready. Point at the Grand Finale poster';
   // Models now load after the camera starts, so video startup is not blocked
   // by Draco / WebP decoding or multiple concurrent model downloads.
   // Give the camera a few live frames before downloading/decoding models.
@@ -545,7 +548,7 @@ for(const button of document.querySelectorAll('[data-act]')){
 // Play from the Start AR user gesture, so iOS Safari permits unmuted playback.
 // Audio is independent of the heavy 3D models and never blocks camera setup.
 const soundButton=document.getElementById('soundButton');
-const soundtrack=new Audio('../auditions/assets/nadanu-retro-score.m4a');
+const soundtrack=new Audio('./assets/nadanu-retro-score.m4a');
 soundtrack.preload='none'; // Delay network work until the visitor actually starts AR.
 soundtrack.loop=true;
 soundtrack.volume=.95; // Louder than the Auditions page's .72 volume.
