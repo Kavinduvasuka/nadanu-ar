@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 export function createVideoStage(
     video,
-    posterSrc = 'assets/post 10.webp',
+    posterSrc = 'assets/grand-finale-poster.png',
     providedTexture = null,
     showTarget = false
 ) {

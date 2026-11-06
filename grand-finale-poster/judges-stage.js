@@ -8,7 +8,7 @@ export const JUDGE_SCENES = [
     { start: 11, end: 15, kicker: 'WE WOULD BE HONOURED', lines: ['BY YOUR', 'PRESENCE.'], copy: ['Lohitha  075 899 9638', 'Dulsith  071 092 9324'] }
 ];
 
-export function createJudgesStage(movie, posterSrc = 'assets/judges-invitation-ar-qr.webp') {
+export function createJudgesStage(movie, posterSrc = 'assets/grand-finale-poster.png') {
     const canvas = document.createElement('canvas'); canvas.width = 1080; canvas.height = 1920;
     const ctx = canvas.getContext('2d'), texture = new THREE.CanvasTexture(canvas);
     const stage = createVideoStage(movie, posterSrc, texture, false);

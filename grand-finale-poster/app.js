@@ -4,9 +4,9 @@ import { createVideoStage } from './video-stage.js';
 import { createJudgesStage } from './judges-stage.js?v=invitation-only-3';
 const PAGE_KIND = 'auditions';
 const { ACTS, TOTAL, startOf, position } = await import(PAGE_KIND === 'judges' ? './judges-timeline.js?v=invitation-only-3' : './timeline.js');
-const TARGETS = [{ src: 'assets/grand-finale-poster.png', kind: 'auditions' }, { src: 'assets/judges-invitation.webp', kind: 'judges' }, { src: 'assets/judges-invitation-ar-qr.webp', kind: 'judges' }].filter(target => target.kind === PAGE_KIND);
+const TARGETS = [{ src: 'assets/grand-finale-poster.png', kind: 'auditions' }];
 // One .mind per experience. Judges .mind must contain both images in TARGETS order.
-const MIND_FILE = PAGE_KIND === 'judges' ? 'assets/judges.mind' : 'assets/grand-finale-poster.mind';
+const MIND_FILE = 'assets/grand-finale-poster.mind';
 const CACHE_KEY = 'nadanu-grand-finale-poster-target-v1';
 let stages = [], activeTarget = -1, activeKind = PAGE_KIND;
 import { createScanGate } from './scan-state.js';
