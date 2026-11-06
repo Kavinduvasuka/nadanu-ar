@@ -239,3 +239,135 @@ html,body{max-width:100%;overflow-x:clip}
  .poster-display.actual-invitation-display{width:min(88vw,350px);max-width:100%}
  .actual-invitation-image{height:auto;max-height:none}
 }
+
+.concert-atmosphere {
+  position: fixed; inset: 0; overflow: hidden; pointer-events: none;
+  z-index: -1; background: radial-gradient(ellipse at 50% 80%, #3b180e 0%, #160c07 58%, #0e0705 100%);
+}
+/* Finale retains its own fixed, scrollable landing surface for camera AR. */
+.light-beam {
+  position: absolute; top: -22vh; width: 38vw; height: 135vh;
+  opacity: .20; transform-origin: 50% 0%; filter: blur(14px);
+  background: linear-gradient(to bottom, #ffae584f 0%, #ff6b2b19 44%, transparent 88%);
+  clip-path: polygon(48% 0, 52% 0, 100% 100%, 0 100%);
+  animation: spotlight-sway 13s ease-in-out infinite alternate;
+}
+.beam-left { left: 3%; transform: rotate(-24deg); }
+.beam-right { right: 3%; animation-delay: -6s; animation-direction: alternate-reverse; }
+.ambient-orb { position: absolute; border-radius: 50%; filter: blur(75px); opacity: .24; animation: ambient-float 17s ease-in-out infinite alternate; }
+.orb-one { width: 420px; height: 420px; top: 12%; left: -170px; background: #ff6126; }
+.orb-two { width: 470px; height: 470px; right: -180px; bottom: 5%; background: #ad3d67; animation-delay: -8s; }
+.retro-grid {
+  position: absolute; left: -40%; right: -40%; bottom: -34%; height: 72%;
+  transform: perspective(500px) rotateX(68deg);
+  background-image: linear-gradient(#ff93441c 1px, transparent 1px), linear-gradient(90deg, #ff93441c 1px, transparent 1px);
+  background-size: 62px 62px;
+  mask-image: linear-gradient(to bottom, transparent, black 45%, transparent);
+  animation: grid-drift 18s linear infinite;
+}
+.music-sparks { position: absolute; inset: 0; opacity: .38;
+  background-image: radial-gradient(circle, #ffd08d 1px, transparent 2px), radial-gradient(circle, #ff7e3e 1px, transparent 2px);
+  background-size: 137px 179px, 193px 223px; background-position: 12px 45px, 84px 12px;
+  animation: sparks-drift 32s linear infinite;
+}
+@keyframes spotlight-sway { from { transform: rotate(-28deg); opacity: .13; } to { transform: rotate(21deg); opacity: .28; } }
+@keyframes ambient-float { from { transform: translate(0,0) scale(1); } to { transform: translate(70px,-65px) scale(1.2); } }
+@keyframes grid-drift { from { background-position: 0 0, 0 0; } to { background-position: 0 62px, 62px 0; } }
+@keyframes sparks-drift { from { background-position: 12px 45px, 84px 12px; } to { background-position: 12px -240px, 84px -320px; } }
+
+/* FOOTER — festival-style editorial layout */
+.site-footer { max-width: none; display: block; padding: 0; margin-top: 45px; border-top: 1px solid #ffb65e45;
+  background: linear-gradient(165deg, #24110de8, #120906f5 70%); font-size: 14px; letter-spacing: normal; }
+.footer-main { max-width: 1280px; margin: auto; padding: 85px 6% 70px; display: grid;
+  grid-template-columns: minmax(280px, 2.2fr) repeat(3, minmax(130px, 1fr)); gap: clamp(25px, 4vw, 70px); }
+.footer-logo { display: inline-block; font-family: Impact, 'Arial Narrow', Arial, sans-serif; font-size: 39px;
+  font-weight: 900; letter-spacing: -.025em !important; color: var(--paper) !important; text-decoration: none; }
+.footer-logo span { color: var(--orange); }
+.footer-overline { margin: 13px 0 23px; color: var(--gold); font-size: 10px; font-weight: 800; letter-spacing: 2.5px; }
+.footer-brand-column h2 { font-family: Impact, 'Arial Narrow', Arial, sans-serif; font-size: clamp(31px, 3.2vw, 50px); line-height: 1.03; margin: 0 0 20px; }
+.footer-brand-column h2 em { font-style: normal; color: var(--orange); }
+.footer-description { max-width: 420px; font-size: 13px; line-height: 1.9; color: var(--dim); }
+.footer-register { display: inline-flex; align-items: center; justify-content: space-between; gap: 26px; margin-top: 22px;
+  border-bottom: 1px solid var(--orange); padding: 0 0 10px; font-weight: 800; font-size: 11px;
+  letter-spacing: 1px !important; color: var(--paper) !important; text-decoration: none; }
+.footer-register span { color: var(--orange); }
+.footer-links-column { display: flex; flex-direction: column; align-items: flex-start; gap: 15px; }
+.footer-links-column h3 { color: var(--gold); font-size: 10px; letter-spacing: 1.8px; margin: 12px 0 14px; }
+.footer-links-column a { color: #f4dec4; font-size: 12px; line-height: 1.5; transition: color .2s, transform .2s; }
+.footer-links-column a:hover { color: var(--orange); transform: translateX(3px); }
+.footer-links-column a span { color: var(--orange); }
+.footer-links-column p { color: var(--dim); font-size: 12px; line-height: 1.8; margin: 0; }
+.footer-links-column p strong { color: var(--paper); }
+.footer-links-column .footer-social-note { color: #a68a78; font-size: 10px; line-height: 1.6; }
+.footer-bottom { max-width: 1280px; margin: auto; padding: 24px 6% 28px; border-top: 1px solid #fff2d321;
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 15px; align-items: center;
+  color: #b99e8a; font-size: 10px; letter-spacing: 1.1px; }
+.footer-bottom a { color: var(--gold); font-size: 10px; }
+@media (max-width: 1050px) { .footer-main { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .footer-brand-column { grid-column: 1 / -1; } }
+@media (max-width: 620px) { .footer-main { padding: 58px 7% 45px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 35px 20px; }
+  .footer-brand-column { grid-column: 1 / -1; } .footer-bottom { padding: 22px 7%; flex-direction: column; align-items: flex-start; }
+  .light-beam { width: 75vw; opacity: .12; } .ambient-orb { opacity: .16; } }
+@media (prefers-reduced-motion: reduce) { .light-beam, .ambient-orb, .retro-grid, .music-sparks { animation: none !important; } }
+
+
+
+/* CLASSIC NADANU BRAND / from original Auditions styles */
+body{font-family:"Audiowide",Arial,sans-serif}
+#landing{background:transparent;isolation:isolate}
+.concert-atmosphere{z-index:0}
+#landing .masthead{position:relative;z-index:2;max-width:1280px;padding:23px 5%;gap:27px;flex-wrap:nowrap}
+#landing .brand{font-family:"Audiowide",sans-serif;font-size:25px;white-space:nowrap}
+#landing .society{font-family:"Audiowide",sans-serif;font-size:10px;line-height:1.4;letter-spacing:1.5px;white-space:nowrap}
+#landing .site-nav{margin-left:auto;display:flex;align-items:center;gap:23px}
+#landing .site-nav a{text-decoration:none;color:var(--dim);font-size:11px;white-space:nowrap;transition:color .2s;font-family:"Audiowide",sans-serif}
+#landing .site-nav a:hover{color:var(--orange)}
+#landing .text-button{font-family:"Audiowide",sans-serif;background:var(--orange);color:#1e0b05;border:1px solid var(--orange);font-weight:800;font-size:12px;padding:13px 20px;border-radius:4px;white-space:nowrap}
+#landing .text-button:hover{background:#ff7e47}
+#landing .hero h1,
+#landing .classic-ar-promo h2,
+#landing .footer-brand-column h2{font-family:"Bungee",sans-serif;letter-spacing:0;font-weight:400}
+#landing .hero h1{font-size:clamp(47px,5.65vw,82px);line-height:1.07}
+#landing .classic-ar-promo{max-width:1280px;margin:38px auto 0;padding:82px 6%;text-align:center;border-top:1px solid #fff2d327}
+#landing .classic-ar-promo .eyebrow{justify-content:center}
+#landing .classic-ar-promo h2{font-size:clamp(27px,4.6vw,60px);line-height:1.13}
+#landing .classic-ar-promo h2 em{color:var(--orange);font-style:normal}
+#landing .classic-ar-promo p:not(.eyebrow){color:var(--dim);max-width:700px;line-height:1.8;margin:0 auto 22px}
+#landing .classic-ar-promo .primary{display:inline-flex;min-height:50px}
+#landing .classic-ar-promo.reveal{opacity:0;transform:translateY(42px);transition:opacity .8s ease,transform .8s ease}
+#landing .classic-ar-promo.reveal.visible{opacity:1;transform:none}
+#landing .site-footer{position:relative;z-index:1}
+#landing .site-footer .footer-main{display:grid}
+#landing .site-footer .footer-logo{font-family:"Bungee",sans-serif;font-size:34px;line-height:1.2}
+#landing .footer-links-column a{text-decoration:none}
+#landing .footer-register{text-decoration:none}
+#landing .page-footer{display:none}
+@media(max-width:1050px){
+ #landing .masthead{gap:14px}
+ #landing .society{display:none}
+ #landing .site-nav{gap:12px}
+ #landing .site-nav a{font-size:10px}
+ #landing .text-button{font-size:11px;padding:11px 14px}
+}
+@media(max-width:750px){
+ #landing .masthead{display:flex;flex-wrap:wrap;gap:10px 12px;padding:18px 5%}
+ #landing .brand{font-size:22px}
+ #landing .site-nav{order:3;width:100%;margin:3px 0 0;justify-content:space-between;gap:8px}
+ #landing .site-nav a{font-size:10px}
+ #landing .text-button{margin-left:auto}
+ #landing .footer-main{grid-template-columns:repeat(2,minmax(0,1fr));gap:35px 20px;padding:58px 7% 45px}
+ #landing .footer-brand-column{grid-column:1/-1}
+ #landing .footer-bottom{padding:22px 7%;gap:12px}
+ #landing .classic-ar-promo{padding:60px 7%}
+}
+@media(max-width:420px){
+ #landing .site-nav{gap:4px}
+ #landing .site-nav a{font-size:9px}
+ #landing .text-button{font-size:10px;padding:10px 12px}
+ #landing .classic-ar-promo{padding:42px 7%}
+ #landing .classic-ar-promo h2{font-size:clamp(25px,7vw,36px)}
+}
+@media(prefers-reduced-motion:reduce){
+ #landing .classic-ar-promo.reveal{opacity:1;transform:none;transition:none}
+}
+/* Ensure original ambient animation is visible behind the AR-landing without interfering with camera. */
