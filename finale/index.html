@@ -24,7 +24,7 @@
       <p class="intro">The spotlight is ready. The finalists are set. Be part of a grand celebration of music, dance and unforgettable talent at the <strong>Nadanu 3.0 Grand Finale.</strong></p>
       <div class="hero-actions">
         <button id="startButton" type="button" class="primary">Start invitation AR <span>↗</span></button>
-        <a class="secondary" href="./world.html">Explore 3D stage <span>▷</span></a>
+        <a class="secondary" href="./world.html?v=group-model-path-20261106">Explore 3D stage <span>▷</span></a>
       </div>
       <p class="camera-note">On your phone, allow camera access and frame the printed Grand Finale invitation. The 3D performance appears when the artwork is recognized.</p>
       <div class="invitation-note">
@@ -86,5 +86,22 @@
   <button id="resetViewButton" type="button" class="reset-actors">RESET ACTORS</button>
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
-<script type="module" src="./app.js?v=ar-button-model-fix-20261106"></script>
+<script type="module" src="./app.js?v=ar-start-fallback-20261106"></script>
+<script>
+(function(){
+ const button=document.getElementById('startButton');
+ const message=document.getElementById('message');
+ button.addEventListener('click',function(){
+  if(window.__nadanuARReady)return;
+  message.textContent='AR engine is not ready. Check your internet connection, then refresh this page in Chrome or Safari (HTTPS).';
+  message.scrollIntoView({behavior:'smooth',block:'nearest'});
+ });
+ window.addEventListener('error',function(event){
+  if(window.__nadanuARReady)return;
+  if(event.target && event.target.tagName==='SCRIPT'){
+   message.textContent='Unable to load AR script. Check your connection and refresh.';
+  }
+ },true);
+})();
+</script>
 </body></html>
