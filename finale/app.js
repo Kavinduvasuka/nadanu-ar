@@ -337,8 +337,29 @@ function setup() {
 }
 let modelErrors=[];
 // Begin loading in the background on initial page open, before START AR.
+startButton.disabled=true;
+message.textContent='Preparing 3D performances for AR…';
 const performersPromise=loadPerformers();
-fetch('./assets/finale.mind').catch(e=>console.warn('Target prefetch failed:',e));
+const targetPreload=fetch('./assets/finale.mind').then(response=>{
+ if(!response.ok)throw new Error('Invitation tracking target unavailable (HTTP '+response.status+').');
+ return response.arrayBuffer();
+}).then(buffer=>{
+ if(buffer.byteLength<100)throw new Error('Invitation tracking target is empty.');
+ return buffer.byteLength;
+}).catch(e=>{console.warn('Target prefetch failed:',e);return null;});
+Promise.all([performersPromise,targetPreload]).then(([errors,targetBytes])=>{
+ modelErrors=errors;
+ startButton.disabled=false;
+ message.textContent=errors.length
+  ? 'Some 3D models could not preload. You can still try AR.'
+  : targetBytes===null
+   ? 'Tracking target could not preload. You can still try AR.'
+   : '3D performances ready — tap Start Invitation AR.';
+}).catch(err=>{
+ console.error('AR preload error:',err);
+ startButton.disabled=false;
+ message.textContent='Preload failed. Tap Start Invitation AR to retry.';
+});
 async function startAR(){
  if(busy||running)return;busy=true;startButton.disabled=true;message.textContent='Checking invitation target and 3D models…';
  try{
