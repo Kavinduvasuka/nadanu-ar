@@ -20,6 +20,7 @@ button.active{background:#ff3d9a;color:#24001b;border-color:#ff3d9a}
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.shadowMap.enabled=true;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
@@ -46,7 +47,9 @@ for(let i=0;i<particleCount;i++){let a=Math.random()*Math.PI*2,r=Math.random()*9
 const geom=new THREE.BufferGeometry();geom.setAttribute('position',new THREE.BufferAttribute(pts,3));
 scene.add(new THREE.Points(geom,new THREE.PointsMaterial({size:.07,color:0xffd9f5,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false})));
 const acts=[new THREE.Group(),new THREE.Group(),new THREE.Group()];acts.forEach(a=>scene.add(a));
-const mixers=[];const loader=new GLTFLoader();let loaded=0;
+const mixers=[];const loader=new GLTFLoader();
+const dracoDecoder=new DRACOLoader();dracoDecoder.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');loader.setDRACOLoader(dracoDecoder);
+let loaded=0;
 const source=[{url:'./assets/solo-dancer.glb',height:2.5,width:3},{url:'./assets/singer.glb',height:2.5,width:3},{url:'./assets/group_dancers.glb',height:3,width:7}];
 source.forEach((cfg,i)=>loader.load(cfg.url,gltf=>{
 const model=gltf.scene;model.updateMatrixWorld(true);
