@@ -13,6 +13,19 @@ const stopButton = document.querySelector('#stopButton');
 const message = document.querySelector('#message');
 const arUI = document.querySelector('#arUI');
 const status = document.querySelector('#trackingStatus');
+const invitationScanner=document.getElementById('invitationScanner');
+const scannerMessage=document.getElementById('scannerMessage');
+function showScanner(state='searching',text='Frame the printed Grand Finale invitation'){
+ if(!invitationScanner)return;
+ invitationScanner.hidden=false;
+ invitationScanner.dataset.scanState=state;
+ if(scannerMessage)scannerMessage.textContent=text;
+ status.hidden=true;
+}
+function hideScanner(){
+ if(invitationScanner)invitationScanner.hidden=true;
+ status.hidden=false;
+}
 const clock = new THREE.Clock();
 const gltfLoader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
@@ -281,6 +294,7 @@ function setup() {
   stage.quaternion.copy(fixedStageTilt);
   stage.visible=false;
   root.visible=false; // Never show an old anchor pose during acquisition.
+  showScanner('locked','Invitation detected · stabilizing stage…');
   status.textContent='Invitation detected · stabilizing tracking…';
  };
  anchor.onTargetLost=()=>{
@@ -288,6 +302,7 @@ function setup() {
   tracked=false;
   stage.visible=false;
   root.visible=false;
+  if(!showInvitation)showScanner('searching','Frame the printed Grand Finale invitation');
   status.textContent='Point camera at the printed Grand Finale invitation';
  };
  renderer.setAnimationLoop(()=>{
@@ -298,6 +313,7 @@ function setup() {
   const locked=tracked && performance.now()-trackingTime>=800;
   root.visible=locked;
   stage.visible=locked && !showInvitation;
+  if(locked && !showInvitation && invitationScanner && !invitationScanner.hidden)hideScanner();
   if(locked){
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
@@ -310,6 +326,7 @@ function setup() {
     // One complete three-act showcase, followed by the formal invitation.
     if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
       showInvitation=true;
+      hideScanner();
       finaleInvitation.hidden=false;
       actBanner.hidden=true;
       status.textContent='You are cordially invited to the Nadanu 3.0 Grand Finale';
@@ -364,6 +381,7 @@ async function startAR(){
 
   // Make the camera layer available before MindAR measures its dimensions.
   arContainer.style.display='block';
+  showScanner('preparing','Opening camera…');
   if(!initialized) setup();
   message.textContent='Preparing camera… (check browser permission prompt)';
   // Start MindAR before downloading GLBs. Note: Three.js pinned to r147 for compatibility.
@@ -379,6 +397,8 @@ async function startAR(){
   mixers.forEach(m=>m.setTime(0));
   resetPerformances();
   landing.style.display='none';arUI.hidden=false;
+  if(!tracked)showScanner('searching','Align the Grand Finale invitation inside the frame');
+  else showScanner('locked','Invitation detected · stabilizing stage…');
   status.textContent='Camera ready. Point at the Grand Finale invitation';
   // Models now load after the camera starts, so video startup is not blocked
   // by Draco / WebP decoding or multiple concurrent model downloads.
@@ -402,6 +422,7 @@ async function startAR(){
    running=false;
    tracked=false;
    arContainer.style.display='none';
+   if(invitationScanner)invitationScanner.hidden=true;
    disableSound();
    await disposeARSession();
    console.info('MindAR startup did not complete. Reload before retrying; inspect the FIRST console error.');
@@ -446,6 +467,7 @@ async function stopAR(){
  running=false;
  tracked=false;
  arUI.hidden=true;
+ if(invitationScanner)invitationScanner.hidden=true;
  arContainer.style.display='none';
  landing.style.display='block';
  disableSound();
