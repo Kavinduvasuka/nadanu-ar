@@ -1,18 +1,25 @@
-# Nadanu 3.0 Grand Finale WebAR — Step 3
+# Nadanu 3.0 — Grand Finale Poster 3D AR
 
-Technologies: Three.js 0.160.0, MindAR 1.2.5, static HTML/CSS/JS. No build required.
+This is a **separate copy** of the original `finale/` 3D AR invitation experience, not the auditions website. The original `finale/`, `invitation/` and `auditions/` folders are unchanged.
 
-## First
-Copy your compiled `finale.mind` into `assets/finale.mind`. Optionally copy the exported B5 tracking image into `assets/finale-invitation.png` (for your records; the script only loads the .mind file).
+## Kept exactly from the existing finale experience
+- Three 3D GLB performers: `singer.glb`, `solo-dancer.glb`, `group_dancers.glb`
+- Three.js concert stage, lights, original 3D animation code, three-act performer sequence
+- Existing animated Solo Singing, Solo Dancing and Group Dancing string-art canvas cards
+- Original styling, background animations, responsive landing and interactive world stage
+- Separate independent copy of the soundtrack and display font
 
-## Local test
-Open this folder in VS Code and run a local server (e.g. `py -m http.server 8000`), then open `http://localhost:8000`. On a phone, use GitHub Pages HTTPS for camera access; a plain LAN HTTP URL may not enable the camera. Print the invitation or show it on another screen as a target.
+## Changed only in this copy
+- Official Grand Finale poster in `assets/grand-finale-poster.png`
+- New poster-specific wording and a 3D mouse hover effect: tilted at rest and straightens on hover
+- Old invitation photo and old `finale.mind` omitted
+- The old auditions website, audition/judges photos, and group-singing artwork are not included
 
-## Publish later
-Place these files under `/finale` in your GitHub Pages repository, maintaining the `assets` folder. The target page should be `https://kavinduvasuka.github.io/nadanu-ar/finale/` if you deploy to the repo's root Pages site.
+## REQUIRED before poster camera recognition works
+Compile **this exact poster image** as `assets/grand-finale-poster.mind` in the MindAR Image Target Compiler. Do not use `finale/assets/finale.mind` — it tracks the old invitation. The Start Poster AR button checks this file and displays an explanatory error until it exists.
 
-## Notes
-- The overlay displays animated title, ring and particles. It is not an MP4 video.
-- Text is a Three.js CanvasTexture, not editable Photoshop text.
-- This project intentionally does not include any invented finale date or venue.
-- The .mind file must be compiled using the *final printed invitation image* and is not provided.
+The **Explore 3D Stage** link is usable independently of the poster tracking target, using the original GLB performers.
+
+Event details from the supplied poster: 26 November 2026, 1:30 AM onwards, ICBT Colombo Campus Amphitheater. Verify AM/PM with event organizers before sharing the link.
+
+Local update: `git pull --ff-only origin main`.
