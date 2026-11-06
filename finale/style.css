@@ -371,3 +371,14 @@ body{font-family:"Audiowide",Arial,sans-serif}
  #landing .classic-ar-promo.reveal{opacity:1;transform:none;transition:none}
 }
 /* Ensure original ambient animation is visible behind the AR-landing without interfering with camera. */
+
+/* Match original public Nadanu site's final Eighties Comeback typography.
+   Reuse the existing repo asset, without duplicating the font or editing Auditions. */
+@font-face{
+ font-family:"Eighties Comeback";
+ src:url("../auditions/assets/fonts/EightiesComeback.otf") format("opentype");
+ font-weight:400;font-style:normal;font-display:swap;
+}
+#landing,#landing *,#landing button,#landing a{
+ font-family:"Eighties Comeback",sans-serif !important;
+}
