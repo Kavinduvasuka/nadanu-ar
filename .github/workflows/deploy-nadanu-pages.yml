@@ -35,7 +35,8 @@ jobs:
             --exclude='.git/' \
             --exclude='.github/' \
             --exclude='auditions/assets/post 10.png' \
-            --exclude='invitation/assets/post 10.png'
+            --exclude='invitation/assets/post 10.png' \
+            --exclude='finale/assets/finale-invitation.png'
           du -sh _site
       - name: Upload static website
         uses: actions/upload-pages-artifact@v4
