@@ -18,6 +18,8 @@ let stage, label, warmLight, violetLight;
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
 let selectedAct=null, musicContext=null, soundInterval=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
+const performerReady=[false,false,false],performerFailed=[false,false,false];
+const performerNames=['Solo Singing','Solo Dancing','Group Dancing'];
 const mixers = [];
 let lastFrame=0, trackingTime=0, sequenceTime=0;
 const ACT_SECONDS=8, TOTAL_ACTS=3;
@@ -236,6 +238,7 @@ async function loadPerformers() {
   const gltf=await gltfLoader.loadAsync(a.path);
   const {wrap,object}=normalizeGLB(gltf,a.height,a.x,a.z,a.maxWidth);
   performers[a.index].add(wrap);
+  performerReady[a.index]=true;
   if(gltf.animations.length){
    const mixer=new THREE.AnimationMixer(object);
    const action=mixer.clipAction(gltf.animations[0]);
@@ -245,6 +248,7 @@ async function loadPerformers() {
  }));
  return results.flatMap((r,i)=>{
   if(r.status==='fulfilled')return [];
+  performerFailed[assets[i].index]=true;
   console.error(`Failed to load ${assets[i].name}:`,r.reason);
   return [`${assets[i].name}: ${r.reason?.message||String(r.reason)}`];
  });
@@ -299,7 +303,11 @@ function setup() {
     }
     inverseTargetRotation.copy(targetRotation).invert();
     stage.quaternion.copy(inverseTargetRotation).multiply(stableRotation).multiply(fixedStageTilt);
-    if(!showInvitation&&selectedAct===null)sequenceTime+=dt;
+    // Preserve each 8-second act until its GLB has fully loaded.
+    // A slow first download must never silently skip the solo dancer.
+    const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
+    const canAdvance=performerReady[activeAutoAct]||performerFailed[activeAutoAct];
+    if(!showInvitation&&selectedAct===null&&canAdvance)sequenceTime+=dt;
     // One complete three-act showcase, followed by the formal invitation.
     if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
       showInvitation=true;
@@ -310,7 +318,12 @@ function setup() {
     const index=selectedAct===null
       ? Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS))
       : selectedAct;
-    performers.forEach((p,i)=>p.visible=!showInvitation && i===index);
+    performers.forEach((p,i)=>p.visible=!showInvitation && i===index && performerReady[i]);
+    if(!showInvitation&&!performerReady[index]){
+      status.textContent=performerFailed[index]
+        ? `${performerNames[index]} model unavailable — try refreshing the page.`
+        : `Preparing ${performerNames[index]} 3D model…`;
+    }
     if(!showInvitation)presentAct(index);
     for(const mixer of mixers)mixer.update(dt);
     label.visible=!showInvitation;
@@ -325,7 +338,9 @@ function setup() {
     // No stage orbit or dynamic resizing after lock.
     if(!stage.visible&&now-trackingTime>=.4){
       stage.visible=true;
-      status.textContent='Stage locked to invitation centre · drag actors · pinch to zoom';
+      status.textContent=performerReady[index]
+       ? 'Stage ready · drag performers · pinch to zoom'
+       : `Preparing ${performerNames[index]} 3D model…`;
     }
     stage.scale.setScalar(BASE_SCALE);
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
