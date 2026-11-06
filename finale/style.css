@@ -633,3 +633,19 @@ body{font-family:"Audiowide",Arial,sans-serif}
 .poster-display.actual-invitation-display{perspective:900px}
 .poster-display.actual-invitation-display .actual-invitation-image{transform:rotate(3deg);box-shadow:0 25px 80px #0009}
 @media(prefers-reduced-motion:reduce){.poster-display.actual-invitation-display .actual-invitation-image{transform:none!important;transition:none!important}}
+
+/* ORIGINAL NADANU ZIP NEON CATEGORY ARTWORK */
+.neon-category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.neon-category-card{position:relative;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;padding:23px 19px 26px;border:1px solid #ff8d4c5c;border-radius:15px;background:linear-gradient(150deg,#341724c9,#1a0b12e8 70%);box-shadow:inset 0 1px #ffc68e24,0 12px 30px #0004;transition:transform .25s,border-color .25s,box-shadow .25s}
+.neon-category-card:hover{transform:translateY(-6px);border-color:#ffae65;box-shadow:0 0 27px #ff6b282b}
+.category-illustration{width:100%;height:145px;display:grid;place-items:center;margin-bottom:17px;background:radial-gradient(ellipse,#ff682b20,transparent 68%);color:#ff974d}
+.category-illustration svg{height:118px;width:118px;filter:drop-shadow(0 0 8px #ff7527) drop-shadow(0 0 19px #ff6c2677)}
+.category-kicker{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:.09em;color:#ffbd7b}
+.neon-category-card h3{font-family:'Audiowide',sans-serif;font-size:clamp(15px,1.55vw,21px);line-height:1.3;margin:12px 0 8px;color:#fff0d5;text-transform:none}
+.neon-category-card p{font-size:12px;line-height:1.7;color:#c9ab9c;margin:0}
+.category-glint{position:absolute;right:17px;top:14px;color:#ffb060;text-shadow:0 0 12px #ff8b37}
+
+/* Exact ZIP art, responsive for Finale's three categories. */
+@media(max-width:850px){.neon-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.neon-category-grid{grid-template-columns:1fr}.neon-category-card{padding:20px 16px}.category-illustration{height:135px}.category-illustration svg{width:110px;height:110px}}
+@media(prefers-reduced-motion:no-preference){.neon-category-card:hover .category-illustration svg{transform:scale(1.1) rotate(-3deg);filter:drop-shadow(0 0 12px #ff7527) drop-shadow(0 0 28px #ff6c26b0)}.neon-category-card .category-illustration svg{transition:transform .35s ease,filter .35s ease}}
