@@ -21,7 +21,7 @@ gltfLoader.setDRACOLoader(dracoLoader);
 let mindarThree, initialized = false, running = false, busy = false, tracked = false;
 let stage, warmLight, violetLight;
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
-let selectedAct=null, musicContext=null, soundInterval=null, soundEnabled=false;
+let selectedAct=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
 const performerReady=[false,false,false],performerFailed=[false,false,false];
 const performerNames=['Solo Singing','Solo Dancing','Group Dancing'];
@@ -430,43 +430,47 @@ for(const button of document.querySelectorAll('[data-act]')){
   document.querySelectorAll('[data-act]').forEach(b=>b.classList.toggle('active',b===button));
  });
 }
-// Original in-browser instrumental beat, enabled from the START AR tap.
-// iOS/Safari and Chrome require an explicit user gesture to unlock audio.
-function tone(frequency,duration=.14,volume=.035,type='triangle'){
- if(!musicContext||musicContext.state!=='running')return;
- const now=musicContext.currentTime,o=musicContext.createOscillator(),g=musicContext.createGain();
- o.type=type;o.frequency.value=frequency;g.gain.setValueAtTime(volume,now);g.gain.exponentialRampToValueAtTime(.001,now+duration);
- o.connect(g);g.connect(musicContext.destination);o.start(now);o.stop(now+duration);
-}
+// NADANU ORIGINAL SOUNDTRACK (the same retro score already used on Auditions).
+// Play from the Start AR user gesture, so iOS Safari permits unmuted playback.
+// Audio is independent of the heavy 3D models and never blocks camera setup.
 const soundButton=document.getElementById('soundButton');
+const soundtrack=new Audio('../auditions/assets/nadanu-retro-score.m4a');
+soundtrack.preload='none'; // Delay network work until the visitor actually starts AR.
+soundtrack.loop=true;
+soundtrack.volume=.95; // Louder than the Auditions page's .72 volume.
+soundtrack.playsInline=true;
+function updateSoundButton(){
+ if(!soundButton)return;
+ soundButton.textContent=soundEnabled?'SOUND ON':'SOUND OFF';
+ soundButton.setAttribute('aria-pressed',String(soundEnabled));
+}
 function disableSound(){
- if(soundInterval!==null){clearInterval(soundInterval);soundInterval=null;}
  soundEnabled=false;
- if(soundButton)soundButton.textContent='SOUND OFF';
+ soundtrack.pause();
+ try{soundtrack.currentTime=0;}catch(_){}
+ updateSoundButton();
 }
-async function enableSound(){
- if(soundEnabled)return;
- const AudioCtx=window.AudioContext||window.webkitAudioContext;
- if(!AudioCtx){if(soundButton)soundButton.textContent='SOUND UNAVAILABLE';return;}
- musicContext??=new AudioCtx();
- // Invoked synchronously within START click; the resume call is made prior to await.
- await musicContext.resume();
- if(soundEnabled)return;
+function enableSound(){
+ if(soundEnabled)return Promise.resolve();
  soundEnabled=true;
- if(soundButton)soundButton.textContent='SOUND ON';
- let step=0;
- soundInterval=setInterval(()=>{
-  if(!running||!tracked)return;
-  const bass=[110,110,146.83,98][Math.floor(step/8)%4];
-  if(step%4===0)tone(bass,.19,.055,'sine');
-  tone([329.63,392,440,523.25][step%4],.12,.018,'triangle');
-  step++;
- },240);
+ updateSoundButton();
+ // Call play() synchronously within the click handler, before any await.
+ return soundtrack.play().catch(err=>{
+  soundEnabled=false;
+  updateSoundButton();
+  console.warn('Soundtrack could not play:',err);
+ });
 }
-if(soundButton)soundButton.addEventListener('click',()=>{
+soundButton?.addEventListener('click',()=>{
  if(soundEnabled)disableSound();
- else enableSound().catch(e=>console.warn('Audio could not start:',e));
+ else enableSound();
 });
+soundtrack.addEventListener('error',()=>{
+ console.warn('Nadanu soundtrack could not load; check the audio asset.');
+ soundEnabled=false;
+ updateSoundButton();
+});
+updateSoundButton();
 
 // AR module initialized: lets the landing page distinguish loading errors from camera issues.
 window.__nadanuARReady = true;
