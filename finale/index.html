@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style.css?v=hide-frozen-ar-on-exit-20261106">
+<link rel="stylesheet" href="./style.css?v=invitation-scanner-ui-20261106">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 <!-- Solo Dance optimized animated GLB deployed: Draco + WebP, 2026-11-06 -->
 </head>
@@ -121,6 +121,21 @@
 <div id="arContainer"></div>
 <div id="arUI" hidden>
   <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><div class="topbar-actions"><button id="resetViewButton" type="button">RESET ACTORS</button><button id="stopButton" type="button">EXIT AR</button></div></div>
+  <div id="invitationScanner" class="invitation-scanner" data-scan-state="preparing" aria-label="Grand Finale invitation scanner">
+    <p class="scan-eyebrow"><span aria-hidden="true"></span> NADANU / INVITATION RECOGNITION</p>
+    <div class="scan-mode">INVITATION AR</div>
+    <div class="scan-viewfinder" aria-hidden="true">
+      <div class="scan-grid"></div>
+      <span class="scan-corner-id scan-corner-one">01</span>
+      <span class="scan-corner-id scan-corner-two">02</span>
+      <span class="scan-check">✓</span>
+      <i></i><i></i><i></i><i></i>
+      <div class="scan-line"></div>
+    </div>
+    <p class="scan-heading"><span class="scan-search-label">FRAME YOUR INVITATION</span><span class="scan-lock-label">INVITATION DETECTED</span></p>
+    <p id="scannerMessage" class="scan-message" role="status" aria-live="polite">Opening camera…</p>
+    <div class="scan-steps" aria-hidden="true"><span>CAMERA</span><i></i><span>INVITATION</span><i></i><span>SHOWTIME</span></div>
+  </div>
   <div id="actBanner" class="act-banner" aria-live="polite">
     <span class="act-banner-kicker">NADANU 3.0 · LIVE ON STAGE</span>
     <strong id="actBannerTitle">SOLO SINGING</strong>
@@ -135,7 +150,7 @@
   <div class="act-controls"><button id="soundButton">SOUND OFF</button></div>
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
-<script type="module" src="./app.js?v=stable-tracking-restart-20261106"></script>
+<script type="module" src="./app.js?v=invitation-scanner-ui-20261106"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
