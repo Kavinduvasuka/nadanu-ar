@@ -450,3 +450,27 @@ body{font-family:"Audiowide",Arial,sans-serif}
  #landing .masthead .text-button{margin-left:auto}
  #landing .masthead .site-nav{order:4;width:100%}
 }
+
+
+/* AR top controls in a single row; accessible on narrow phones. */
+#arUI .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;z-index:7}
+#arUI .topbar>strong{min-width:0;flex:1 1 auto;max-width:none;font-size:clamp(10px,2.5vw,15px);line-height:1.25}
+#arUI .topbar-actions{display:flex;align-items:center;justify-content:flex-end;flex:0 0 auto;gap:7px}
+#arUI .topbar-actions button{position:static;min-height:40px;padding:9px 11px;font-size:10px;white-space:nowrap;line-height:1.2}
+#arUI #stopButton{border-color:#ff632588;color:#fff2d3}
+#arUI .finale-invitation .finale-invitation-actions{display:flex;justify-content:center;align-items:stretch;gap:8px;flex-wrap:wrap}
+#arUI .finale-invitation .finale-invitation-actions button{flex:1 1 155px;min-width:0;min-height:44px;white-space:normal;font-size:10px;line-height:1.35}
+#arUI #backToWebsiteButton{background:#ff6325;color:#210b05;border-color:#ff6325}
+@media(max-width:600px){
+ #arUI .topbar{padding:calc(10px + env(safe-area-inset-top)) 10px 10px;gap:7px}
+ #arUI .topbar>strong{font-size:clamp(9px,2.5vw,11px);max-width:none}
+ #arUI .topbar-actions{gap:5px}
+ #arUI .topbar-actions button{font-size:9px;min-height:40px;padding:8px 7px}
+ #arUI .act-banner{top:calc(88px + env(safe-area-inset-top))}
+ #arUI .finale-invitation .finale-invitation-actions{padding:10px 8px;gap:7px}
+}
+@media(max-width:370px){
+ #arUI .topbar>strong{font-size:9px}
+ #arUI .topbar-actions button{font-size:8px;padding:7px 6px}
+ #arUI .act-banner{top:calc(91px + env(safe-area-inset-top))}
+}
