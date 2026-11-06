@@ -20,10 +20,12 @@ function showScanner(state='searching',text='Frame the printed Grand Finale invi
  invitationScanner.hidden=false;
  invitationScanner.dataset.scanState=state;
  if(scannerMessage)scannerMessage.textContent=text;
+ if(actBanner)actBanner.hidden=true;
  status.hidden=true;
 }
 function hideScanner(){
  if(invitationScanner)invitationScanner.hidden=true;
+ if(actBanner)actBanner.hidden=showInvitation;
  status.hidden=false;
 }
 const clock = new THREE.Clock();
