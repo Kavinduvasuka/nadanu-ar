@@ -27,10 +27,24 @@ const performerNames=['Solo Singing','Solo Dancing','Group Dancing'];
 const mixers = [];
 let lastFrame=0, trackingTime=0, sequenceTime=0;
 const ACT_SECONDS=8, TOTAL_ACTS=3;
+const actNames=['SOLO SINGING','SOLO DANCING','GROUP DANCING'];
+const actBanner=document.getElementById('actBanner');
+const actBannerTitle=document.getElementById('actBannerTitle');
+const actBannerCount=document.getElementById('actBannerCount');
+let lastPresentedAct=-1;
+function presentAct(index){
+ if(lastPresentedAct===index)return;
+ actBannerTitle.textContent=actNames[index];
+ actBannerCount.textContent='ACT 0'+(index+1)+' / 03';
+ lastPresentedAct=index;
+}
 const finaleInvitation=document.getElementById('finaleInvitation');
 const replayActsButton=document.getElementById('replayActsButton');
 let showInvitation=false;
 function resetPerformances(){
+ lastPresentedAct=-1;
+ actBanner.hidden=false;
+ presentAct(0);
  sequenceTime=0;
  showInvitation=false;
  if(finaleInvitation)finaleInvitation.hidden=true;
@@ -275,11 +289,13 @@ function setup() {
     if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
       showInvitation=true;
       finaleInvitation.hidden=false;
+      actBanner.hidden=true;
       status.textContent='You are cordially invited to the Nadanu 3.0 Grand Finale';
     }
     const index=selectedAct===null
       ? Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS))
       : selectedAct;
+    if(!showInvitation)presentAct(index);
     performers.forEach((p,i)=>p.visible=!showInvitation && i===index && performerReady[i]);
     if(!showInvitation&&!performerReady[index]){
       status.textContent=performerFailed[index]
