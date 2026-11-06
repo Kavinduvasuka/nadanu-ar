@@ -19,6 +19,7 @@ const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
 gltfLoader.setDRACOLoader(dracoLoader);
 let mindarThree, initialized = false, running = false, busy = false, tracked = false;
+let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
 let stage, warmLight, violetLight;
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
 let selectedAct=null, soundEnabled=false;
@@ -67,6 +68,8 @@ function applyOrbit(){
  });
 }
 function bindOrbitControls(){
+ if(orbitControlsBound)return;
+ orbitControlsBound=true;
  const surface=document.querySelector('#arContainer');
  surface.style.touchAction='none';
  surface.addEventListener('pointerdown',e=>{
@@ -253,8 +256,10 @@ async function loadPerformers() {
 function setup() {
  mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'yes',uiScanning:'no',uiError:'yes'});
  const {scene,renderer,camera}=mindarThree;
+ activeRenderer=renderer;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
  const anchor=mindarThree.addAnchor(0),root=anchor.group;
+ activeAnchor=anchor;activeRoot=root;
  scene.add(new THREE.HemisphereLight(0xffffff,0x34132a,2.8));
  warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
@@ -357,6 +362,9 @@ async function startAR(){
       new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Camera start timed out after 25 seconds. Close other camera apps, check the browser console, and refresh.')),25000);})
     ]);
   } finally { clearTimeout(timer); }
+  tracked=false;
+  if(activeRoot)activeRoot.visible=false;
+  if(stage)stage.visible=false;
   running=true;clock.start();lastFrame=clock.getElapsedTime();
   resetPerformances();
   landing.style.display='none';arUI.hidden=false;
@@ -382,32 +390,50 @@ async function startAR(){
    tracked=false;
    arContainer.style.display='none';
    disableSound();
+   await disposeARSession();
    console.info('MindAR startup did not complete. Reload before retrying; inspect the FIRST console error.');
  }
  finally{busy=false;startButton.disabled=false;}
 }
+// Rebuild the MindAR controller after exit: a reused iOS camera tracker can
+// leave its old anchor transform visible even when the invitation is absent.
+async function disposeARSession(){
+ const instance=mindarThree,renderer=activeRenderer,anchor=activeAnchor,root=activeRoot;
+ if(anchor){anchor.onTargetFound=null;anchor.onTargetLost=null;}
+ if(root)root.visible=false;
+ if(stage)stage.visible=false;
+ try{
+  if(instance)await instance.stop();
+ }catch(err){
+  console.warn('MindAR shutdown warning:',err);
+ }finally{
+  if(renderer){
+   try{renderer.setAnimationLoop(null);}catch(_){}
+   try{renderer.dispose();}catch(_){}
+  }
+  arContainer.replaceChildren();
+  arContainer.style.display='none';
+  mindarThree=null;activeRenderer=null;activeAnchor=null;activeRoot=null;
+  initialized=false;tracked=false;
+  orbit.pointers.clear();orbit.distance=0;orbit.zoom=1;
+  applyOrbit();
+  clock.stop();lastFrame=0;trackingTime=0;
+ }
+}
 async function stopAR(){
  if(busy||!running)return;
  busy=true;
- // Hide the WebGL canvas and camera immediately rather than exposing a frozen
- // final frame behind the partly transparent landing-page design.
  running=false;
  tracked=false;
- arContainer.style.display='none';
  arUI.hidden=true;
+ arContainer.style.display='none';
  landing.style.display='block';
  disableSound();
  resetPerformances();
+ selectedAct=null;
  message.textContent='';
- try{
-   await mindarThree.stop();
- }catch(e){
-   console.error('AR camera shutdown issue:',e);
-   message.textContent='Camera may still be releasing. If it remains active, refresh the page.';
- }finally{
-   arContainer.style.display='none';
-   busy=false;
- }
+ try{await disposeARSession();}
+ finally{busy=false;}
 }
 startButton.addEventListener('click',()=>{
  // Must unlock Web Audio in the direct tap gesture, before camera and network awaits.
