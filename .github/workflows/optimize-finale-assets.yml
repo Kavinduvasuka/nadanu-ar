@@ -1,0 +1,119 @@
+name: Optimize Nadanu Website Assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/optimize-finale-assets.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nadanu-asset-optimization
+  cancel-in-progress: false
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install model and image optimizer
+        run: |
+          npm install --global @gltf-transform/cli@4.5.1
+          python3 -m pip install --user Pillow
+      - name: Produce compact invitation art
+        run: |
+          python3 - <<'PY'
+          from PIL import Image,ImageOps
+          import os
+          src='finale/assets/finale-invitation.png'
+          dst='finale/assets/finale-invitation.webp'
+          with Image.open(src) as im:
+              im=ImageOps.exif_transpose(im)
+              im.thumbnail((1800,2500),Image.Resampling.LANCZOS)
+              im.save(dst,'WEBP',quality=85,method=6)
+          print('Invitation image:',os.path.getsize(src),'->',os.path.getsize(dst))
+          assert os.path.getsize(dst)<os.path.getsize(src)*.6
+          PY
+      - name: Optimize remaining Finale 3D models
+        run: |
+          python3 - <<'PY'
+          import json,struct,subprocess,os
+          def metadata(p):
+              with open(p,'rb') as f:
+                  header=f.read(20)
+                  magic,v,sz,jsz,typ=struct.unpack('<IIIII',header)
+                  assert magic==0x46546c67 and v==2 and typ==0x4e4f534a
+                  data=json.loads(f.read(jsz))
+                  return len(data.get('animations',[])),len(data.get('meshes',[]))
+          for name in ('singer.glb','group_dancers.glb'):
+              src='finale/assets/'+name
+              tmp='/tmp/'+name
+              before=os.path.getsize(src)
+              animations,meshes=metadata(src)
+              args=['gltf-transform','optimize',src,tmp,'--compress','draco','--texture-compress','webp','--texture-size','768','--simplify','true','--simplify-ratio','0.8']
+              try:
+                  subprocess.run(args,check=True,timeout=420)
+                  after=os.path.getsize(tmp)
+                  new_animations,new_meshes=metadata(tmp)
+                  assert new_animations>=animations and new_meshes>0
+                  if after<before*.90:
+                      import shutil
+                      shutil.copy2(tmp,src)
+                      print('Optimized',name,before,'->',after,'animations:',animations)
+                  else:
+                      print('Retained original',name,before,'candidate',after)
+              except Exception as e:
+                  print('Retaining original model',name,str(e))
+          PY
+      - name: Compress web video assets while retaining compatible MP4 and audio
+        run: |
+          python3 - <<'PY'
+          import os,subprocess
+          for folder in ('auditions/assets','invitation/assets'):
+              for name in os.listdir(folder):
+                  if not name.lower().endswith('.mp4'):continue
+                  src=os.path.join(folder,name)
+                  dst='/tmp/optimized-'+folder.split('/')[0]+'-'+name
+                  before=os.path.getsize(src)
+                  cmd=['ffmpeg','-hide_banner','-loglevel','error','-y','-i',src,'-map','0:v:0','-map','0:a?','-vf',"scale='min(1280,iw)':-2",' -c:v']
+                  cmd=[x for x in cmd if x!=' -c:v']+['-c:v','libx264','-preset','medium','-crf','28','-pix_fmt','yuv420p','-c:a','aac','-b:a','96k','-movflags','+faststart',dst]
+                  try:
+                      subprocess.run(cmd,check=True,timeout=180)
+                      after=os.path.getsize(dst)
+                      def duration(p):
+                          x=subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',p],text=True)
+                          return float(x.strip())
+                      if after<before*.85 and abs(duration(src)-duration(dst))<.3:
+                          import shutil
+                          shutil.copy2(dst,src)
+                          print('Compressed video',src,before,'->',after)
+                      else:print('Kept video',src,before,'candidate',after)
+                  except Exception as e:print('Kept original video',src,str(e))
+          PY
+      - name: Use optimized web image on Finale page
+        run: |
+          python3 - <<'PY'
+          p='finale/index.html'
+          s=open(p,encoding='utf-8').read()
+          s=s.replace('./assets/finale-invitation.png','./assets/finale-invitation.webp')
+          s=s.replace('style.css?v=nadanu-star-header-20261106','style.css?v=optimized-assets-20261106')
+          open(p,'w',encoding='utf-8').write(s)
+          PY
+      - name: Commit only successfully optimized assets
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add finale/index.html finale/assets/finale-invitation.webp finale/assets/singer.glb finale/assets/group_dancers.glb auditions/assets/*.mp4 invitation/assets/*.mp4
+          if ! git diff --cached --quiet; then
+            git commit -m 'Compress Nadanu invitation image, performance GLBs, and show videos'
+            git push origin HEAD:main
+          fi
