@@ -120,5 +120,6 @@ jobs:
           git add finale/index.html finale/assets/finale-invitation.webp finale/assets/singer.glb finale/assets/group_dancers.glb auditions/assets/*.mp4 invitation/assets/*.mp4
           if ! git diff --cached --quiet; then
             git commit -m 'Compress Nadanu invitation image, performance GLBs, and show videos'
+            git pull --rebase origin main
             git push origin HEAD:main
           fi
