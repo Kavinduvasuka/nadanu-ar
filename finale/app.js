@@ -7,6 +7,7 @@ import { MindARThree } from 'mindar-image-three';
 // Animations: singer.glb and solo-dancer.glb have embedded animation clips.
 // group_dancers.glb is a STATIC mesh; it moves as a whole, not as rigged individuals.
 const landing = document.querySelector('#landing');
+const arContainer = document.querySelector('#arContainer');
 const startButton = document.querySelector('#startButton');
 const stopButton = document.querySelector('#stopButton');
 const message = document.querySelector('#message');
@@ -275,6 +276,7 @@ function setup() {
   status.textContent='Point your camera at the printed Grand Finale invitation';
  };
  renderer.setAnimationLoop(()=>{
+  if(!running)return; // Do not render a stale 3D stage after leaving AR.
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
   if(running&&tracked){
     // Keep local stage orientation constant while MindAR tracks the invitation.
@@ -352,6 +354,8 @@ async function startAR(){
   if(!window.isSecureContext || !cam) throw new Error('Camera requires localhost or HTTPS in a compatible browser.');
   console.info('Secure context:',window.isSecureContext,'Three revision:',THREE.REVISION);
 
+  // Make the camera layer available before MindAR measures its dimensions.
+  arContainer.style.display='block';
   if(!initialized) setup();
   message.textContent='Preparing camera… (check browser permission prompt)';
   // Start MindAR before downloading GLBs. Note: Three.js pinned to r147 for compatibility.
@@ -383,16 +387,34 @@ async function startAR(){
    // Do not stop an AR session that never reached the running state.
    running=false;
    tracked=false;
+   arContainer.style.display='none';
    disableSound();
    console.info('MindAR startup did not complete. Reload before retrying; inspect the FIRST console error.');
  }
  finally{busy=false;startButton.disabled=false;}
 }
 async function stopAR(){
- if(busy||!running)return;busy=true;
- try{await mindarThree.stop();running=false;tracked=false;disableSound();resetPerformances();arUI.hidden=true;landing.style.display='grid';message.textContent='';}
- catch(e){console.error(e);status.textContent='Unable to stop camera. Refresh the page.';}
- finally{busy=false;}
+ if(busy||!running)return;
+ busy=true;
+ // Hide the WebGL canvas and camera immediately rather than exposing a frozen
+ // final frame behind the partly transparent landing-page design.
+ running=false;
+ tracked=false;
+ arContainer.style.display='none';
+ arUI.hidden=true;
+ landing.style.display='block';
+ disableSound();
+ resetPerformances();
+ message.textContent='';
+ try{
+   await mindarThree.stop();
+ }catch(e){
+   console.error('AR camera shutdown issue:',e);
+   message.textContent='Camera may still be releasing. If it remains active, refresh the page.';
+ }finally{
+   arContainer.style.display='none';
+   busy=false;
+ }
 }
 startButton.addEventListener('click',()=>{
  // Must unlock Web Audio in the direct tap gesture, before camera and network awaits.
