@@ -277,7 +277,7 @@ function setup() {
  anchor.onTargetFound=()=>{
   if(generation!==trackerGeneration)return; // Ignore callbacks from disposed camera.
   tracked=true;
-  trackingTime=clock.getElapsedTime();
+  trackingTime=performance.now();
   stage.quaternion.copy(fixedStageTilt);
   stage.visible=false;
   root.visible=false; // Never show an old anchor pose during acquisition.
@@ -295,7 +295,7 @@ function setup() {
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
   // MindAR can retain an old anchor matrix temporarily on iOS. Hide both the
   // complete stage and its lights until NEW invitation tracking has stabilized.
-  const locked=tracked && now-trackingTime>=.8;
+  const locked=tracked && performance.now()-trackingTime>=800;
   root.visible=locked;
   stage.visible=locked && !showInvitation;
   if(locked){
