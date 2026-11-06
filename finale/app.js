@@ -18,7 +18,7 @@ const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
 gltfLoader.setDRACOLoader(dracoLoader);
 let mindarThree, initialized = false, running = false, busy = false, tracked = false;
-let stage, label, warmLight, violetLight;
+let stage, warmLight, violetLight;
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
 let selectedAct=null, musicContext=null, soundInterval=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
@@ -268,7 +268,6 @@ function setup() {
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
  createStage(root);
  bindOrbitControls();
- label=textMesh(['SOLO SINGING'],.77,.16,0,.62,.10,67);root.add(label);
  root.visible=false;
  anchor.onTargetFound=()=>{
   tracked=true;
@@ -330,12 +329,6 @@ function setup() {
     }
     if(!showInvitation)presentAct(index);
     for(const mixer of mixers)mixer.update(dt);
-    label.visible=!showInvitation;
-    if(label.userData.index!==index){
-      label.material.map.dispose();
-      label.material.map=panelTexture([['SOLO SINGING','SOLO DANCING','GROUP DANCING'][index]],66);
-      label.material.needsUpdate=true;label.userData.index=index;
-    }
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
     applyOrbit();
     // Lock to the invitation centre; delay the first reveal to avoid acquisition bounce.
