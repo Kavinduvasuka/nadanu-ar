@@ -546,3 +546,52 @@ body{font-family:"Audiowide",Arial,sans-serif}
  #arUI .scan-message{padding:6px 10px;font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){#arUI .scan-line,#arUI .scan-eyebrow>span{animation:none}}
+
+
+/* Cinematic, lightweight invitation confirmation — visible over the live camera.
+   Hidden until MindAR confirms a NEW tracked invitation. */
+#arUI .recognition-intro[hidden]{display:none!important}
+#arUI .recognition-intro{
+ position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;
+ overflow:hidden;pointer-events:none;padding:calc(85px + env(safe-area-inset-top)) 16px calc(90px + env(safe-area-inset-bottom));
+ background:radial-gradient(ellipse at center,#100a15c9 0%,#120609ad 58%,#0a050480 100%);
+ animation:recognition-backdrop .4s ease-out both;
+}
+#arUI .recognition-intro-glow{position:absolute;left:50%;top:49%;width:min(90vw,420px);height:340px;
+ transform:translate(-50%,-50%);background:radial-gradient(ellipse,#ff76253b,transparent 67%);
+ filter:blur(20px);animation:recognition-aura 2.6s ease-in-out infinite alternate}
+#arUI .recognition-intro-card{
+ position:relative;width:min(90vw,370px);max-height:100%;display:flex;align-items:center;flex-direction:column;
+ justify-content:center;gap:12px;padding:27px 18px;border:1px solid #ffac6652;border-radius:18px;
+ background:linear-gradient(145deg,#260f1cef,#1b0a12ed 61%,#2b120feb);
+ box-shadow:0 22px 70px #080407b5,inset 0 0 36px #ef712515;
+ text-align:center;animation:recognition-card-in .6s cubic-bezier(.2,.75,.2,1) both;
+}
+#arUI .recognition-intro-kicker{font:800 9px/1.4 Arial,sans-serif;letter-spacing:2.3px;color:#ffc889}
+#arUI .recognition-intro-logo{width:min(58vw,210px);height:auto;max-height:24dvh;object-fit:contain;
+ filter:drop-shadow(0 0 18px #fd7e42a8);animation:recognition-logo-in .7s .1s ease-out both}
+#arUI .recognition-intro-divider{width:60px;height:2px;background:linear-gradient(90deg,transparent,#ffb162,transparent)}
+#arUI .recognition-intro-check{display:inline-flex;gap:9px;align-items:center;color:#ffdaa4;
+ font:800 10px/1.4 Arial,sans-serif;letter-spacing:1.5px}
+#arUI .recognition-intro-check span{display:grid;place-items:center;width:24px;height:24px;
+ border:1px solid #ffca7c80;border-radius:50%;background:#f88a232e;color:#ffe5af;font-size:15px}
+#arUI .recognition-intro-title{font:900 clamp(17px,4.4vw,23px)/1.2 Arial,sans-serif;
+ letter-spacing:1.3px;color:#fff4df;text-shadow:0 0 16px #ff963444}
+#arUI .recognition-intro-subtitle{font:500 12px/1.4 Arial,sans-serif;letter-spacing:1px;color:#f3bc88}
+#arUI .recognition-intro-progress{width:min(68vw,230px);height:3px;border-radius:5px;
+ background:#f4ad4b38;overflow:hidden;margin-top:6px}
+#arUI .recognition-intro-progress span{display:block;width:100%;height:100%;background:linear-gradient(90deg,#ff6325,#ffc46d);
+ transform-origin:left;animation:recognition-progress 2.7s linear forwards}
+#arUI .recognition-intro-next{font:700 9px/1.5 Arial,sans-serif;letter-spacing:1.5px;color:#ffe0b6}
+@keyframes recognition-backdrop{from{opacity:0}to{opacity:1}}
+@keyframes recognition-card-in{from{opacity:0;transform:translateY(22px) scale(.92)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes recognition-logo-in{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+@keyframes recognition-aura{from{opacity:.55;transform:translate(-50%,-50%) scale(.85)}to{opacity:1;transform:translate(-50%,-50%) scale(1.15)}}
+@keyframes recognition-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(max-height:640px){#arUI .recognition-intro-card{gap:7px;padding:14px}
+ #arUI .recognition-intro-logo{max-height:17dvh;width:min(48vw,170px)}
+ #arUI .recognition-intro-title{font-size:15px}}
+@media(prefers-reduced-motion:reduce){
+ #arUI .recognition-intro,#arUI .recognition-intro-card,#arUI .recognition-intro-logo,
+ #arUI .recognition-intro-glow{animation:none}
+}
