@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style.css?v=optimized-assets-20261106">
+<link rel="stylesheet" href="./style.css?v=ar-topbar-exit-back-20261106">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 <!-- Solo Dance optimized animated GLB deployed: Draco + WebP, 2026-11-06 -->
 </head>
@@ -120,7 +120,7 @@
 </main>
 <div id="arContainer"></div>
 <div id="arUI" hidden>
-  <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><button id="stopButton" type="button">EXIT AR</button></div>
+  <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><div class="topbar-actions"><button id="resetViewButton" type="button">RESET ACTORS</button><button id="stopButton" type="button">EXIT AR</button></div></div>
   <div id="actBanner" class="act-banner" aria-live="polite">
     <span class="act-banner-kicker">NADANU 3.0 · LIVE ON STAGE</span>
     <strong id="actBannerTitle">SOLO SINGING</strong>
@@ -129,14 +129,13 @@
   <div id="finaleInvitation" class="finale-invitation" hidden role="region" aria-label="Grand Finale Invitation">
     <div class="finale-invitation-card finale-poster-card">
       <img class="finale-poster-image" src="./assets/finale-invitation.webp" alt="Nadanu 3.0 Grand Finale invitation poster" loading="eager" decoding="async">
-      <div class="finale-invitation-actions"><button type="button" id="replayActsButton">↻ WATCH PERFORMANCES AGAIN</button></div>
+      <div class="finale-invitation-actions"><button type="button" id="replayActsButton">↻ WATCH PERFORMANCES AGAIN</button><button type="button" id="backToWebsiteButton">← BACK TO WEBSITE</button></div>
     </div>
   </div>
   <div class="act-controls"><button id="soundButton">SOUND OFF</button></div>
-  <button id="resetViewButton" type="button" class="reset-actors">RESET ACTORS</button>
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
-<script type="module" src="./app.js?v=upper-act-title-restored-20261106"></script>
+<script type="module" src="./app.js?v=ar-topbar-exit-back-20261106"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
