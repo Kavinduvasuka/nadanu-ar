@@ -382,3 +382,25 @@ body{font-family:"Audiowide",Arial,sans-serif}
 #landing,#landing *,#landing button,#landing a{
  font-family:"Eighties Comeback",sans-serif !important;
 }
+
+
+/* Actual Nadanu brand image in Finale header */
+#landing .masthead .header-logo-link{
+  display:inline-flex;
+  align-items:center;
+  flex:0 0 auto;
+  line-height:0;
+}
+#landing .masthead .header-logo{
+  display:block;
+  width:clamp(122px,15vw,174px);
+  height:66px;
+  max-width:100%;
+  object-fit:contain;
+}
+@media(max-width:750px){
+  #landing .masthead .header-logo{width:140px;height:56px}
+}
+@media(max-width:420px){
+  #landing .masthead .header-logo{width:118px;height:48px}
+}
