@@ -38,6 +38,9 @@ jobs:
             --exclude='invitation/assets/post 10.png' \
             --exclude='finale/assets/finale-invitation.png'
           du -sh _site
+      # Each new push creates a fresh workflow run with exactly one Pages artifact.
+      # Avoid re-running failed jobs in a completed run: GitHub can retain the
+      # previous github-pages artifact and deploy-pages rejects duplicates.
       - name: Upload static website
         uses: actions/upload-pages-artifact@v4
         with:
