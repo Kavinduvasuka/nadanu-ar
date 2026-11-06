@@ -595,3 +595,36 @@ body{font-family:"Audiowide",Arial,sans-serif}
  #arUI .recognition-intro,#arUI .recognition-intro-card,#arUI .recognition-intro-logo,
  #arUI .recognition-intro-glow{animation:none}
 }
+
+
+/* ZIP-inspired live retro lettering, interactive string art and cursor sparks. */
+#landing{--mouse-x:-200px;--mouse-y:-200px}
+#landing .landing-spark-layer{position:fixed;inset:0;width:100%;height:100%;z-index:20;pointer-events:none}
+.animated-finale-hero .animated-hero-title{perspective:600px}
+.animated-finale-hero .animated-hero-title>span{display:inline-block;animation:finale-type-up .85s cubic-bezier(.2,.7,.2,1) both}
+.animated-finale-hero .animated-hero-title>span:nth-of-type(2){animation-delay:.16s}
+.animated-finale-hero .animated-hero-title em{display:inline-block;animation:finale-type-up .95s .3s cubic-bezier(.2,.7,.2,1) both,finale-letter-glow 4s 1.3s ease-in-out infinite}
+.animated-finale-hero .eyebrow{animation:finale-type-up .7s .1s both}
+.animated-finale-hero .actual-invitation-image{transition:transform .45s cubic-bezier(.2,.7,.2,1),filter .45s;will-change:transform}
+@media(hover:hover){.animated-finale-hero .actual-invitation-display:hover .actual-invitation-image{transform:translateY(-6px) rotate(1.1deg) scale(1.02);filter:drop-shadow(0 0 24px #ff833866)}}
+@keyframes finale-type-up{from{opacity:0;transform:translate3d(0,33px,0) rotateX(13deg);filter:blur(4px)}to{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}}
+@keyframes finale-letter-glow{0%,100%{text-shadow:0 0 2px #ff702566}50%{text-shadow:0 0 19px #ff7b44a0,0 0 38px #ff672245}}
+#landing .performance-art-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+#landing .performance-art-card{border:1px solid #ef9a513f;border-radius:10px;overflow:hidden;position:relative;min-width:0;background:linear-gradient(145deg,#2b1219db,#180b0bef);box-shadow:inset 0 0 30px #f8791808;transform:translateY(26px);opacity:0;transition:opacity .75s,transform .75s,border-color .3s,box-shadow .3s}
+#landing .performance-art-card.is-visible{opacity:1;transform:translateY(0)}
+#landing .performance-art-card:nth-child(2){transition-delay:.1s}
+#landing .performance-art-card:nth-child(3){transition-delay:.2s}
+#landing .performance-art-card:hover{border-color:#ffb65ba8;box-shadow:0 12px 39px #080308aa,0 0 25px #ff892125}
+#landing .performance-art-canvas{width:100%;aspect-ratio:1.34;min-height:180px;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 50%,#5c1e2545,transparent 66%),linear-gradient(135deg,#210f20,#170e12)}
+#landing .performance-art-canvas::before{content:'';position:absolute;inset:0;background-image:linear-gradient(#ffa44f08 1px,transparent 1px),linear-gradient(90deg,#ffa44f08 1px,transparent 1px);background-size:23px 23px;opacity:.8}
+#landing .performance-art-canvas::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 25%,#ffb15a10 50%,transparent 75%);transform:translateX(-100%);animation:finale-shimmer 6s infinite;pointer-events:none}
+#landing .performance-art-canvas canvas{position:relative;width:100%;height:100%;display:block;transform:rotate(var(--tilt,0deg)) scale(1.04);transition:transform .3s}
+#landing .art-watermark{position:absolute;right:15px;top:14px;font:700 9px/1.4 Arial,sans-serif;letter-spacing:1.8px;color:#ffbf8aa6}
+#landing .performance-art-label{display:flex;align-items:center;gap:12px;padding:18px 18px 8px;border-right:0}
+#landing .performance-art-label>span{font:800 11px Arial,sans-serif;color:#ff7b43}
+#landing .performance-art-label h3{margin:0;font:800 clamp(17px,2.2vw,25px)/1.25 'Bungee',Impact,Arial,sans-serif;color:#fff0d1}
+#landing .performance-art-label i{margin-left:auto;font-size:20px;font-style:normal;color:#ffb563}
+#landing .performance-art-card>p{margin:0;padding:0 18px 19px;color:#d09e84;letter-spacing:1.4px;font:700 10px/1.5 Arial,sans-serif}
+@keyframes finale-shimmer{0%,15%{transform:translateX(-100%)}45%,100%{transform:translateX(100%)}}
+@media(max-width:760px){#landing .performance-art-grid{grid-template-columns:1fr;gap:16px}#landing .performance-art-canvas{aspect-ratio:1.6;min-height:170px}#landing .performance-art-label h3{font-size:21px}}
+@media(prefers-reduced-motion:reduce){#landing .performance-art-card,#landing .animated-hero-title>span,#landing .animated-hero-title em,#landing .eyebrow,#landing .performance-art-canvas::after{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}}
