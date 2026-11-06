@@ -362,9 +362,7 @@ async function startAR(){
       new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Camera start timed out after 25 seconds. Close other camera apps, check the browser console, and refresh.')),25000);})
     ]);
   } finally { clearTimeout(timer); }
-  tracked=false;
-  if(activeRoot)activeRoot.visible=false;
-  if(stage)stage.visible=false;
+  // Preserve any invitation lock acquired during the camera start promise.
   running=true;clock.start();lastFrame=clock.getElapsedTime();
   resetPerformances();
   landing.style.display='none';arUI.hidden=false;
