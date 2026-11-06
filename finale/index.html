@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style.css?v=recognition-intro-20261106">
+<link rel="stylesheet" href="./style.css?v=string-art-20261107">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 <!-- Solo Dance optimized animated GLB deployed: Draco + WebP, 2026-11-06 -->
 </head>
@@ -40,10 +40,10 @@
     <button type="button" class="text-button" id="headerStartAR">START AR ↗</button>
   </header>
 
-  <section class="hero" id="about">
+  <section class="hero animated-finale-hero" id="about">
     <div class="hero-copy">
       <p class="eyebrow"><i></i> NADANU 3.0 / THE FINAL CHAPTER</p>
-      <h1>THE STAGE<br>IS SET.<br><em>YOU'RE<br>INVITED.</em></h1>
+      <h1 class="animated-hero-title"><span>THE STAGE</span><br><span>IS SET.</span><br><em>YOU'RE<br>INVITED.</em></h1>
       <p class="intro">The spotlight is ready. The finalists are set. Be part of a grand celebration of music, dance and unforgettable talent at the <strong>Nadanu 3.0 Grand Finale.</strong></p>
       <div class="hero-actions">
         <button id="startButton" type="button" class="primary">Start invitation AR <span>↗</span></button>
@@ -64,10 +64,22 @@
 
   <section class="categories" id="categories" aria-label="Finale performances">
     <p>THREE PERFORMANCES. ONE GRAND STAGE.</p>
-    <div class="category-row">
-      <div><span>01</span> Solo singing <i>↗</i></div>
-      <div><span>02</span> Solo dancing <i>↗</i></div>
-      <div><span>03</span> Group dancing <i>↗</i></div>
+    <div class="category-row performance-art-grid">
+      <article class="performance-art-card" data-art="0">
+        <div class="performance-art-canvas"><canvas aria-hidden="true"></canvas><span class="art-watermark">01 / VOICE</span></div>
+        <div class="performance-art-label"><span>01</span><h3>Solo Singing</h3><i>↗</i></div>
+        <p>ONE VOICE. ONE SPOTLIGHT.</p>
+      </article>
+      <article class="performance-art-card" data-art="1">
+        <div class="performance-art-canvas"><canvas aria-hidden="true"></canvas><span class="art-watermark">02 / RHYTHM</span></div>
+        <div class="performance-art-label"><span>02</span><h3>Solo Dancing</h3><i>↗</i></div>
+        <p>YOUR RHYTHM. YOUR STORY.</p>
+      </article>
+      <article class="performance-art-card" data-art="2">
+        <div class="performance-art-canvas"><canvas aria-hidden="true"></canvas><span class="art-watermark">03 / UNITY</span></div>
+        <div class="performance-art-label"><span>03</span><h3>Group Dancing</h3><i>↗</i></div>
+        <p>MOVE AS ONE. OWN THE STAGE.</p>
+      </article>
     </div>
   </section>
   <section class="how" id="journey" aria-label="Experience the invitation in AR">
@@ -163,6 +175,7 @@
   <div class="act-controls"><button id="soundButton">SOUND OFF</button></div>
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
+<script defer src="./landing-effects.js?v=string-art-20261107"></script>
 <script type="module" src="./app.js?v=recognition-intro-20261106"></script>
 <script>
 (function(){
