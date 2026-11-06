@@ -13,11 +13,12 @@ permissions:
 
 concurrency:
   group: nadanu-pages-publish
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -33,3 +34,5 @@ jobs:
       - name: Publish to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 360000
