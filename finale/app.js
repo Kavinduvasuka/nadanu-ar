@@ -465,3 +465,6 @@ if(soundButton)soundButton.addEventListener('click',()=>{
  if(soundEnabled)disableSound();
  else enableSound().catch(e=>console.warn('Audio could not start:',e));
 });
+
+// AR module initialized: lets the landing page distinguish loading errors from camera issues.
+window.__nadanuARReady = true;
