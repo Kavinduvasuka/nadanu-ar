@@ -729,3 +729,8 @@ body{font-family:"Audiowide",Arial,sans-serif}
 #arEnableTilt[hidden]{display:none!important}
 #arEnableTilt{border-color:#ffc16b;background:#70301de8}
 #arTiltStatus{width:100%;text-align:center;font:700 9px/1.3 Arial,sans-serif;letter-spacing:.6px;color:#ffe0b8;text-shadow:0 1px 5px #000}
+
+/* Finale invitation manual zoom controls, above bottom safe area. */
+.finale-zoom-actions{display:flex;align-items:center;justify-content:center;gap:10px;pointer-events:auto}
+.finale-zoom-actions span{font:800 10px Arial,sans-serif;color:#ffe7c9;letter-spacing:1px}
+.finale-zoom-actions button{min-width:44px;min-height:40px;font-size:23px;line-height:1;padding:6px 12px}
