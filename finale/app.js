@@ -135,11 +135,15 @@ function receiveMotion(event){
    // Ignore sensor noise below ~3 degrees. Low-pass orientation updates
    // so a shaky hand does not make the entire stage vibrate.
    const deadZone=angle=>Math.sign(angle)*Math.max(0,Math.abs(angle)-3);
-   const desiredY=THREE.MathUtils.clamp(deadZone(diffGamma)*.019,-1.25,1.25);
+   // Gentle lateral yaw with a smaller sensor dead zone. Keep the
+   // independently tuned up/down (beta) behavior unchanged.
+   const lateralGamma=Math.sign(diffGamma)*Math.max(0,Math.abs(diffGamma)-1.5);
+   const desiredY=THREE.MathUtils.clamp(lateralGamma*.017,-1.08,1.08);
    // Beta controls the top-down reveal; a ~50 degree handset tilt can
    // now reach the stage top view instead of hitting the old 0.42rad cap.
    const desiredX=THREE.MathUtils.clamp(-deadZone(diffBeta)*.024,-.28,STAGE_TOP_VIEW_MAX);
-   filteredSensorY+=(desiredY-filteredSensorY)*.085;
+   // Smooth left/right noise without losing deliberate phone movement.
+   filteredSensorY+=(desiredY-filteredSensorY)*.12;
    filteredSensorX+=(desiredX-filteredSensorX)*.085;
    const combinedY=THREE.MathUtils.clamp(stageManualY+filteredSensorY,-1.4,1.4);
    const combinedX=THREE.MathUtils.clamp(stageManualX+filteredSensorX,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX);
@@ -380,7 +384,8 @@ function bindOrbitControls(){
   const old=pointers.get(e.pointerId);
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===1){
-   stageManualY=THREE.MathUtils.clamp(stageManualY+(e.clientX-old.x)*.012,-1.4,1.4);
+   // Match lateral finger drag with the calmer phone yaw sensitivity.
+   stageManualY=THREE.MathUtils.clamp(stageManualY+(e.clientX-old.x)*.009,-1.4,1.4);
    stageManualX=THREE.MathUtils.clamp(stageManualX+(e.clientY-old.y)*.008,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX);
    stageTargetY=THREE.MathUtils.clamp(stageManualY+filteredSensorY,-1.4,1.4);
    stageTargetX=THREE.MathUtils.clamp(stageManualX+filteredSensorX,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX);
@@ -712,6 +717,7 @@ function setup() {
     // Slow, frame-rate-independent damping: stable even if mobile FPS varies.
     const smoothing=1-Math.exp(-4.3*dt);
     stageTiltX+=(stageTargetX-stageTiltX)*smoothing;
+    // Yaw follows the same damped path as pitch, without sudden side flips.
     stageTiltY+=(stageTargetY-stageTiltY)*smoothing;
     // Smooth 3D orbit of the full stage + performers in screen-locked hybrid AR.
     // Keep the camera-space stage position fixed to avoid marker tracking jitter.
