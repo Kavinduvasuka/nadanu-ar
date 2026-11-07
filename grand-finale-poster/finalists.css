@@ -47,3 +47,29 @@
 .finalist-page-shell .finalists-count{margin-top:0}
 @media(max-width:800px){.finalist-category-pages{grid-template-columns:1fr;gap:14px}.finalist-category-link{min-height:205px}}
 @media(prefers-reduced-motion:reduce){.finalist-category-link{transition:none}}
+
+/* Video-reference gallery: 3 x 2 square of portrait photos, arrows below, same main page */
+#landing .finalists-section{max-width:1400px;padding:clamp(35px,6vw,80px) 5%}
+#landing .finalists-showcase{border:1px solid #c68c5c55;border-radius:12px;background:linear-gradient(120deg,#2b170ff2,#21110ef5);padding:clamp(18px,3.8vw,38px);box-shadow:0 22px 50px #0005;position:relative;overflow:hidden}
+#landing .finalists-showcase-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;position:relative}
+#landing .finalists-showcase-head h2{font-size:clamp(29px,4.5vw,52px);line-height:1.13;margin:12px 0 8px}
+#landing .finalists-subtitle{font-size:clamp(12px,1.3vw,15px);color:#cba997;line-height:1.6;margin:0 0 16px}
+#landing .finalists-watermark{font:700 clamp(60px,11vw,145px) 'Bungee',sans-serif;color:#f9a96810;line-height:1;flex-shrink:0}
+#landing .finalists-category-top{display:flex;align-items:center;gap:12px;margin:0 0 18px}
+#landing .finalists-category-top label{font:600 10px 'Audiowide',sans-serif;letter-spacing:.17em;color:#ffbe8a}
+#landing .finalists-category-top select{appearance:auto;max-width:100%;border:1px solid #fcab7355;border-radius:5px;padding:9px 12px;background:#311b16;color:#ffefd9;font:600 12px 'Audiowide',sans-serif;cursor:pointer}
+#landing .finalists-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;min-height:0}
+#landing .finalist-card{border:1px solid #f8a16d55;border-radius:6px;background:#2c111e;min-width:0;overflow:hidden;box-shadow:none;transition:transform .25s,box-shadow .25s}
+#landing .finalist-card:hover{transform:translateY(-3px);box-shadow:0 0 20px #ff7e4b38}
+#landing .finalist-photo-frame{aspect-ratio:4/3;display:block;background:radial-gradient(circle,#63334e,#200f1b)}
+#landing .finalist-photo-frame img{object-fit:cover;object-position:center 28%}
+#landing .finalist-info{padding:9px 11px 11px;background:#261319}
+#landing .finalist-info h3{font:600 clamp(11px,1.45vw,17px) 'Audiowide',sans-serif;margin:0;color:#fff0dc;line-height:1.4}
+#landing .finalists-gallery-controls{display:flex;justify-content:center;align-items:center;gap:20px;margin:20px auto 0}
+#landing .finalists-arrow{border:1px solid #ec905b80;border-radius:50%;width:42px;height:42px;display:grid;place-items:center;background:transparent;color:#ffb77e;font:400 22px Arial,sans-serif;cursor:pointer;transition:background .2s,transform .2s}
+#landing .finalists-arrow:hover{background:#ff985034;transform:scale(1.07)}
+#landing .finalists-page-index{font:600 12px 'Audiowide',sans-serif;color:#eac4ab;min-width:45px;text-align:center}
+#landing .finalists-grid-enter{animation:finalistsGalleryEnter .3s ease both}
+@keyframes finalistsGalleryEnter{from{opacity:.35;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:650px){#landing .finalists-section{padding:40px 4%}#landing .finalists-showcase{padding:16px}#landing .finalists-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#landing .finalist-photo-frame{aspect-ratio:3/4}#landing .finalists-watermark{font-size:54px}#landing .finalist-info h3{font-size:12px}#landing .finalists-gallery-controls{margin-top:17px}}
+@media(prefers-reduced-motion:reduce){#landing .finalists-grid-enter{animation:none}}

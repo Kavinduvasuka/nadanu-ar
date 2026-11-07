@@ -13,7 +13,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=grand-finale-zip-clone-20261107"><link rel="stylesheet" href="finalists.css?v=20261107-2">
+  <link rel="stylesheet" href="style.css?v=grand-finale-zip-clone-20261107"><link rel="stylesheet" href="finalists.css?v=category-gallery-20261107-3">
   <script
     type="importmap">{"imports":{"three":"./assets/three.module.js","three/addons/renderers/CSS3DRenderer.js":"./assets/CSS3DRenderer.js"}}</script>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Audiowide&display=swap" rel="stylesheet">
@@ -148,28 +148,30 @@
       <p class="category-note">Three performances. One Grand Finale stage.</p>
     </section>
     <section class="finalists-section reveal" id="finalists" aria-labelledby="finalistsTitle">
- <div class="section-heading">
-  <div><p class="eyebrow section-kicker"><i></i> THE FINAL SPOTLIGHT</p>
-  <h2 id="finalistsTitle">Meet Our <em>Finalists.</em></h2></div>
-  <p>Choose a performance category to meet the finalists and view their photos.</p>
- </div>
- <div class="finalist-category-pages">
-  <a class="finalist-category-link" href="./solo-singing.html" aria-label="View Solo Singing finalists">
-   <span class="finalist-category-icon" aria-hidden="true">♫</span>
-   <span class="finalist-category-eyebrow">01 / VOCALS · 11 FINALISTS</span>
-   <strong>Solo Singing</strong><span class="finalist-category-action">MEET THE FINALISTS ↗</span>
-  </a>
-  <a class="finalist-category-link" href="./solo-dancing.html" aria-label="View Solo Dancing finalists">
-   <span class="finalist-category-icon" aria-hidden="true">✧</span>
-   <span class="finalist-category-eyebrow">02 / DANCE · 5 FINALISTS</span>
-   <strong>Solo Dancing</strong><span class="finalist-category-action">MEET THE FINALISTS ↗</span>
-  </a>
-  <a class="finalist-category-link" href="./group-dancing.html" aria-label="View Group Dancing finalists">
-   <span class="finalist-category-icon" aria-hidden="true">✦</span>
-   <span class="finalist-category-eyebrow">03 / DANCE · 2 ENTRIES</span>
-   <strong>Group Dancing</strong><span class="finalist-category-action">MEET THE FINALISTS ↗</span>
-  </a>
- </div>
+  <div class="finalists-showcase">
+    <div class="finalists-showcase-head">
+      <div>
+        <p class="eyebrow section-kicker"><i></i> THE FINAL SPOTLIGHT</p>
+        <h2 id="finalistsTitle">Meet Our <em>Finalists.</em></h2>
+        <p class="finalists-subtitle" id="finalistsSubtitle">Meet the performers taking the stage at Nadanu 3.0.</p>
+      </div>
+      <span class="finalists-watermark" id="finalistsWatermark" aria-hidden="true">01</span>
+    </div>
+    <div class="finalists-category-top">
+      <label for="finalistsCategorySelect">CATEGORY</label>
+      <select id="finalistsCategorySelect" aria-label="Choose finalists category">
+        <option value="solo-singing">Solo Singing</option>
+        <option value="solo-dancing">Solo Dancing</option>
+        <option value="group-dancing">Group Dancing</option>
+      </select>
+    </div>
+    <div id="finalistsGrid" class="finalists-grid" aria-live="polite" aria-atomic="false"></div>
+    <div class="finalists-gallery-controls" aria-label="Finalists gallery navigation">
+      <button class="finalists-arrow" type="button" id="finalistsPrev" aria-label="Previous finalists gallery">←</button>
+      <span class="finalists-page-index" id="finalistsPageIndex" aria-live="polite">1 / 4</span>
+      <button class="finalists-arrow" type="button" id="finalistsNext" aria-label="Next finalists gallery">→</button>
+    </div>
+  </div>
 </section>
     <section class="journey-section reveal" id="journey">
       <p class="eyebrow section-kicker"><i></i> The Competition Journey</p>
@@ -295,4 +297,4 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
 });
 </script>
-</body></html>
+<script defer src="./finalists.js?v=category-gallery-20261107-3"></script></body></html>

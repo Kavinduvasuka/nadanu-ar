@@ -1,47 +1,63 @@
-/* Nadanu Grand Finale — names and categories from supplied finalists ZIP; photos stored locally. */
+/* Nadanu Grand Finale — inline category gallery, 3x2 grid and arrow pagination. */
 (() => {
 'use strict';
 const finalists=[["Anjula Pragathi","solo-singing","anjula-pragathi"],["Daphni Mendis","solo-singing","daphni-mendis"],["Imesha Uddheepani","solo-singing","imesha-uddheepani"],["Ishira Nipun","solo-singing","ishira-nipun"],["Kisandi Wethara","solo-singing","kisandi-wethara"],["Misheala Wanigaratnam","solo-singing","misheala-wanigaratnam"],["Omalmie Karunaratne","solo-singing","omalmie-karunaratne"],["Senesh Perera","solo-singing","senesh-perera"],["Tharinsa S. Liyanage","solo-singing","tharinsa-s-liyanage"],["Theekshana Ranaweera","solo-singing","theekshana-ranaweera"],["Vivekh Sivasithamparam","solo-singing","vivekh-sivasithamparam"],["Dinuka Thimansa","solo-dancing","dinuka-thimansa"],["Gigiri Perera","solo-dancing","gigiri-perera"],["Sanjana Mendis","solo-dancing","sanjana-mendis"],["Siluni Batuwantudawa","solo-dancing","siluni-batuwantudawa"],["Sithumini Dilarangi","solo-dancing","sithumini-dilarangi"],["Sanjana Mendis","group-dancing","sanjana-mendis"],["Sasemi Thisasna","group-dancing","sasemi-thisasna"]];
-const categories={'solo-singing':'Solo Singing','solo-dancing':'Solo Dancing','group-dancing':'Group Dancing'};
-const grid=document.getElementById('finalistsGrid');
-const pageCategory=document.body.dataset.finalistCategory||'all';
-const filters=document.querySelectorAll('[data-finalist-filter]');
-if(!grid)return;
-const cards=finalists.filter(([,category])=>pageCategory==='all'||category===pageCategory).map(([name,category,slug],idx)=>{
-  const article=document.createElement('article');
-  article.className='finalist-card';
-  article.dataset.category=category;
-  article.style.setProperty('--stagger',String(idx%6));
-  const frame=document.createElement('div');
-  frame.className='finalist-photo-frame';
-  const image=document.createElement('img');
-  image.loading='lazy';image.decoding='async';image.alt='Finalist photo: '+name;
-  image.src='assets/finalists/'+category+'/'+slug+'.webp';
-  image.addEventListener('error',()=>{
-    image.hidden=true;frame.classList.add('finalist-photo-missing');
-  },{once:true});
-  const fallback=document.createElement('span');fallback.className='finalist-photo-fallback';fallback.textContent='PHOTO COMING SOON';
-  frame.append(image,fallback);
-  const info=document.createElement('div');info.className='finalist-info';
-  const cat=document.createElement('span');cat.className='finalist-category';cat.textContent=categories[category];
-  const title=document.createElement('h3');title.textContent=name;
-  info.append(cat,title);article.append(frame,info);
-  return article;
-});
-grid.replaceChildren(...cards);
-const count=document.getElementById('finalistsCount');
-function setFilter(filter){
- let visible=0;
- for(const card of cards){
-  const show=filter==='all'||card.dataset.category===filter;
-  card.hidden=!show;if(show)visible++;
+const categoryData={
+ 'solo-singing':{title:'Solo Singing',subtitle:'Eleven voices. One stage. Meet our Grand Finale vocalists.',number:'01'},
+ 'solo-dancing':{title:'Solo Dancing',subtitle:'Five solo dancers taking their moment in the spotlight.',number:'02'},
+ 'group-dancing':{title:'Group Dancing',subtitle:'The dancers bringing energy and unity to the Grand Finale.',number:'03'}
+};
+const categories=['solo-singing','solo-dancing','group-dancing'];
+const slides=[];
+for(const cat of categories){
+ const people=finalists.filter(p=>p[1]===cat);
+ for(let start=0;start<people.length;start+=6){
+  slides.push({cat,people:people.slice(start,start+6),part:Math.floor(start/6)+1});
  }
- for(const button of filters){
-  const chosen=button.dataset.finalistFilter===filter;
-  button.setAttribute('aria-pressed',String(chosen));
- }
- if(count)count.textContent=visible+' finalist'+(visible===1?'':'s');
 }
-for(const button of filters)button.addEventListener('click',()=>setFilter(button.dataset.finalistFilter));
-setFilter(pageCategory);
+const grid=document.getElementById('finalistsGrid');
+const previous=document.getElementById('finalistsPrev');
+const next=document.getElementById('finalistsNext');
+const indexLabel=document.getElementById('finalistsPageIndex');
+const select=document.getElementById('finalistsCategorySelect');
+const title=document.getElementById('finalistsTitle');
+const subtitle=document.getElementById('finalistsSubtitle');
+const watermark=document.getElementById('finalistsWatermark');
+if(!grid||!previous||!next||!select)return;
+let active=0;
+function makeCard([name,category,slug]){
+ const card=document.createElement('article');card.className='finalist-card';
+ const frame=document.createElement('div');frame.className='finalist-photo-frame';
+ const img=document.createElement('img');
+ img.src='assets/finalists/'+category+'/'+slug+'.webp';
+ img.alt=name+' — '+categoryData[category].title;
+ img.loading='lazy';img.decoding='async';
+ const fallback=document.createElement('span');fallback.className='finalist-photo-fallback';fallback.textContent='PHOTO COMING SOON';
+ img.addEventListener('error',()=>{img.hidden=true;frame.classList.add('finalist-photo-missing')},{once:true});
+ frame.append(img,fallback);
+ const info=document.createElement('div');info.className='finalist-info';
+ const h=document.createElement('h3');h.textContent=name;
+ info.appendChild(h);card.append(frame,info);return card;
+}
+function show(slideNumber){
+ active=(slideNumber+slides.length)%slides.length;
+ const slide=slides[active],data=categoryData[slide.cat];
+ grid.replaceChildren(...slide.people.map(makeCard));
+ grid.classList.remove('finalists-grid-enter');void grid.offsetWidth;grid.classList.add('finalists-grid-enter');
+ if(indexLabel)indexLabel.textContent=(active+1)+' / '+slides.length;
+ if(title)title.innerHTML=data.title.replace(' ', '<br><em>')+'.</em>';
+ if(subtitle)subtitle.textContent=data.subtitle;
+ if(watermark)watermark.textContent=data.number;
+ select.value=slide.cat;
+}
+previous.addEventListener('click',()=>show(active-1));
+next.addEventListener('click',()=>show(active+1));
+select.addEventListener('change',()=>{const first=slides.findIndex(s=>s.cat===select.value);if(first>=0)show(first)});
+const wrapper=document.querySelector('.finalists-showcase');
+if(wrapper){
+ let x=0,y=0;
+ wrapper.addEventListener('touchstart',e=>{if(e.touches.length===1){x=e.touches[0].clientX;y=e.touches[0].clientY}},{passive:true});
+ wrapper.addEventListener('touchend',e=>{if(!x||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-x,dy=e.changedTouches[0].clientY-y;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.4)show(active+(dx<0?1:-1));x=0},{passive:true});
+}
+show(0);
 })();
