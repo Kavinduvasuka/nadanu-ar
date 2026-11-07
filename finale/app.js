@@ -566,6 +566,11 @@ async function loadPerformers() {
 }
 
 function setup() {
+ // Keep the invitation backdrop inside the camera container even after
+ // an earlier AR session cleaned up its video/canvas DOM elements.
+ if(arInvitationOverlay && arInvitationOverlay.parentElement!==arContainer){
+  arContainer.appendChild(arInvitationOverlay);
+ }
  const generation=++trackerGeneration;
  tracked=false;
  mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/finale.mind?v=eaee01ad',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'no',uiScanning:'no',uiError:'yes'});
@@ -855,6 +860,8 @@ async function disposeARSession(){
   }
   if(aliveInvitation){aliveInvitation.dispose();aliveInvitation=null;}
   arContainer.replaceChildren();
+  // Preserve the original overlay for subsequent Start AR / Replay sessions.
+  if(arInvitationOverlay){arInvitationOverlay.hidden=true;arContainer.appendChild(arInvitationOverlay);}
   arContainer.style.display='none';
   mindarThree=null;activeRenderer=null;activeAnchor=null;activeRoot=null;
   initialized=false;tracked=false;stageSensorBase=null;stagePoseCaptured=false;
