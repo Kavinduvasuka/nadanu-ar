@@ -55,31 +55,27 @@ function setInvitationOverlay(visible){
  if(arInvitationOverlay)arInvitationOverlay.hidden=!visible;
 }
 function createStageWireframe(root){
+  // A single restrained stage outline: no triangulated web or giant spokes.
   stageWireframe=new THREE.Group();
   stageWireframe.position.copy(stage.position);
   stageWireframe.rotation.copy(stage.rotation);
   stageWireframe.scale.copy(stage.scale);
   root.add(stageWireframe);
   wireframeMat=new THREE.LineBasicMaterial({
-    color:0x58efff,transparent:true,opacity:.72,depthWrite:false
+    color:0x8ae5e0,transparent:true,opacity:.26,depthWrite:false
   });
-  const mesh=new THREE.LineSegments(
-    new THREE.WireframeGeometry(new THREE.CylinderGeometry(9.35,9.35,.5,28,2)),
-    wireframeMat
+  const perimeter=new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints(
+      Array.from({length:48},(_,i)=>{
+        const a=i/48*Math.PI*2;
+        return new THREE.Vector3(Math.cos(a)*9.15,.015,Math.sin(a)*9.15);
+      })
+    ),wireframeMat
   );
-  mesh.position.y=-.25;stageWireframe.add(mesh);
-  for(let i=0;i<3;i++){
-    const loop=new THREE.LineLoop(
-      new THREE.BufferGeometry().setFromPoints(Array.from({length:65},(_,j)=>{
-        const a=j/64*Math.PI*2,r=2.6+i*2.5;
-        return new THREE.Vector3(Math.cos(a)*r,.018,Math.sin(a)*r);
-      })),
-      wireframeMat
-    );
-    stageWireframe.add(loop);
-  }
+  stageWireframe.add(perimeter);
   stageWireframe.visible=false;
 }
+
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
 let selectedAct=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
@@ -428,12 +424,12 @@ function createStage(root){
   root.add(stage);
   stageWorld=stage;
   const colors=[0xff3d9a,0x33e1ff,0xffc857];
-  const floor=new THREE.Mesh(new THREE.CircleGeometry(10,96),
-    new THREE.MeshBasicMaterial({color:0x49eaff,wireframe:true,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide}));
+  const floor=new THREE.Mesh(new THREE.RingGeometry(8.85,9.05,48),
+    new THREE.MeshBasicMaterial({color:0x79dfd4,transparent:true,opacity:.20,depthWrite:false,side:THREE.DoubleSide}));
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
   neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((color,i)=>{
     const ring=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),
-      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
+      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.10,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
     ring.rotation.x=-Math.PI/2;ring.position.y=.012+i*.002;stage.add(ring);return ring;
   });
   eqBars=[];
@@ -441,11 +437,11 @@ function createStage(root){
     const a=i/40*Math.PI*2;
     const bar=new THREE.Mesh(new THREE.BoxGeometry(.16,1,.16),
       new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:.75,depthWrite:false}));
-    bar.position.set(Math.sin(a)*9,0,Math.cos(a)*9);stage.add(bar);eqBars.push(bar);
+    bar.position.set(Math.sin(a)*9,0,Math.cos(a)*9);bar.visible=false;stage.add(bar);eqBars.push(bar);
   }
   halo=new THREE.Mesh(new THREE.TorusGeometry(2.4,.04,12,96),
     new THREE.MeshBasicMaterial({color:0xff3d9a}));
-  halo.position.set(0,2.2,-2.6);stage.add(halo);
+  halo.position.set(0,2.2,-2.6);halo.visible=false;stage.add(halo);
   stageSpots=[];beamCones=[];
   colors.forEach((color,i)=>{
     const light=new THREE.SpotLight(color,2.4,32,.5,.55,1);
@@ -453,7 +449,7 @@ function createStage(root){
     light.target.position.set(0,1,0);stage.add(light,light.target);stageSpots.push(light);
     const beam=new THREE.Mesh(new THREE.ConeGeometry(2.1,10,32,1,true),
       new THREE.MeshBasicMaterial({color,wireframe:true,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
-    stage.add(beam);beamCones.push(beam);
+    beam.visible=false;stage.add(beam);beamCones.push(beam);
   });
   const count=500,positions=new Float32Array(count*3);
   for(let i=0;i<count;i++){
@@ -463,7 +459,7 @@ function createStage(root){
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
   particles=new THREE.Points(geometry,new THREE.PointsMaterial({size:.07,color:0xffd9f5,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false}));
-  stage.add(particles);
+  particles.visible=false;stage.add(particles);
   // Original procedural human figures are replaced by the three supplied GLBs.
   performers.forEach((group,i)=>{
     group.position.set(0,0,i===2?0:1);
@@ -488,13 +484,14 @@ function updateStageEffects(t,dt,index){
     const a=t*.4+i*2.1;
     l.position.set(Math.cos(a)*6,9,Math.sin(a)*6);
     l.target.position.set(Math.sin(t*.7+i)*1.5*sw,1,Math.cos(t*.6+i)*1.5*sw);
-    l.intensity=1.8+pulse*1.6;
+    // Keep only gentle invisible illumination on performers; no beams.
+    l.intensity=.9;
     const beam=beamCones[i],d=stageV.copy(l.position).sub(l.target.position),length=d.length();
     beam.position.copy(l.position).add(l.target.position).multiplyScalar(.5);
     stageQ.setFromUnitVectors(stageUp,d.normalize());beam.quaternion.copy(stageQ);
-    beam.scale.y=length/10;beam.material.opacity=.05+pulse*.05;
+    beam.scale.y=length/10;beam.material.opacity=0;
   });
-  neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.04*(i+1));r.material.opacity=.22+pulse*.45;});
+  neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.012*(i+1));r.material.opacity=.09;});
   eqBars.forEach((bar,i)=>{const height=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;bar.scale.y=height;bar.position.y=height/2;bar.material.color.setHSL((i/40+t*.05)%1,.9,.55);});
   halo.material.color.setHSL((t*.08)%1,.9,.6);halo.scale.setScalar(1+pulse*.05);
   const positions=particles.geometry.attributes.position;
@@ -680,7 +677,7 @@ function setup() {
   stage.visible=showStage && !showInvitation;
   if(stageWireframe){
     stageWireframe.visible=showStage && !showInvitation;
-    wireframeMat.opacity=.82;
+    wireframeMat.opacity=.26;
   }
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
