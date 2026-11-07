@@ -734,3 +734,65 @@ body{font-family:"Audiowide",Arial,sans-serif}
 .finale-zoom-actions{display:flex;align-items:center;justify-content:center;gap:10px;pointer-events:auto}
 .finale-zoom-actions span{font:800 10px Arial,sans-serif;color:#ffe7c9;letter-spacing:1px}
 .finale-zoom-actions button{min-width:44px;min-height:40px;font-size:23px;line-height:1;padding:6px 12px}
+
+/* Mobile-first Finale polish and genuinely live invitation prewarm. */
+.finale-motion.prewarming{
+ opacity:0!important;pointer-events:none!important;visibility:visible!important;
+}
+.finale-motion.prewarming *{pointer-events:none!important}
+#landing,#landing section,#landing header,#landing footer{min-width:0}
+#landing img{max-width:100%;height:auto}
+#arUI .topbar{gap:8px;align-items:flex-start}
+#arUI .topbar strong{min-width:0;overflow-wrap:anywhere}
+#arUI .topbar-actions{min-width:0;align-items:center}
+.finale-motion-foot button,.finale-motion-head button,#arUI button{touch-action:manipulation}
+@media(max-width:760px){
+ #landing .masthead{padding:14px 4%;gap:10px;flex-wrap:wrap;justify-content:center}
+ #landing .header-logo{max-width:56px;height:auto}
+ #landing .header-logo-link{min-width:0;max-width:100%}
+ #landing .header-brand-copy{min-width:0}
+ #landing .header-organizer{white-space:normal}
+ #landing .site-nav{width:100%;justify-content:center;display:flex;gap:clamp(8px,2.4vw,16px);flex-wrap:wrap}
+ #landing .site-nav a{font-size:clamp(9px,2.5vw,12px)}
+ #landing #headerStartAR{max-width:100%;white-space:normal}
+ #landing .hero{padding:34px 5% 36px;gap:25px;min-height:0;grid-template-columns:minmax(0,1fr)}
+ #landing .hero-copy{min-width:0}
+ #landing .animated-hero-title{font-size:clamp(34px,10vw,70px);overflow-wrap:normal}
+ #landing .hero-actions{width:100%;max-width:100%}
+ #landing .hero-actions>*{width:100%;max-width:100%;min-height:44px}
+ #landing .poster-display{min-width:0;max-width:min(100%,440px);margin-inline:auto}
+ #landing .categories,#landing .journey,#landing .ar-showcase{padding-inline:5%}
+ #arUI .topbar{padding:calc(8px + env(safe-area-inset-top)) 8px 8px;flex-wrap:wrap}
+ #arUI .topbar>strong{flex:1 1 100%;font-size:11px;text-align:center}
+ #arUI .topbar-actions{width:100%;justify-content:center}
+ #arUI .topbar-actions button{min-height:36px;font-size:10px;padding:8px 9px}
+ #arUI .act-banner{top:calc(114px + env(safe-area-inset-top));max-width:calc(100vw - 24px)}
+ #arUI .act-controls{left:8px;right:8px;bottom:calc(54px + env(safe-area-inset-bottom));gap:5px}
+ #arUI .act-controls button{min-height:42px}
+ .finale-motion-head{left:8px;right:8px;gap:6px;flex-wrap:wrap}
+ .finale-motion-head span{flex:1 1 100%;text-align:center;margin:0;font-size:10px}
+ .finale-motion-head button{flex:1 1 auto;min-height:38px}
+ .finale-motion-foot{left:8px;right:8px;gap:6px;bottom:calc(7px + env(safe-area-inset-bottom))}
+ .finale-motion-foot>div{width:100%;gap:6px}
+ .finale-motion-foot button,.finale-motion-foot a{min-height:40px;flex:1 1 auto;display:inline-flex;justify-content:center;align-items:center;text-align:center}
+ #finaleMotionPlaceholder{max-height:calc(100dvh - 190px);max-width:90vw}
+}
+@media(max-width:390px){
+ #landing .masthead{gap:8px}
+ #landing .header-event-title{font-size:clamp(14px,4vw,20px)}
+ #landing .hero{padding-top:25px}
+ #arUI .topbar-actions button{font-size:9px;padding:8px 5px}
+ #arUI .act-banner{top:calc(118px + env(safe-area-inset-top));padding:9px 19px}
+ #arUI .act-banner strong{font-size:clamp(19px,6vw,26px)}
+ #finaleMotionPlaceholder{max-height:calc(100dvh - 212px)}
+}
+@media(max-height:620px) and (orientation:landscape){
+ #arUI .act-banner{top:calc(50px + env(safe-area-inset-top));max-width:45vw}
+ #arUI .topbar{justify-content:flex-end}
+ #arUI .topbar>strong{display:none}
+ #arUI .act-controls{bottom:calc(8px + env(safe-area-inset-bottom));width:max-content;right:8px;left:auto}
+ .finale-motion-head{right:8px;left:auto;max-width:48vw}
+ .finale-motion-head span{display:none}
+ .finale-motion-foot{left:auto;right:8px;max-width:45vw}
+ #finaleMotionPlaceholder{max-height:85dvh}
+}
