@@ -208,7 +208,7 @@ replayActsButton?.addEventListener('click',()=>{
 });
 // The 3D performers remain fixed to the invitation, allowing natural side views.
 const orbit={zoom:1,pointers:new Map(),distance:0};
-const BASE_SCALE=0.17;
+const BASE_SCALE=0.115; // Compact mini-stage: keep floor and actors in the camera frame.
 // The real image-anchor pose determines camera perspective in Three.js.
 const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,0));
 function resetStageView(){
@@ -455,8 +455,6 @@ function setup() {
    hideScanner();
   }
   root.visible=false; // Tracking-only anchor; stage uses a filtered copy of its pose.
-  showScanner('locked','Invitation detected · stabilizing stage…');
-  status.textContent='Invitation detected · stabilizing tracking…';
  };
  anchor.onTargetLost=()=>{
   if(generation!==trackerGeneration)return;
@@ -473,7 +471,7 @@ function setup() {
   // complete stage and its lights until NEW invitation tracking has stabilized.
   const locked=tracked && performance.now()-trackingTime>=650;
   const inGrace=!tracked && stagePoseCaptured && targetLostAt>0 && performance.now()-targetLostAt<TRACKING_GRACE_MS;
-  if(locked && showInvitation && invitationScanner && !invitationScanner.hidden)hideScanner();
+  if(locked && introCompleted && invitationScanner && !invitationScanner.hidden)hideScanner();
   if(locked && !introCompleted && !introStartedAt)startRecognitionIntro();
   if(locked && introStartedAt && performance.now()-introStartedAt>=INTRO_DURATION_MS)finishRecognitionIntro();
   // Follow the real image pose with damping instead of freezing it forever.
@@ -498,11 +496,9 @@ function setup() {
    }
   }
   const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
-  if(!showStage && stageWasActive && !showInvitation){
-   if(!tracked){
-    showScanner('searching','Invitation lost · stage paused. Frame the artwork to resume.');
-    status.textContent='Invitation lost · stage paused';
-   }
+  if(!showStage && stageWasActive && !showInvitation && !tracked){
+   showScanner('searching','Invitation lost · stage paused. Frame the artwork to resume.');
+   status.textContent='Invitation lost · stage paused';
   }
   stageWasActive=showStage;
   root.visible=false;
