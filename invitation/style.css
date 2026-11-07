@@ -1140,3 +1140,16 @@ dialog small {
     text-decoration: none;
     justify-content: center
 }
+/* Invitation-only 3D tilt: never rotate the page or AR camera. */
+.poster-display { perspective: 1100px; }
+.poster-display .poster {
+    --inv-tilt-x: 0deg;
+    --inv-tilt-y: 0deg;
+    transform: rotate(3deg) rotateX(var(--inv-tilt-x)) rotateY(var(--inv-tilt-y));
+    transform-style: preserve-3d;
+    transition: transform 260ms ease-out;
+    will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+    .poster-display .poster { transform: rotate(3deg); transition: none; }
+}
