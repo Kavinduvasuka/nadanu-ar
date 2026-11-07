@@ -201,7 +201,7 @@ function forwardMotion(){
 }
 let finaleSceneReady=false;
 let finalePreloaded=false;
-const CINEMATIC_FRAME_URL='./cinematic/embed.html?v=instant-zoom-20261107-3';
+const CINEMATIC_FRAME_URL='./cinematic/embed.html?v=depth-enhance-20261107-4';
 function preloadFinaleScene(){
  if(finalePreloaded)return;
  finalePreloaded=true;
