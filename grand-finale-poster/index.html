@@ -13,10 +13,10 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=grand-finale-inline-ar-20261107"><link rel="stylesheet" href="finalists.css?v=group-pending-20261107-6">
+  <link rel="stylesheet" href="style.css?v=camera-first-20261107-2"><link rel="stylesheet" href="finalists.css?v=group-pending-20261107-6">
   <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Audiowide&display=swap" rel="stylesheet">
-<link id="arRuntimeStyles" rel="stylesheet" href="./ar-style.css?v=inline-camera-20261107" media="not all">
+<link id="arRuntimeStyles" rel="stylesheet" href="./ar-style.css?v=camera-first-20261107-2" media="not all">
 </head>
 
 <body>
@@ -335,15 +335,7 @@ document.addEventListener('DOMContentLoaded',()=>{
    const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}}),{threshold:.08});
    sections.forEach(x=>obs.observe(x));
  }else sections.forEach(x=>x.classList.add('visible'));
- document.querySelectorAll('#startAR,#scrollStartAR,[data-register]').forEach(btn=>btn.addEventListener('click',()=>{
- const status=document.getElementById('message');
- if(!window.__nadanuARReady){
-   if(status)status.textContent='AR is loading. Check your connection and tap Start AR again in a moment.';
-   return;
- }
- if(status)status.textContent='';
- document.getElementById('startButton')?.click();
-}));
+ /* AR buttons are handled by the camera-first inline controller below. */
  document.querySelectorAll('#preview,#scrollPreview').forEach(btn=>btn.addEventListener('click',()=>{location.href='./world.html'}));
  const container=document.querySelector('.poster-display'),image=container?.querySelector('.poster');
  if(container&&image&&matchMedia('(pointer:fine)').matches){
@@ -353,6 +345,100 @@ document.addEventListener('DOMContentLoaded',()=>{
    container.addEventListener('pointerleave',()=>{image.style.transform=base});
  }
 });
+</script>
+
+<script>
+/* Direct-to-camera control. Keep this independent of the 3D module CDN so a
+   missing tracker or network error cannot make Start AR an inert button. */
+(()=>{
+'use strict';
+let previewStream=null,previewVideo=null,opening=false;
+let trackerAvailable=false;
+const main=document.getElementById('landing');
+const ui=document.getElementById('arUI');
+const cameraLayer=document.getElementById('arContainer');
+const notice=document.getElementById('message');
+const scanner=document.getElementById('invitationScanner');
+const scanText=document.getElementById('scannerMessage');
+const arStyles=document.getElementById('arRuntimeStyles');
+const arEngineButton=document.getElementById('startButton');
+const exit=document.getElementById('stopButton');
+const targetReady=fetch('./assets/grand-finale-poster.mind?v=direct-camera-20261107',{method:'HEAD',cache:'no-cache'})
+ .then(r=>{trackerAvailable=r.ok;return r.ok})
+ .catch(()=>false);
+function showStatus(message){if(notice)notice.textContent=message}
+function endPreview(){
+ if(previewStream){for(const track of previewStream.getTracks())track.stop();}
+ previewStream=null;
+ if(previewVideo){previewVideo.pause();previewVideo.srcObject=null;previewVideo.remove();previewVideo=null;}
+ cameraLayer?.querySelectorAll('.camera-fallback-video').forEach(el=>el.remove());
+ cameraLayer.style.display='none';
+ if(ui)ui.hidden=true;
+ if(scanner)scanner.hidden=true;
+ if(main)main.style.display='';
+ if(arStyles)arStyles.media='not all';
+ document.body.classList.remove('camera-preview-active');
+ opening=false;
+ showStatus('');
+}
+async function startCameraPreview(){
+ if(opening||previewStream)return;
+ if(!navigator.mediaDevices?.getUserMedia||!window.isSecureContext){
+   showStatus('Camera needs HTTPS and a supported browser. Open this website directly in Chrome or Safari.');
+   return;
+ }
+ opening=true;
+ if(arStyles)arStyles.media='all';
+ if(main)main.style.display='none';
+ if(ui)ui.hidden=false;
+ if(cameraLayer)cameraLayer.style.display='block';
+ document.body.classList.add('camera-preview-active');
+ if(scanner){scanner.hidden=false;scanner.dataset.scanState='searching';}
+ if(scanText)scanText.textContent='Camera is opening…';
+ const tracking=document.getElementById('trackingStatus');if(tracking)tracking.hidden=true;
+ const intro=document.getElementById('recognitionIntro');if(intro)intro.hidden=true;
+ const banner=document.getElementById('actBanner');if(banner)banner.hidden=true;
+ const invitation=document.getElementById('finaleInvitation');if(invitation)invitation.hidden=true;
+ try{
+   // Important: invoke getUserMedia as part of the actual user click.
+   const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'}}});
+   previewStream=stream;
+   const video=document.createElement('video');
+   video.className='camera-fallback-video';
+   video.setAttribute('playsinline','');
+   video.muted=true;video.autoplay=true;video.playsInline=true;video.srcObject=stream;
+   cameraLayer.appendChild(video);previewVideo=video;
+   await video.play();
+   if(scanText)scanText.textContent='Camera ready. Poster scanning will be enabled when the Grand Finale tracking file is added.';
+   showStatus('');
+ }catch(err){
+   const failure=(err&&err.name==='NotAllowedError')?'Camera permission was denied. Allow camera access in browser settings.':
+      'Could not start camera: '+(err?.message||String(err));
+   endPreview();showStatus(failure);
+ }finally{opening=false;}
+}
+function startFromButton(){
+ if(opening||previewStream)return;
+ if(trackerAvailable&&window.__nadanuARReady&&arEngineButton){
+   arEngineButton.click();return;
+ }
+ // Fallback camera preview while the poster-specific .mind target is missing.
+ startCameraPreview();
+}
+for(const button of document.querySelectorAll('#startAR,#scrollStartAR,[data-register]')){
+ button.addEventListener('click',startFromButton);
+}
+exit?.addEventListener('click',event=>{
+ if(previewStream||opening){
+   event.stopImmediatePropagation();
+   endPreview();
+ }
+},true);
+window.addEventListener('pagehide',()=>{if(previewStream)endPreview()});
+targetReady.then(ready=>{
+ if(!ready){console.info('Grand Finale .mind tracking target is pending; camera preview mode available.');}
+});
+})();
 </script>
 <script defer src="./finalists.js?v=group-pending-20261107-6"></script>
 <script type="module" src="./app.js?v=inline-camera-20261107"></script></body></html>
