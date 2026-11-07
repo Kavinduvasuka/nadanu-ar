@@ -68,47 +68,86 @@ const finaleMotionInfo=document.getElementById('finaleMotionInfo');
 let finalMotionActive=false,motionAllowed=false,motionReference=null;
 let finalX=0,finalY=0,smoothedX=0,smoothedY=0,motionFrame=0;
 function setMotionStatus(text){if(finaleMotionInfo)finaleMotionInfo.textContent=text;}
+// Calibrated against the device position when the invitation is first shown.
+// iOS requires an explicit tap to allow orientation; Android may grant automatically.
+let motionSamples=0, motionPermissionPending=false;
 function receiveMotion(event){
  if(!motionAllowed || !Number.isFinite(event.gamma) || !Number.isFinite(event.beta))return;
- if(!motionReference)motionReference={gamma:event.gamma,beta:event.beta};
+ motionSamples++;
+ if(!finalMotionActive)return;
+ if(!motionReference) motionReference={gamma:event.gamma,beta:event.beta};
  const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
- finalY=clamp((event.gamma-motionReference.gamma)*.006,-.23,.23);
- finalX=clamp(-(event.beta-motionReference.beta)*.0045,-.17,.17);
+ finalY=clamp((event.gamma-motionReference.gamma)*.011,-.30,.30);
+ finalX=clamp(-(event.beta-motionReference.beta)*.008,-.23,.23);
+ if(motionSamples===1 || motionSamples%120===0)setMotionStatus('PHONE TILT ACTIVE · MOVE YOUR PHONE OR DRAG');
 }
 function requestMotionFromStartGesture(){
- if(!('DeviceOrientationEvent' in window)){setMotionStatus('DRAG TO EXPLORE · SENSOR NOT AVAILABLE');return;}
+ if(!('DeviceOrientationEvent' in window)){
+  motionAllowed=false;setMotionStatus('PHONE SENSOR UNAVAILABLE · DRAG TO TILT');return;
+ }
+ if(motionPermissionPending)return;
+ motionPermissionPending=true;
  try{
   const result=typeof DeviceOrientationEvent.requestPermission==='function'
-   ?DeviceOrientationEvent.requestPermission():Promise.resolve('granted');
+    ?DeviceOrientationEvent.requestPermission():Promise.resolve('granted');
   Promise.resolve(result).then(value=>{
    motionAllowed=value==='granted';
-   if(motionAllowed){motionReference=null;window.addEventListener('deviceorientation',receiveMotion,true);}
-   else setMotionStatus('DRAG TO EXPLORE · SENSOR ACCESS NOT GRANTED');
-  }).catch(e=>{console.warn('Motion permission:',e);setMotionStatus('DRAG TO EXPLORE · SENSOR ACCESS UNAVAILABLE');});
- }catch(e){console.warn('Motion permission:',e);}
+   if(motionAllowed){
+    motionSamples=0;motionReference=null;
+    window.removeEventListener('deviceorientation',receiveMotion,true);
+    window.addEventListener('deviceorientation',receiveMotion,true);
+    setMotionStatus('PHONE TILT ENABLED · MOVE PHONE OR DRAG');
+    document.getElementById('finaleEnableTilt').hidden=true;
+   }else{
+    setMotionStatus('ENABLE PHONE TILT OR DRAG TO EXPLORE');
+    document.getElementById('finaleEnableTilt').hidden=false;
+   }
+  }).catch(error=>{
+   console.warn('Orientation permission:',error);
+   setMotionStatus('TAP ENABLE PHONE TILT OR DRAG');
+   document.getElementById('finaleEnableTilt').hidden=false;
+  }).finally(()=>{motionPermissionPending=false;});
+ }catch(error){
+  motionPermissionPending=false;
+  console.warn('Orientation permission:',error);
+  document.getElementById('finaleEnableTilt').hidden=false;
+ }
 }
 function forwardMotion(){
  if(!finalMotionActive)return;
- smoothedX+=(finalX-smoothedX)*.11;
- smoothedY+=(finalY-smoothedY)*.11;
+ smoothedX+=(finalX-smoothedX)*.20;
+ smoothedY+=(finalY-smoothedY)*.20;
  finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-motion',x:smoothedX,y:smoothedY},location.origin);
  motionFrame=requestAnimationFrame(forwardMotion);
 }
+let finaleSceneReady=false;
+window.addEventListener('message',event=>{
+ if(event.origin!==location.origin||event.source!==finaleMotionFrame?.contentWindow)return;
+ if(event.data?.type!=='nadanu-scene-ready'||!finalMotionActive)return;
+ finaleSceneReady=true;
+ finaleMotion.classList.add('scene-ready');
+});
 async function revealFinalMotion(){
  if(finalMotionActive)return;
  finalMotionActive=true;
+ finaleSceneReady=false;
+ finaleMotion.classList.remove('scene-ready');
  running=false;tracked=false;
  if(invitationScanner)invitationScanner.hidden=true;
  if(recognitionIntro)recognitionIntro.hidden=true;
  arUI.hidden=true;
- setMotionStatus(motionAllowed?'MOVE PHONE OR DRAG TO EXPLORE 3D':'DRAG THE INVITATION TO EXPLORE 3D');
- try{await disposeARSession();}catch(error){console.warn('Camera shutdown before invitation:',error);}
- arContainer.style.display='none';
+ // Show the cached original image immediately, before waiting for camera shutdown.
  finaleMotion.hidden=false;
- finaleMotionFrame.src='./cinematic/embed.html?v=artwork-only-20261107';
- smoothedX=smoothedY=finalX=finalY=0;motionReference=null;
+ setMotionStatus(motionAllowed?'MOVE PHONE OR DRAG TO EXPLORE 3D':'ENABLE PHONE TILT OR DRAG TO EXPLORE');
+ document.getElementById('finaleEnableTilt').hidden=motionAllowed;
+ smoothedX=smoothedY=finalX=finalY=0;
+ motionReference=null;
  cancelAnimationFrame(motionFrame);
  motionFrame=requestAnimationFrame(forwardMotion);
+ try{await disposeARSession();}catch(error){console.warn('Camera shutdown before invitation:',error);}
+ if(!finalMotionActive)return;
+ arContainer.style.display='none';
+ finaleMotionFrame.src='./cinematic/embed.html?v=fast-tilt-20261107-3';
 }
 
 // Confirm invitation with a logo reveal before any actors are visible.
@@ -584,11 +623,18 @@ startButton.addEventListener('click',()=>{
 });
 function closeFinalMotion(){
  finalMotionActive=false;cancelAnimationFrame(motionFrame);
+ finaleMotion.classList.remove('scene-ready');
  finaleMotion.hidden=true;
  finaleMotionFrame.removeAttribute('src');
  disableSound();resetPerformances();selectedAct=null;
  landing.style.display='block';message.textContent='';
 }
+document.getElementById('finaleEnableTilt')?.addEventListener('click',requestMotionFromStartGesture);
+document.getElementById('finaleResetTilt')?.addEventListener('click',()=>{
+ motionReference=null;finalX=finalY=smoothedX=smoothedY=0;
+ finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-reset-view'},location.origin);
+ setMotionStatus(motionAllowed?'VIEW RESET · MOVE PHONE TO TILT':'VIEW RESET · DRAG TO TILT');
+});
 document.getElementById('finaleMotionClose')?.addEventListener('click',closeFinalMotion);
 document.getElementById('finaleMotionReplay')?.addEventListener('click',()=>{
  closeFinalMotion();startAR();
