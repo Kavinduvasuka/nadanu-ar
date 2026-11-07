@@ -380,44 +380,6 @@ function textMesh(lines,w,h,x,y,z,size=74){
 // Original Stage Lights geometry and proportions, mounted as a complete
 // mini concert world on the printed invitation. Nothing is flattened to a plane.
 let stageWorld, halo, noteSprites=[], noteCooldown=0;
-let floatingInvitation=null;
-function createFloatingInvitation(stageRoot){
-  // Original printed artwork, displayed as a freestanding 3D invitation:
-  // no LED wall, backdrop panel, string art, or replacement branding.
-  const group=new THREE.Group();
-  group.position.set(0,5.85,-6.3);
-  group.rotation.y=-.045;
-  stageRoot.add(group);
-  const width=4.85,height=width*2048/1441;
-  const texture=new THREE.TextureLoader().load(
-    './assets/finale-invitation.webp',
-    ()=>{texture.colorSpace=THREE.SRGBColorSpace||texture.colorSpace;},
-    undefined,
-    error=>console.warn('Floating original invitation could not load:',error)
-  );
-  texture.colorSpace=THREE.SRGBColorSpace||texture.colorSpace;
-  const image=new THREE.Mesh(
-    new THREE.PlaneGeometry(width,height),
-    new THREE.MeshBasicMaterial({map:texture,transparent:true,opacity:.94,
-      side:THREE.DoubleSide,depthWrite:false})
-  );
-  group.add(image);
-  // A narrow luminous outline makes the invite feel like a floating object,
-  // while keeping the original graphic fully visible.
-  const outline=new THREE.LineLoop(
-    new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-width/2,-height/2,-.018),
-      new THREE.Vector3(width/2,-height/2,-.018),
-      new THREE.Vector3(width/2,height/2,-.018),
-      new THREE.Vector3(-width/2,height/2,-.018)
-    ]),
-    new THREE.LineBasicMaterial({color:0xffd58a,transparent:true,opacity:.7,
-      depthWrite:false})
-  );
-  group.add(outline);
-  return {group,texture};
-}
-
 const stageV=new THREE.Vector3(), stageQ=new THREE.Quaternion(), stageUp=new THREE.Vector3(0,1,0);
 function createStage(root){
   // Recreated directly from stage-lights(2).html: open circular concert floor,
@@ -434,7 +396,6 @@ function createStage(root){
   const floor=new THREE.Mesh(new THREE.CircleGeometry(10,96),
     new THREE.MeshStandardMaterial({color:0x140a28,metalness:.75,roughness:.22,side:THREE.DoubleSide}));
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
-  floatingInvitation=createFloatingInvitation(stage);
   neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((color,i)=>{
     const ring=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),
       new THREE.MeshBasicMaterial({color,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
@@ -672,11 +633,6 @@ function setup() {
   stage.visible=showStage && !showInvitation;
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
-    if(floatingInvitation){
-      const t=performance.now()*.001;
-      floatingInvitation.group.position.y=5.85+Math.sin(t*.8)*.09;
-      floatingInvitation.group.rotation.y=-.045+Math.sin(t*.42)*.055;
-    }
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
     // Slow, frame-rate-independent damping: stable even if mobile FPS varies.
@@ -819,7 +775,6 @@ async function disposeARSession(){
   console.warn('MindAR shutdown warning:',err);
  }finally{
   initialMarkerDistance=0;markerDistanceZoom=markerDistanceTarget=1;
-  if(floatingInvitation){floatingInvitation.texture.dispose();floatingInvitation=null;}
   if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;stableCamera=null;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
