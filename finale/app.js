@@ -234,17 +234,19 @@ function bindOrbitControls(){
  const pointers=orbit.pointers;
  const interactive=e=>e.target?.closest?.('button,a,input,select,textarea,dialog');
  document.addEventListener('pointerdown',e=>{
-  if(!running||!tracked||!introCompleted||showInvitation||interactive(e))return;
+  if(!running||!stagePoseCaptured||!introCompleted||showInvitation||interactive(e))return;
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  lastManualOrbitAt=performance.now();
   if(pointers.size===2)orbit.distance=0;
  },true);
  document.addEventListener('pointermove',e=>{
-  if(!running||!tracked||!introCompleted||!pointers.has(e.pointerId))return;
+  if(!running||!stagePoseCaptured||!introCompleted||!pointers.has(e.pointerId))return;
+  if(e.cancelable)e.preventDefault();
   const old=pointers.get(e.pointerId);
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===1){
-   stageTargetY=THREE.MathUtils.clamp(stageTargetY+(e.clientX-old.x)*.009,-1.15,1.15);
-   stageTargetX=THREE.MathUtils.clamp(stageTargetX+(e.clientY-old.y)*.005,-.42,.42);
+   stageTargetY=THREE.MathUtils.clamp(stageTargetY+(e.clientX-old.x)*.012,-1.4,1.4);
+   stageTargetX=THREE.MathUtils.clamp(stageTargetX+(e.clientY-old.y)*.006,-.48,.48);
    lastManualOrbitAt=performance.now();
   }else if(pointers.size===2){
    const [a,b]=[...pointers.values()];
@@ -546,7 +548,7 @@ function setup() {
         : `Preparing ${performerNames[index]} 3D model…`;
     }
     if(tracked)for(const mixer of mixers)mixer.update(dt);
-    // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
+    // Apply explicit visual rotation to the performers, not the stage.
     applyOrbit();
     // Lock to the invitation centre; delay the first reveal to avoid acquisition bounce.
     // No stage orbit or dynamic resizing after lock.
