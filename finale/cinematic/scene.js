@@ -34,7 +34,20 @@ function quad(tex,w,h,m){return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new 
 function groupFor(key,tex){const [file,x,y,width,height,z]=files[key];const w=width/PW*W,h=height/PH*H;
  const g=new THREE.Group();g.position.copy(xy(x+width/2,y+height/2,z));g.userData={key,w,h,z,origin:g.position.clone()};root.add(g);all[key]=g;
  return {g,w,h,tex};}
-function frontElement(key,tex,depth=false){const {g,w,h}=groupFor(key,tex);if(depth){let layers=key==='title'?9:key==='logo'?9:5;for(let i=layers;i>=1;i--){const d=quad(tex,w,h,{color:key==='title'?0x6b1d0b:0x3e1530,opacity:.60});d.position.set(-i*.008,i*.005,-i*.038);g.add(d)}}const p=quad(tex,w,h,{});p.position.z=.038;g.add(p);g.userData.face=p;return g;}
+function frontElement(key,tex,depth=false){
+ const {g,w,h}=groupFor(key,tex);
+ if(depth){
+  // Layered relief only on the main original logo/title to keep WebGL light.
+  const layers=key==='title'?12:key==='logo'?11:5;
+  for(let i=layers;i>=1;i--){
+   const d=quad(tex,w,h,{color:key==='title'?0x7e2911:0x542447,opacity:.68});
+   d.position.set(-i*.010,i*.006,-i*.050);
+   g.add(d);
+  }
+ }
+ const p=quad(tex,w,h,{});p.position.z=.065;g.add(p);
+ g.userData.face=p;return g;
+}
 function flat(key,tex){return frontElement(key,tex,false)}
 function makeDisc(tex){const {g,w,h}=groupFor('disc',tex);const r=Math.min(w,h)*.49;g.position.z=.41;g.userData.origin.copy(g.position);
  const outer=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.19,96,2),material(0x140d0d,{metalness:.91,roughness:.2}));outer.rotation.x=Math.PI/2;g.add(outer);
@@ -123,7 +136,7 @@ function makeBulb(key,tex,i){const {g,w,h}=groupFor(key,tex);
 function makeEmblem(tex){const g=frontElement('logo',tex,true);g.position.z=.59;g.userData.origin.copy(g.position);
  const geo=new THREE.TorusGeometry(1.45,.027,8,96);const ring=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0xe89528,transparent:true,opacity:.36,blending:THREE.AdditiveBlending}));ring.position.z=-.2;g.add(ring);gs.logoRing=ring;gs.logo=g;return g;}
 function makeTitle(tex){const g=frontElement('title',tex,true);gs.title=g;
- const halo=glowSprite(g.userData.w*1.5,g.userData.h*1.9,-.28,.10);g.add(halo);gs.titleHalo=halo;return g;}
+ const halo=glowSprite(g.userData.w*1.5,g.userData.h*1.9,-.39,.14);g.add(halo);gs.titleHalo=halo;return g;}
 function eqBars(){const cols=[{x:65,y:986,s:1},{x:1350,y:660,s:-1},{x:1328,y:1856,s:-1}];cols.forEach(({x,y,s},j)=>{for(let i=0;i<9;i++){let bar=new THREE.Mesh(new THREE.BoxGeometry(.053,.15,.045),new THREE.MeshBasicMaterial({color:0xff752b,transparent:true,opacity:.7}));bar.position.copy(xy(x+s*i*9,y,.26));root.add(bar);equalizerBars.push({bar,j,i,base:bar.position.y});}})}
 function extraParticles(){const geometry=new THREE.BufferGeometry(),coords=new Float32Array(135*3),color=[];for(let i=0;i<135;i++){coords[i*3]=(Math.random()-.5)*W;coords[i*3+1]=(Math.random()-.5)*H;coords[i*3+2]=.1+Math.random()*1.4;particles.push({speed:.13+Math.random()*.41,offset:Math.random()*Math.PI*2});color.push(1,.35+Math.random()*.5,.08)}geometry.setAttribute('position',new THREE.BufferAttribute(coords,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(color,3));const mat=new THREE.PointsMaterial({size:.036,vertexColors:true,transparent:true,opacity:.82,depthWrite:false,blending:THREE.AdditiveBlending});FX=new THREE.Points(geometry,mat);root.add(FX)}
 async function main(){
@@ -157,8 +170,8 @@ async function main(){
    if(lastPinchDistance>0)targetZoom=THREE.MathUtils.clamp(targetZoom*distance/lastPinchDistance,.70,1.45);
    lastPinchDistance=distance;pinchActive=true;manualZoomUntil=Infinity;zoomOverrideUntil=Infinity;
   }else if(pointerDown){
-   targetRY=THREE.MathUtils.clamp(targetRY+(e.clientX-dragX)*.0015,-.24,.24);
-   targetRX=THREE.MathUtils.clamp(targetRX+(e.clientY-dragY)*.001,-.14,.14);
+   targetRY=THREE.MathUtils.clamp(targetRY+(e.clientX-dragX)*.0018,-.31,.31);
+   targetRX=THREE.MathUtils.clamp(targetRX+(e.clientY-dragY)*.0013,-.20,.20);
   }
   dragX=e.clientX;dragY=e.clientY;
  });
@@ -183,6 +196,15 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.043,(now-previ
  const t=elapsed,phase=Math.min(1,t/4.8);
  // Three-dimensional floating print; motion is restrained and positions remain aligned.
  root.rotation.x+=(targetRX-root.rotation.x)*.055;root.rotation.y+=(targetRY-root.rotation.y)*.055;
+ // Gentle independent foreground parallax adds perceived depth without
+ // disturbing the original text, spacing, or screen fitting.
+ for(const key of ['logo','title','invitation','tagline','version','date','time','venue','showdown']){
+  const g=all[key];if(!g||!g.userData.origin)continue;
+  const origin=g.userData.origin;
+  const strength=key==='logo'||key==='title'?0.24:key==='invitation'||key==='showdown'?0.13:0.07;
+  g.position.x+=(origin.x+targetRY*strength-g.position.x)*.075;
+  g.position.y+=(origin.y-targetRX*strength-g.position.y)*.075;
+ }
  if(camera){camera.zoom+=(targetZoom-camera.zoom)*.075;camera.updateProjectionMatrix()}
  root.position.y=(Math.sin(t*.4)*.014);
  if(gs.disc){gs.disc.g.rotation.z=-t*1.26;gs.disc.shine.rotation.z=t*2.7;gs.disc.shine.material.opacity=.1+.13*Math.sin(t*3.5)**2}
@@ -274,6 +296,6 @@ window.addEventListener('message', event => {
  const zoom=Number(event.data.zoom);
  if(Number.isFinite(zoom)&&!pinchActive&&performance.now()>manualZoomUntil&&performance.now()>zoomOverrideUntil)targetZoom=THREE.MathUtils.clamp(zoom,.90,1.12);
  if(!Number.isFinite(x)||!Number.isFinite(y))return;
- targetRX=THREE.MathUtils.clamp(x,-.23,.23);
- targetRY=THREE.MathUtils.clamp(y,-.30,.30);
+ targetRX=THREE.MathUtils.clamp(x,-.27,.27);
+ targetRY=THREE.MathUtils.clamp(y,-.36,.36);
 });
