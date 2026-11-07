@@ -38,6 +38,9 @@ let mindarThree, initialized = false, running = false, busy = false, tracked = f
 let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
 let stageTargetX=0,stageTargetY=0,stageTiltX=0,stageTiltY=0,stageSensorBase=null;
 let frozenStageRoot=null,stagePoseCaptured=false;
+let targetLostAt=0,stageWasActive=false;
+const TRACKING_GRACE_MS=550;
+const posePosition=new THREE.Vector3(),poseRotation=new THREE.Quaternion(),poseScale=new THREE.Vector3();
 let lastManualOrbitAt=0;
 let trackerGeneration=0; // Invalidate late tracking events from a previous camera session.
 let stage, warmLight, violetLight;
@@ -437,48 +440,67 @@ function setup() {
  root.visible=false;
  anchor.onTargetFound=()=>{
   if(generation!==trackerGeneration)return; // Ignore callbacks from disposed camera.
-  tracked=true;
-  trackingTime=performance.now();
-  stagePoseCaptured=false;
-  resetStageView();
-  stage.visible=false;
-  frozenStageRoot.visible=false;
-  root.visible=false; // Tracking-only anchor; stage will use its captured pose.
+  const firstLock=!stagePoseCaptured;
+  tracked=true;targetLostAt=0;
+  if(firstLock){
+   trackingTime=performance.now();
+   resetStageView();
+   stage.visible=false;
+   frozenStageRoot.visible=false;
+   showScanner('locked','Invitation detected · stabilizing stage…');
+   status.textContent='Invitation detected · stabilizing tracking…';
+  } else if(introCompleted) {
+   hideScanner();
+  }
+  root.visible=false; // Tracking-only anchor; stage uses a filtered copy of its pose.
   showScanner('locked','Invitation detected · stabilizing stage…');
   status.textContent='Invitation detected · stabilizing tracking…';
  };
  anchor.onTargetLost=()=>{
   if(generation!==trackerGeneration)return;
   tracked=false;
-  stagePoseCaptured=false;
-  stage.visible=false;
-  if(frozenStageRoot)frozenStageRoot.visible=false;
+  targetLostAt=performance.now();
+  // Short interruptions are tolerated. The render loop pauses and hides the
+  // stage only after the invitation has genuinely been lost for a moment.
   root.visible=false;
-  if(!introCompleted){
-   introStartedAt=0;
-   if(recognitionIntro)recognitionIntro.hidden=true;
-  }
-  // Guide the visitor to reacquire the printed image even after the final AR scene.
-  showScanner('searching','Invitation lost · stage paused. Frame the invitation to resume.');
-  status.textContent='Invitation lost · stage paused. Reframe the artwork to resume';
  };
  renderer.setAnimationLoop(()=>{
   if(generation!==trackerGeneration||!running)return;
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
   // MindAR can retain an old anchor matrix temporarily on iOS. Hide both the
   // complete stage and its lights until NEW invitation tracking has stabilized.
-  const locked=tracked && performance.now()-trackingTime>=800;
+  const locked=tracked && performance.now()-trackingTime>=650;
+  const inGrace=!tracked && stagePoseCaptured && targetLostAt>0 && performance.now()-targetLostAt<TRACKING_GRACE_MS;
   if(locked && showInvitation && invitationScanner && !invitationScanner.hidden)hideScanner();
   if(locked && !introCompleted && !introStartedAt)startRecognitionIntro();
   if(locked && introStartedAt && performance.now()-introStartedAt>=INTRO_DURATION_MS)finishRecognitionIntro();
-  // Copy one stabilized marker pose into the independent stage.
-  if(locked && !stagePoseCaptured && frozenStageRoot){
+  // Follow the real image pose with damping instead of freezing it forever.
+  // This preserves actual side-view parallax while suppressing tracking jitter.
+  if(locked && frozenStageRoot){
    root.updateWorldMatrix(true,false);
-   root.matrixWorld.decompose(frozenStageRoot.position,frozenStageRoot.quaternion,frozenStageRoot.scale);
-   stagePoseCaptured=true;
-   stageSensorBase=null;
+   root.matrixWorld.decompose(posePosition,poseRotation,poseScale);
+   if(!stagePoseCaptured){
+    frozenStageRoot.position.copy(posePosition);
+    frozenStageRoot.quaternion.copy(poseRotation);
+    frozenStageRoot.scale.copy(poseScale);
+    stagePoseCaptured=true;
+    stageSensorBase=null;
+   }else{
+    const distance=frozenStageRoot.position.distanceTo(posePosition);
+    const positionAlpha=distance<.006?.045:distance<.04?.12:.22;
+    frozenStageRoot.position.lerp(posePosition,positionAlpha);
+    frozenStageRoot.quaternion.slerp(poseRotation,.12);
+    frozenStageRoot.scale.lerp(poseScale,.12);
+   }
   }
-  const showStage=locked && introCompleted && stagePoseCaptured;
+  const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
+  if(!showStage && stageWasActive && !showInvitation){
+   if(!tracked){
+    showScanner('searching','Invitation lost · stage paused. Frame the artwork to resume.');
+    status.textContent='Invitation lost · stage paused';
+   }
+  }
+  stageWasActive=showStage;
   root.visible=false;
   if(frozenStageRoot)frozenStageRoot.visible=showStage;
   stage.visible=showStage && !showInvitation;
@@ -618,7 +640,7 @@ async function disposeARSession(){
  }catch(err){
   console.warn('MindAR shutdown warning:',err);
  }finally{
-  if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;}
+  if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
    try{renderer.dispose();}catch(_){}
