@@ -239,10 +239,10 @@ function resetStageView(){
  applyOrbit();
 }
 function applyOrbit(){
- // Only the 3D performers rotate. The concert floor, lights, rings and
- // surrounding stage keep their original orientation and animations.
+ // Rotate the entire mini-concert together: performers stay firmly on
+ // the stage floor instead of twisting independently in mid-air.
  performers.forEach((group,i)=>{
-   group.rotation.set(stageTiltX,stageTiltY,0,'XYZ');
+   group.rotation.set(0,0,0);
    group.scale.setScalar((i===2?1.80:3.35)*orbit.zoom);
  });
 }
@@ -548,8 +548,9 @@ function setup() {
     // Moving around the invitation creates genuine perspective and parallax.
     stageTiltX+=(stageTargetX-stageTiltX)*.17;
     stageTiltY+=(stageTargetY-stageTiltY)*.17;
-    // Keep the stage completely unrotated by touch/sensors; only performers orbit.
-    stage.quaternion.copy(fixedStageTilt);
+    // Smooth 3D orbit of the full stage + performers in screen-locked hybrid AR.
+    // Keep the camera-space stage position fixed to avoid marker tracking jitter.
+    stage.quaternion.setFromEuler(new THREE.Euler(.62+stageTiltX,stageTiltY,0,'XYZ'));
     // Preserve each 8-second act until its GLB has fully loaded.
     // A slow first download must never silently skip the solo dancer.
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
