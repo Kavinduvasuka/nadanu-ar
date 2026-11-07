@@ -24,6 +24,7 @@ let renderer,scene,camera,root,bgMesh,FX,frameRequested=0;
 const all={},animated=[],bulbs=[],reels=[],particles=[],equalizerBars=[],rings=[],shimmerCards=[],tubeLights=[],cassetteSpools=[];
 let elapsed=0,playing=true,comparison=false,speed=1,targetRX=0,targetRY=0,pointerDown=false,dragX=0,dragY=0,autoOrbit=true,previous=0;
 let targetZoom=1,lastPinchDistance=0,pinchActive=false,manualZoomUntil=0;
+let zoomOverrideUntil=0;
 const touchPoints=new Map();
 const gs={};
 function material(color=0xffffff,props={}){return new THREE.MeshStandardMaterial({color,metalness:.52,roughness:.38,...props})}
@@ -153,8 +154,8 @@ async function main(){
   if(touchPoints.size===2){
    const [a,b]=[...touchPoints.values()];
    const distance=Math.hypot(a.x-b.x,a.y-b.y);
-   if(lastPinchDistance>0)targetZoom=THREE.MathUtils.clamp(targetZoom*distance/lastPinchDistance,.86,1.12);
-   lastPinchDistance=distance;pinchActive=true;manualZoomUntil=performance.now()+2800;
+   if(lastPinchDistance>0)targetZoom=THREE.MathUtils.clamp(targetZoom*distance/lastPinchDistance,.70,1.45);
+   lastPinchDistance=distance;pinchActive=true;manualZoomUntil=Infinity;zoomOverrideUntil=Infinity;
   }else if(pointerDown){
    targetRY=THREE.MathUtils.clamp(targetRY+(e.clientX-dragX)*.0015,-.24,.24);
    targetRX=THREE.MathUtils.clamp(targetRX+(e.clientY-dragY)*.001,-.14,.14);
@@ -257,16 +258,21 @@ window.addEventListener('message', event => {
   // Reset angles, position and camera zoom, including when coming from AR.
   targetRX=targetRY=0;targetZoom=1;
   dragX=dragY=0;
-  pointerDown=false;pinchActive=false;lastPinchDistance=0;touchPoints.clear();manualZoomUntil=0;
+  pointerDown=false;pinchActive=false;lastPinchDistance=0;touchPoints.clear();manualZoomUntil=0;zoomOverrideUntil=0;
   if(root){root.rotation.set(0,0,0);root.position.set(0,0,0);root.scale.setScalar(1)}
   if(camera){camera.zoom=1;camera.position.set(0,0,25);camera.lookAt(0,0,0);camera.updateProjectionMatrix()}
+  return;
+ }
+ if(event.data.type === 'nadanu-zoom'){
+  const factor=Number(event.data.factor);
+  if(Number.isFinite(factor)&&factor>0){targetZoom=THREE.MathUtils.clamp(targetZoom*factor,.70,1.45);zoomOverrideUntil=Infinity}
   return;
  }
  if(event.data.type !== 'nadanu-motion') return;
  if(pointerDown || comparison) return;
  const x=Number(event.data.x),y=Number(event.data.y);
  const zoom=Number(event.data.zoom);
- if(Number.isFinite(zoom)&&!pinchActive&&performance.now()>manualZoomUntil)targetZoom=THREE.MathUtils.clamp(zoom,.90,1.12);
+ if(Number.isFinite(zoom)&&!pinchActive&&performance.now()>manualZoomUntil&&performance.now()>zoomOverrideUntil)targetZoom=THREE.MathUtils.clamp(zoom,.90,1.12);
  if(!Number.isFinite(x)||!Number.isFinite(y))return;
  targetRX=THREE.MathUtils.clamp(x,-.23,.23);
  targetRY=THREE.MathUtils.clamp(y,-.30,.30);
