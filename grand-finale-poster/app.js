@@ -418,6 +418,9 @@ async function startAR(){
   if(!window.isSecureContext || !cam) throw new Error('Camera requires localhost or HTTPS in a compatible browser.');
   console.info('Secure context:',window.isSecureContext,'Three revision:',THREE.REVISION);
 
+  // AR styles only apply while the camera is active; the ZIP landing look is preserved.
+  const arStyles=document.getElementById('arRuntimeStyles');
+  if(arStyles)arStyles.media='all';
   // Make the camera layer available before MindAR measures its dimensions.
   arContainer.style.display='block';
   resetRecognitionIntro();
@@ -466,6 +469,7 @@ async function startAR(){
    arContainer.style.display='none';
    arUI.hidden=true;
    landing.style.display='block';
+   const arStyles=document.getElementById('arRuntimeStyles');if(arStyles)arStyles.media='not all';
    resetRecognitionIntro();
    if(invitationScanner)invitationScanner.hidden=true;
    disableSound();
@@ -516,6 +520,7 @@ async function stopAR(){
  resetRecognitionIntro();
  arContainer.style.display='none';
  landing.style.display='block';
+ const arStyles=document.getElementById('arRuntimeStyles');if(arStyles)arStyles.media='not all';
  disableSound();
  resetPerformances();
  selectedAct=null;

@@ -460,3 +460,7 @@ dialog * {
 @media(max-width:900px){#landing .neon-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){#landing .neon-category-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){#landing .poster-display .poster{transition:none;transform:none!important}}
+
+/* Inline AR controls: original landing layout untouched until Start AR is pressed. */
+.grand-finale-ar-message:not(:empty){display:block;max-width:900px;margin:8px auto 24px;padding:14px 20px;border:1px solid #ef925477;border-radius:9px;color:#ffd1a8;background:#451c20;font-size:13px;line-height:1.6}
+#startButton[hidden]{display:none!important}

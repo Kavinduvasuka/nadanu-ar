@@ -13,10 +13,10 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=grand-finale-zip-clone-20261107"><link rel="stylesheet" href="finalists.css?v=group-pending-20261107-6">
-  <script
-    type="importmap">{"imports":{"three":"./assets/three.module.js","three/addons/renderers/CSS3DRenderer.js":"./assets/CSS3DRenderer.js"}}</script>
+  <link rel="stylesheet" href="style.css?v=grand-finale-inline-ar-20261107"><link rel="stylesheet" href="finalists.css?v=group-pending-20261107-6">
+  <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Audiowide&display=swap" rel="stylesheet">
+<link id="arRuntimeStyles" rel="stylesheet" href="./ar-style.css?v=inline-camera-20261107" media="not all">
 </head>
 
 <body>
@@ -269,7 +269,55 @@
 
 
 </footer>
+  <p id="message" role="status" aria-live="polite" class="grand-finale-ar-message"></p>
+  <button id="startButton" type="button" hidden aria-hidden="true" tabindex="-1">Start AR engine</button>
   </main>
+<div id="arContainer"></div>
+<div id="arUI" hidden>
+  <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><div class="topbar-actions"><button id="resetViewButton" type="button">RESET ACTORS</button><button id="stopButton" type="button">EXIT AR</button></div></div>
+  <div id="invitationScanner" class="invitation-scanner" data-scan-state="preparing" aria-label="Grand Finale poster scanner">
+    <p class="scan-eyebrow"><span aria-hidden="true"></span> NADANU / POSTER RECOGNITION</p>
+    <div class="scan-mode">POSTER AR</div>
+    <div class="scan-viewfinder" aria-hidden="true">
+      <div class="scan-grid"></div>
+      <span class="scan-corner-id scan-corner-one">01</span>
+      <span class="scan-corner-id scan-corner-two">02</span>
+      <span class="scan-check">✓</span>
+      <i></i><i></i><i></i><i></i>
+      <div class="scan-line"></div>
+    </div>
+    <p class="scan-heading"><span class="scan-search-label">FRAME YOUR POSTER</span><span class="scan-lock-label">POSTER DETECTED</span></p>
+    <p id="scannerMessage" class="scan-message" role="status" aria-live="polite">Opening camera…</p>
+    <div class="scan-steps" aria-hidden="true"><span>CAMERA</span><i></i><span>POSTER</span><i></i><span>SHOWTIME</span></div>
+  </div>
+  <div id="recognitionIntro" class="recognition-intro" hidden role="status" aria-live="polite">
+    <div class="recognition-intro-glow" aria-hidden="true"></div>
+    <div class="recognition-intro-card">
+      <span class="recognition-intro-kicker">NADANU 3.0 / GRAND FINALE</span>
+      <img src="./assets/nadanu-logo.png" alt="Nadanu 3.0" class="recognition-intro-logo">
+      <span class="recognition-intro-divider" aria-hidden="true"></span>
+      <span class="recognition-intro-check"><span aria-hidden="true">✓</span> POSTER RECOGNIZED</span>
+      <strong class="recognition-intro-title">WELCOME TO THE GRAND FINALE</strong>
+      <span class="recognition-intro-subtitle">Feel the Beat. Own the Stage.</span>
+      <span class="recognition-intro-progress"><span></span></span>
+      <span class="recognition-intro-next">YOUR AR SHOW IS BEGINNING</span>
+    </div>
+  </div>
+  <div id="actBanner" class="act-banner" aria-live="polite">
+    <span class="act-banner-kicker">NADANU 3.0 · LIVE ON STAGE</span>
+    <strong id="actBannerTitle">SOLO SINGING</strong>
+    <span id="actBannerCount" class="act-banner-count">ACT 01 / 03</span>
+  </div>
+  <div id="finaleInvitation" class="finale-invitation" hidden role="region" aria-label="Grand Finale Poster">
+    <div class="finale-invitation-card finale-poster-card">
+      <img class="finale-poster-image" src="./assets/grand-finale-poster.png" alt="Nadanu 3.0 Grand Finale invitation poster" loading="eager" decoding="async">
+      <div class="finale-invitation-actions"><button type="button" id="replayActsButton">↻ WATCH PERFORMANCES AGAIN</button><button type="button" id="backToWebsiteButton">← BACK TO WEBSITE</button></div>
+    </div>
+  </div>
+  <div class="act-controls"><button id="soundButton">SOUND OFF</button></div>
+  <div id="trackingStatus" class="tracking">Point camera at the Grand Finale poster</div>
+</div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
@@ -287,7 +335,15 @@ document.addEventListener('DOMContentLoaded',()=>{
    const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}}),{threshold:.08});
    sections.forEach(x=>obs.observe(x));
  }else sections.forEach(x=>x.classList.add('visible'));
- document.querySelectorAll('#startAR,#scrollStartAR,[data-register]').forEach(btn=>btn.addEventListener('click',()=>{location.href='./ar.html'}));
+ document.querySelectorAll('#startAR,#scrollStartAR,[data-register]').forEach(btn=>btn.addEventListener('click',()=>{
+ const status=document.getElementById('message');
+ if(!window.__nadanuARReady){
+   if(status)status.textContent='AR is loading. Check your connection and tap Start AR again in a moment.';
+   return;
+ }
+ if(status)status.textContent='';
+ document.getElementById('startButton')?.click();
+}));
  document.querySelectorAll('#preview,#scrollPreview').forEach(btn=>btn.addEventListener('click',()=>{location.href='./world.html'}));
  const container=document.querySelector('.poster-display'),image=container?.querySelector('.poster');
  if(container&&image&&matchMedia('(pointer:fine)').matches){
@@ -298,4 +354,5 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
 });
 </script>
-<script defer src="./finalists.js?v=group-pending-20261107-6"></script></body></html>
+<script defer src="./finalists.js?v=group-pending-20261107-6"></script>
+<script type="module" src="./app.js?v=inline-camera-20261107"></script></body></html>
