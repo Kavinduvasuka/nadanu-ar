@@ -340,7 +340,8 @@ function setup() {
    introStartedAt=0;
    if(recognitionIntro)recognitionIntro.hidden=true;
   }
-  if(!showInvitation)showScanner('searching','Frame the printed Grand Finale invitation');
+  // Guide the visitor to reacquire the printed image even after the final AR scene.
+  showScanner('searching','Keep the Grand Finale invitation in the camera frame');
   status.textContent='Point camera at the printed Grand Finale invitation';
  };
  renderer.setAnimationLoop(()=>{
@@ -349,6 +350,7 @@ function setup() {
   // MindAR can retain an old anchor matrix temporarily on iOS. Hide both the
   // complete stage and its lights until NEW invitation tracking has stabilized.
   const locked=tracked && performance.now()-trackingTime>=800;
+  if(locked && showInvitation && invitationScanner && !invitationScanner.hidden)hideScanner();
   if(locked && !introCompleted && !introStartedAt)startRecognitionIntro();
   if(locked && introStartedAt && performance.now()-introStartedAt>=INTRO_DURATION_MS)finishRecognitionIntro();
   const showStage=locked && introCompleted;
