@@ -715,3 +715,9 @@ body{font-family:"Audiowide",Arial,sans-serif}
 .finale-motion-head,.finale-motion-foot{z-index:3}
 #finaleEnableTilt,#finaleResetTilt{pointer-events:auto;cursor:pointer;background:#200c0bd8;color:#ffe5c3;border:1px solid #ffb6577a;border-radius:9px;padding:8px 13px;font:800 10px Arial,sans-serif;letter-spacing:.4px}
 #finaleEnableTilt[hidden]{display:none}
+
+/* Stable AR: compact navigation in camera and invitation scenes. */
+.topbar-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.finale-motion-head{justify-content:flex-end}
+.finale-motion-head span{margin-right:auto}
+@media(max-width:520px){.topbar-actions{gap:4px}#arUI .topbar-actions button{font-size:9px;padding:8px 7px}.finale-motion-head button{font-size:9px;padding:8px}}
