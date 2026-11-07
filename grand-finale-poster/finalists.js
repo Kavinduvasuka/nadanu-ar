@@ -10,9 +10,7 @@ const categories=['solo-singing','solo-dancing'];
 const slides=[];
 for(const cat of categories){
  const people=finalists.filter(p=>p[1]===cat);
- for(let start=0;start<people.length;start+=6){
-  slides.push({cat,people:people.slice(start,start+6),part:Math.floor(start/6)+1});
- }
+ if(people.length)slides.push({cat,people});
 }
 const grid=document.getElementById('finalistsGrid');
 const previous=document.getElementById('finalistsPrev');
@@ -26,6 +24,7 @@ if(!grid||!previous||!next||!select)return;
 let active=0;
 function makeCard([name,category,slug]){
  const card=document.createElement('article');card.className='finalist-card';
+ if(slug==='sanjana-mendis')card.classList.add('finalist-card--sanjana');
  const frame=document.createElement('div');frame.className='finalist-photo-frame';
  const img=document.createElement('img');
  img.src='assets/finalists/'+category+'/'+slug+'.webp';

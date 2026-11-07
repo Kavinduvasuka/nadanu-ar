@@ -77,3 +77,7 @@
 /* Only Solo Singing and Solo Dancing remain in the Grand Finale. */
 #landing .categories .neon-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:920px;margin-inline:auto}
 @media(max-width:560px){#landing .categories .neon-category-grid{grid-template-columns:1fr}}
+
+/* One gallery page per performance category. Face-aware framing for Sanjana. */
+#landing .finalist-card--sanjana .finalist-photo-frame img{object-position:center 60%}
+@media(max-width:650px){#landing .finalist-card--sanjana .finalist-photo-frame img{object-position:center 57%}}
