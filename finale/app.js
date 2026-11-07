@@ -207,7 +207,6 @@ const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,0
 function resetStageView(){
  orbit.zoom=1;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;stageSensorBase=null;
  if(stage)stage.quaternion.copy(fixedStageTilt);
- if(frozenStageRoot)frozenStageRoot.rotation.set(0,0,0);
  applyOrbit();
 }
 function applyOrbit(){
