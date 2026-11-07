@@ -199,10 +199,18 @@ function forwardMotion(){
  motionFrame=requestAnimationFrame(forwardMotion);
 }
 let finaleSceneReady=false;
+let finalePreloaded=false;
+const CINEMATIC_FRAME_URL='./cinematic/embed.html?v=instant-zoom-20261107-3';
+function preloadFinaleScene(){
+ if(finalePreloaded)return;
+ finalePreloaded=true;
+ finaleMotionFrame.src=CINEMATIC_FRAME_URL;
+}
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==finaleMotionFrame?.contentWindow)return;
- if(event.data?.type!=='nadanu-scene-ready'||!finalMotionActive)return;
+ if(event.data?.type!=='nadanu-scene-ready')return;
  finaleSceneReady=true;
+ if(!finalMotionActive)return;
  // New invitation always starts front-facing and fitted inside the screen.
  finaleMotionUnlockedAt=performance.now()+1200;
  motionReference=null;
@@ -213,8 +221,8 @@ window.addEventListener('message',event=>{
 async function revealFinalMotion(){
  if(finalMotionActive)return;
  finalMotionActive=true;
- finaleSceneReady=false;
  finaleMotionUnlockedAt=Infinity;
+ if(!finalePreloaded)preloadFinaleScene();
  resetStageView(); // Clear concert orbit and zoom before the final invitation.
  finaleMotion.classList.remove('scene-ready');
  running=false;tracked=false;
@@ -232,7 +240,13 @@ async function revealFinalMotion(){
  try{await disposeARSession();}catch(error){console.warn('Camera shutdown before invitation:',error);}
  if(!finalMotionActive)return;
  arContainer.style.display='none';
- finaleMotionFrame.src='./cinematic/embed.html?v=motion-zoom-20261107-2';
+ if(!finaleMotionFrame.getAttribute('src'))preloadFinaleScene();
+ if(finaleSceneReady){
+  finaleMotionUnlockedAt=performance.now()+1200;
+  motionReference=null;smoothedX=smoothedY=finalX=finalY=0;finalZoom=1;
+  finaleMotionFrame.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin);
+  finaleMotion.classList.add('scene-ready');
+ }
 }
 
 // Confirm invitation with a logo reveal before any actors are visible.
@@ -607,6 +621,8 @@ function setup() {
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
     const canAdvance=performerReady[activeAutoAct]||performerFailed[activeAutoAct];
     if(tracked&&!showInvitation&&selectedAct===null&&canAdvance)sequenceTime+=dt;
+    // Load cinematic artwork before the last performance ends.
+    if(sequenceTime>=ACT_SECONDS*2+2&&!finalePreloaded&&performerReady[2])preloadFinaleScene();
     // One complete three-act showcase, followed by the formal invitation.
     if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
       showInvitation=true;
@@ -780,11 +796,18 @@ function closeFinalMotion(){
  finaleMotion.classList.remove('scene-ready');
  finaleMotion.hidden=true;
  finaleMotionFrame.removeAttribute('src');
+ finalePreloaded=false;finaleSceneReady=false;
  disableSound();resetPerformances();selectedAct=null;
  landing.style.display='block';message.textContent='';
 }
 document.getElementById('finaleEnableTilt')?.addEventListener('click',requestMotionFromStartGesture);
 arTiltButton?.addEventListener('click',requestMotionFromStartGesture);
+document.getElementById('finaleZoomIn')?.addEventListener('click',()=>{
+ finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-zoom',factor:1.12},location.origin);
+});
+document.getElementById('finaleZoomOut')?.addEventListener('click',()=>{
+ finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-zoom',factor:1/1.12},location.origin);
+});
 document.getElementById('finaleResetTilt')?.addEventListener('click',()=>{
  motionReference=null;finalX=finalY=smoothedX=smoothedY=0;finalZoom=1;
  finaleMotionUnlockedAt=performance.now()+900;
