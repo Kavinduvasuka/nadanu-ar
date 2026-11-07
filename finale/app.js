@@ -78,20 +78,31 @@ let finalX=0,finalY=0,smoothedX=0,smoothedY=0,motionFrame=0;
 function setMotionStatus(text){if(finaleMotionInfo)finaleMotionInfo.textContent=text;}
 // Calibrated against the device position when the invitation is first shown.
 // iOS requires an explicit tap to allow orientation; Android may grant automatically.
-let motionSamples=0, motionPermissionPending=false;
+let motionSamples=0, motionPermissionPending=false, lastMotionEventAt=0;
+const arTiltButton=document.getElementById('arEnableTilt');
+const arTiltStatus=document.getElementById('arTiltStatus');
+function updateARTiltStatus(message,enableButton=false){
+ if(arTiltStatus)arTiltStatus.textContent=message;
+ if(arTiltButton)arTiltButton.hidden=!enableButton;
+}
 function receiveMotion(event){
  if(!motionAllowed || !Number.isFinite(event.gamma) || !Number.isFinite(event.beta))return;
  motionSamples++;
+ lastMotionEventAt=performance.now();
  if(running && stagePoseCaptured && introCompleted && !showInvitation){
-  if(!stageSensorBase)stageSensorBase={gamma:event.gamma,beta:event.beta};
-  // Do not let device sensors immediately overwrite a finger-drag orbit.
+  if(!stageSensorBase){
+   stageSensorBase={gamma:event.gamma,beta:event.beta};
+   updateARTiltStatus('PHONE TILT ACTIVE · MOVE PHONE TO VIEW PERFORMERS');
+  }
   if(performance.now()-lastManualOrbitAt>2200){
-   stageTargetY=THREE.MathUtils.clamp((event.gamma-stageSensorBase.gamma)*.018,-1.15,1.15);
-   stageTargetX=THREE.MathUtils.clamp(-(event.beta-stageSensorBase.beta)*.012,-.42,.42);
+   const diffGamma=((event.gamma-stageSensorBase.gamma+540)%360)-180;
+   const diffBeta=((event.beta-stageSensorBase.beta+540)%360)-180;
+   stageTargetY=THREE.MathUtils.clamp(diffGamma*.022,-1.35,1.35);
+   stageTargetX=THREE.MathUtils.clamp(-diffBeta*.015,-.46,.46);
   }
  }
  if(!finalMotionActive)return;
- if(!motionReference) motionReference={gamma:event.gamma,beta:event.beta};
+ if(!motionReference)motionReference={gamma:event.gamma,beta:event.beta};
  const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
  finalY=clamp((event.gamma-motionReference.gamma)*.011,-.30,.30);
  finalX=clamp(-(event.beta-motionReference.beta)*.008,-.23,.23);
@@ -99,7 +110,10 @@ function receiveMotion(event){
 }
 function requestMotionFromStartGesture(){
  if(!('DeviceOrientationEvent' in window)){
-  motionAllowed=false;setMotionStatus('PHONE SENSOR UNAVAILABLE · DRAG TO TILT');return;
+  motionAllowed=false;
+  updateARTiltStatus('TILT SENSOR NOT AVAILABLE · DRAG TO ROTATE',false);
+  setMotionStatus('PHONE SENSOR UNAVAILABLE · DRAG TO TILT');
+  return;
  }
  if(motionPermissionPending)return;
  motionPermissionPending=true;
@@ -109,23 +123,29 @@ function requestMotionFromStartGesture(){
   Promise.resolve(result).then(value=>{
    motionAllowed=value==='granted';
    if(motionAllowed){
-    motionSamples=0;motionReference=null;
+    motionSamples=0;motionReference=null;stageSensorBase=null;lastMotionEventAt=0;
     window.removeEventListener('deviceorientation',receiveMotion,true);
     window.addEventListener('deviceorientation',receiveMotion,true);
+    updateARTiltStatus('TILT ALLOWED · CALIBRATING…',false);
     setMotionStatus('PHONE TILT ENABLED · MOVE PHONE OR DRAG');
     document.getElementById('finaleEnableTilt').hidden=true;
-   }else{
+  }else{
+    updateARTiltStatus('ALLOW PHONE TILT TO ROTATE PERFORMERS',true);
     setMotionStatus('ENABLE PHONE TILT OR DRAG TO EXPLORE');
     document.getElementById('finaleEnableTilt').hidden=false;
-   }
+  }
   }).catch(error=>{
    console.warn('Orientation permission:',error);
+   motionAllowed=false;
+   updateARTiltStatus('TILT PERMISSION NEEDED · TAP ENABLE',true);
    setMotionStatus('TAP ENABLE PHONE TILT OR DRAG');
    document.getElementById('finaleEnableTilt').hidden=false;
   }).finally(()=>{motionPermissionPending=false;});
  }catch(error){
   motionPermissionPending=false;
+  motionAllowed=false;
   console.warn('Orientation permission:',error);
+  updateARTiltStatus('TILT PERMISSION NEEDED · TAP ENABLE',true);
   document.getElementById('finaleEnableTilt').hidden=false;
  }
 }
@@ -510,6 +530,9 @@ function setup() {
    }
   }
   const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
+  if(showStage && motionAllowed && motionSamples===0 && performance.now()-trackingTime>2400){
+   updateARTiltStatus('NO TILT DATA · CHECK MOTION ACCESS OR DRAG',true);
+  }
   if(!showStage && stageWasActive && !showInvitation && !tracked){
    showScanner('searching','Invitation lost · stage paused. Frame the artwork to resume.');
    status.textContent='Invitation lost · stage paused';
@@ -588,6 +611,7 @@ async function startAR(){
   // Make the camera layer available before MindAR measures its dimensions.
   arContainer.style.display='block';
   resetRecognitionIntro();
+  updateARTiltStatus(motionAllowed?'TILT ALLOWED · MOVE PHONE':'TAP ENABLE PHONE TILT',!motionAllowed);
   // Show the custom scanner before MindAR starts; avoid blank loading screens.
   landing.style.display='none';
   arUI.hidden=false;
@@ -707,6 +731,7 @@ function closeFinalMotion(){
  landing.style.display='block';message.textContent='';
 }
 document.getElementById('finaleEnableTilt')?.addEventListener('click',requestMotionFromStartGesture);
+arTiltButton?.addEventListener('click',requestMotionFromStartGesture);
 document.getElementById('finaleResetTilt')?.addEventListener('click',()=>{
  motionReference=null;finalX=finalY=smoothedX=smoothedY=0;
  finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-reset-view'},location.origin);
