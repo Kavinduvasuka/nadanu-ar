@@ -26,7 +26,7 @@ let elapsed=0,playing=true,comparison=false,speed=1,targetRX=0,targetRY=0,pointe
 const gs={};
 function material(color=0xffffff,props={}){return new THREE.MeshStandardMaterial({color,metalness:.52,roughness:.38,...props})}
 function setStatus(s){stats.textContent=s}
-function texture(file){return new Promise((resolve,reject)=>texLoader.load('assets/'+file+'.png',t=>{t.encoding=THREE.sRGBEncoding;t.anisotropy=renderer.capabilities.getMaxAnisotropy()>8?8:4;resolve(t)},undefined,reject))}
+function texture(file){return new Promise((resolve,reject)=>texLoader.load('assets/'+file+'.png',t=>{t.encoding=THREE.sRGBEncoding;t.anisotropy=2;resolve(t)},undefined,reject))}
 function quad(tex,w,h,m){return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,side:THREE.DoubleSide,...m}));}
 function groupFor(key,tex){const [file,x,y,width,height,z]=files[key];const w=width/PW*W,h=height/PH*H;
  const g=new THREE.Group();g.position.copy(xy(x+width/2,y+height/2,z));g.userData={key,w,h,z,origin:g.position.clone()};root.add(g);all[key]=g;
@@ -124,7 +124,7 @@ function makeTitle(tex){const g=frontElement('title',tex,true);gs.title=g;
 function eqBars(){const cols=[{x:65,y:986,s:1},{x:1350,y:660,s:-1},{x:1328,y:1856,s:-1}];cols.forEach(({x,y,s},j)=>{for(let i=0;i<9;i++){let bar=new THREE.Mesh(new THREE.BoxGeometry(.053,.15,.045),new THREE.MeshBasicMaterial({color:0xff752b,transparent:true,opacity:.7}));bar.position.copy(xy(x+s*i*9,y,.26));root.add(bar);equalizerBars.push({bar,j,i,base:bar.position.y});}})}
 function extraParticles(){const geometry=new THREE.BufferGeometry(),coords=new Float32Array(135*3),color=[];for(let i=0;i<135;i++){coords[i*3]=(Math.random()-.5)*W;coords[i*3+1]=(Math.random()-.5)*H;coords[i*3+2]=.1+Math.random()*1.4;particles.push({speed:.13+Math.random()*.41,offset:Math.random()*Math.PI*2});color.push(1,.35+Math.random()*.5,.08)}geometry.setAttribute('position',new THREE.BufferAttribute(coords,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(color,3));const mat=new THREE.PointsMaterial({size:.036,vertexColors:true,transparent:true,opacity:.82,depthWrite:false,blending:THREE.AdditiveBlending});FX=new THREE.Points(geometry,mat);root.add(FX)}
 async function main(){
- renderer=new THREE.WebGLRenderer({canvas:document.querySelector('#scene'),alpha:true,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.23;
+ renderer=new THREE.WebGLRenderer({canvas:document.querySelector('#scene'),alpha:true,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.25));renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.23;
  scene=new THREE.Scene();camera=new THREE.OrthographicCamera(-W/2,W/2,H/2,-H/2,.1,100);camera.position.set(0,0,25);camera.lookAt(0,0,0);root=new THREE.Group();scene.add(root);
  scene.add(new THREE.AmbientLight(0xffd4b5,1.38));const warm=new THREE.PointLight(0xff7f36,1.9,16);warm.position.set(-3,2,8);scene.add(warm);const violet=new THREE.PointLight(0xb852ff,.8,12);violet.position.set(3,4,4);scene.add(violet);
  const bg=await new Promise((res,rej)=>texLoader.load('assets/backdrop.webp',res,undefined,rej));bg.encoding=THREE.sRGBEncoding;
@@ -140,6 +140,8 @@ async function main(){
  function resize(){const b=viewport.getBoundingClientRect();renderer.setSize(b.width,b.height,false)}new ResizeObserver(resize).observe(viewport);resize();
  cv.addEventListener('pointerdown',e=>{pointerDown=true;dragX=e.clientX;dragY=e.clientY;cv.setPointerCapture(e.pointerId)});
  cv.addEventListener('pointermove',e=>{if(!pointerDown||comparison)return;targetRY=THREE.MathUtils.clamp(targetRY+(e.clientX-dragX)*.0015,-.24,.24);targetRX=THREE.MathUtils.clamp(targetRX+(e.clientY-dragY)*.001,-.14,.14);dragX=e.clientX;dragY=e.clientY});cv.addEventListener('pointerup',()=>pointerDown=false);cv.addEventListener('pointercancel',()=>pointerDown=false);
+ // The original artwork is front-facing at zero rotation; tilt applies only to this root.
+ root.rotation.set(0,0,0);targetRX=targetRY=0;
  const buttons={pause:document.getElementById('pause'),compare:document.getElementById('compare'),reset:document.getElementById('reset'),speed:document.getElementById('speed')};
  buttons.pause.addEventListener('click',()=>{playing=!playing;document.body.classList.toggle('paused',!playing);buttons.pause.textContent=playing?'Ⅱ PAUSE':'▶ PLAY'});
  buttons.compare.addEventListener('click',()=>{comparison=!comparison;document.body.classList.toggle('compare-on',comparison);buttons.compare.textContent=comparison?'✦ VIEW 3D':'◧ VIEW ORIGINAL'});
@@ -211,16 +213,22 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.043,(now-previ
  }
  progress.style.width=(Math.min(1,t/7.5)*100)+'%';
  renderer.render(scene,camera);
+ if(!window.__nadanuFirstFrame){
+  window.__nadanuFirstFrame=true;
+  window.parent?.postMessage({type:'nadanu-scene-ready'},location.origin);
+ }
 }
-main().catch(e=>{console.error(e);document.body.classList.add('fallback-original');setStatus('3D PREVIEW UNAVAILABLE · ORIGINAL ARTWORK SHOWN');});
+main().catch(e=>{console.error(e);document.body.classList.add('fallback-original');setStatus('3D PREVIEW UNAVAILABLE · ORIGINAL ARTWORK SHOWN');window.parent?.postMessage({type:'nadanu-scene-ready'},location.origin);});
 
 // Embedded-final-invitation mode: parent requested motion on the initial AR click.
 // Use the parent origin check to reject unrelated frame messages.
 window.addEventListener('message', event => {
- if(event.origin !== location.origin || !event.data || event.data.type !== 'nadanu-motion') return;
+ if(event.origin !== location.origin || !event.data) return;
+ if(event.data.type === 'nadanu-reset-view') { targetRX=0;targetRY=0;root?.rotation.set(0,0,0);return; }
+ if(event.data.type !== 'nadanu-motion') return;
  if(pointerDown || comparison) return;
  const x=Number(event.data.x),y=Number(event.data.y);
  if(!Number.isFinite(x)||!Number.isFinite(y))return;
- targetRX=THREE.MathUtils.clamp(x,-.17,.17);
- targetRY=THREE.MathUtils.clamp(y,-.23,.23);
+ targetRX=THREE.MathUtils.clamp(x,-.23,.23);
+ targetRY=THREE.MathUtils.clamp(y,-.30,.30);
 });
