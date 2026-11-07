@@ -18,8 +18,14 @@
 }
 #arInvitationOverlay img{
  display:block;width:96vw;height:88dvh;max-height:88vh;
- object-fit:contain;opacity:.46;pointer-events:none;
- filter:drop-shadow(0 0 15px rgba(246,175,112,.18));
+ object-fit:contain;opacity:.72;pointer-events:none;
+ /* Keep the original invitation sharp and legible, without washing out
+    the performers in the central concert area. */
+ -webkit-mask-image:radial-gradient(ellipse 34% 28% at 50% 67%,
+   rgba(0,0,0,.08) 0%,rgba(0,0,0,.42) 64%,#000 100%);
+ mask-image:radial-gradient(ellipse 34% 28% at 50% 67%,
+   rgba(0,0,0,.08) 0%,rgba(0,0,0,.42) 64%,#000 100%);
+ filter:drop-shadow(0 0 9px rgba(246,175,112,.14));
 }
 </style>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
@@ -238,7 +244,7 @@
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=persistent-mesh-viewport-invitation-20261108-42"></script>
+<script type="module" src="./app.js?v=clean-outline-stage-20261108-43"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
