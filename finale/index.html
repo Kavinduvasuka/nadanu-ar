@@ -10,6 +10,18 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./style.css?v=auditions-mobile-layout-20261107-25">
+<style>
+#arInvitationOverlay[hidden]{display:none!important}
+#arInvitationOverlay{
+ position:fixed;inset:0;z-index:3;pointer-events:none;
+ display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+#arInvitationOverlay img{
+ display:block;width:96vw;height:88dvh;max-height:88vh;
+ object-fit:contain;opacity:.46;pointer-events:none;
+ filter:drop-shadow(0 0 15px rgba(246,175,112,.18));
+}
+</style>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 <!-- Solo Dance optimized animated GLB deployed: Draco + WebP, 2026-11-06 -->
 <!-- Redeploy GitHub Pages: 2026-11-07; no AR behavior changes -->
@@ -176,6 +188,10 @@
   <div class="finale-motion-foot"><p id="finaleMotionInfo">MOVE PHONE OR DRAG TO EXPLORE 3D</p><button id="finaleEnableTilt" type="button" hidden>ENABLE PHONE TILT</button><button id="finaleResetTilt" type="button">RESET VIEW</button><div><button id="finaleMotionReplay" type="button">↻ WATCH PERFORMANCES AGAIN</button><a href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL ↗</a></div></div>
 </section>
 <div id="arContainer"></div>
+<!-- Original invitation: actual viewport-fit overlay, visible only while tracked. -->
+<div id="arInvitationOverlay" hidden aria-hidden="true">
+  <img src="./assets/finale-invitation.webp" alt="" draggable="false">
+</div>
 <div id="arUI" hidden>
   <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><div class="topbar-actions"><button id="resetViewButton" type="button">RESET VIEW</button><button id="arBackToSite" type="button">← BACK TO SITE</button><button id="stopButton" type="button">EXIT AR</button></div></div>
   <div id="invitationScanner" class="invitation-scanner" data-scan-state="preparing" aria-label="Grand Finale invitation scanner">
@@ -222,7 +238,7 @@
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=mesh-invitation-focus-20261108-41"></script>
+<script type="module" src="./app.js?v=persistent-mesh-viewport-invitation-20261108-42"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
