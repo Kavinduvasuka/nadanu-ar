@@ -1,0 +1,19 @@
+/* Only the original cinematic invitation artwork is mounted in Finale AR.
+   No demo site, navigation, sidebar, header, or footer. */
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#100807}
+.artwork-only{width:100%;height:100%;height:100dvh;display:grid;place-items:center;position:relative;background:radial-gradient(ellipse at center,#4b241b 0%,#100807 75%)}
+#viewport{position:relative;width:min(96vw,calc(90dvh * 1441 / 2048));aspect-ratio:1441/2048;max-height:90dvh;background:#24100e;overflow:hidden;box-shadow:0 0 65px #ff70252a}
+#scene,#original,#atmosphere{position:absolute;inset:0;display:block;width:100%;height:100%}
+#scene{z-index:1;touch-action:none;cursor:grab}
+#scene:active{cursor:grabbing}
+#original{z-index:4;object-fit:cover;opacity:0;pointer-events:none}
+#atmosphere{z-index:3;pointer-events:none;opacity:.8}
+#status{position:absolute;bottom:2%;left:0;right:0;text-align:center;color:#ffd99b;font:700 10px Arial,sans-serif;letter-spacing:1px;pointer-events:none}
+#introProgress{position:absolute;bottom:0;left:0;height:2px;background:#ffae62;box-shadow:0 0 10px #ff9b44;pointer-events:none}
+.ready #status{display:none}
+.fallback-original #original{opacity:1}
+.fallback-original #atmosphere{opacity:0}
+.fallback-original #scene{display:none}
+.scene-controls{display:none!important}
+@media (max-width:560px){#viewport{width:min(97vw,calc(86dvh * 1441 / 2048));max-height:86dvh}}
