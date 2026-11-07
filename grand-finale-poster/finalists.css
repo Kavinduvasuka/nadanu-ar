@@ -81,3 +81,13 @@
 /* One gallery page per performance category. Face-aware framing for Sanjana. */
 #landing .finalist-card--sanjana .finalist-photo-frame img{object-position:center 60%}
 @media(max-width:650px){#landing .finalist-card--sanjana .finalist-photo-frame img{object-position:center 57%}}
+
+/* Group Dancing retains its original category artwork and has an honest pending-gallery state. */
+#landing .categories .neon-category-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-width:1200px}
+#landing .finalists-grid.finalists-grid--pending{display:flex;justify-content:center;align-items:center;min-height:350px}
+#landing .finalists-pending{width:100%;max-width:740px;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:35px 24px;border:1px solid #ff944a6a;background:radial-gradient(ellipse at top,#4a1e2b,#1d0d1b 70%);border-radius:12px;box-shadow:0 0 24px #ff6c2920}
+#landing .finalists-pending-icon{font-size:60px;color:#ffad6d;text-shadow:0 0 30px #ff6a32}
+#landing .finalists-pending h3{margin:0;font:700 clamp(24px,4vw,42px) 'Audiowide',sans-serif;color:#fff1dc}
+#landing .finalists-pending p{margin:0;font:600 clamp(11px,2vw,15px) 'Audiowide',sans-serif;letter-spacing:.1em;color:#ffb983;line-height:1.7}
+@media(max-width:850px){#landing .categories .neon-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){#landing .categories .neon-category-grid{grid-template-columns:1fr}#landing .finalists-pending{min-height:250px;padding:25px 14px}}

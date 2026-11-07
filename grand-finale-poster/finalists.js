@@ -4,13 +4,14 @@
 const finalists=[["Anjula Pragathi","solo-singing","anjula-pragathi"],["Daphni Mendis","solo-singing","daphni-mendis"],["Imesha Uddheepani","solo-singing","imesha-uddheepani"],["Ishira Nipun","solo-singing","ishira-nipun"],["Kisandi Wethara","solo-singing","kisandi-wethara"],["Misheala Wanigaratnam","solo-singing","misheala-wanigaratnam"],["Omalmie Karunaratne","solo-singing","omalmie-karunaratne"],["Senesh Perera","solo-singing","senesh-perera"],["Tharinsa S. Liyanage","solo-singing","tharinsa-s-liyanage"],["Theekshana Ranaweera","solo-singing","theekshana-ranaweera"],["Vivekh Sivasithamparam","solo-singing","vivekh-sivasithamparam"],["Dinuka Thimansa","solo-dancing","dinuka-thimansa"],["Gigiri Perera","solo-dancing","gigiri-perera"],["Sanjana Mendis","solo-dancing","sanjana-mendis"],["Siluni Batuwantudawa","solo-dancing","siluni-batuwantudawa"],["Sithumini Dilarangi","solo-dancing","sithumini-dilarangi"],["Sasemi Thisasna","solo-dancing","sasemi-thisasna"]];
 const categoryData={
  'solo-singing':{title:'Solo Singing',subtitle:'Eleven voices. One stage. Meet our Grand Finale vocalists.',number:'01'},
- 'solo-dancing':{title:'Solo Dancing',subtitle:'Six solo dancers taking their moment in the spotlight.',number:'02'}
+ 'solo-dancing':{title:'Solo Dancing',subtitle:'Six solo dancers taking their moment in the spotlight.',number:'02'},
+ 'group-dancing':{title:'Group Dancing',subtitle:'Finalists and photographs will be announced soon.',number:'03'}
 };
-const categories=['solo-singing','solo-dancing'];
+const categories=['solo-singing','solo-dancing','group-dancing'];
 const slides=[];
 for(const cat of categories){
  const people=finalists.filter(p=>p[1]===cat);
- if(people.length)slides.push({cat,people});
+ slides.push({cat,people});
 }
 const grid=document.getElementById('finalistsGrid');
 const previous=document.getElementById('finalistsPrev');
@@ -40,7 +41,20 @@ function makeCard([name,category,slug]){
 function show(slideNumber){
  active=(slideNumber+slides.length)%slides.length;
  const slide=slides[active],data=categoryData[slide.cat];
+ if(slide.cat==='group-dancing'){
+ const pending=document.createElement('div');
+ pending.className='finalists-pending';
+ pending.setAttribute('role','status');
+ const icon=document.createElement('span');icon.className='finalists-pending-icon';icon.setAttribute('aria-hidden','true');icon.textContent='✦';
+ const heading=document.createElement('h3');heading.textContent='GROUP DANCING';
+ const note=document.createElement('p');note.textContent='FINALISTS & PHOTOS COMING SOON';
+ pending.append(icon,heading,note);
+ grid.replaceChildren(pending);
+ grid.classList.add('finalists-grid--pending');
+}else{
+ grid.classList.remove('finalists-grid--pending');
  grid.replaceChildren(...slide.people.map(makeCard));
+}
  grid.classList.remove('finalists-grid-enter');void grid.offsetWidth;grid.classList.add('finalists-grid-enter');
  if(indexLabel)indexLabel.textContent=(active+1)+' / '+slides.length;
  if(title)title.innerHTML=data.title.replace(' ', '<br><em>')+'.</em>';
