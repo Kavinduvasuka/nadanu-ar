@@ -721,3 +721,6 @@ body{font-family:"Audiowide",Arial,sans-serif}
 .finale-motion-head{justify-content:flex-end}
 .finale-motion-head span{margin-right:auto}
 @media(max-width:520px){.topbar-actions{gap:4px}#arUI .topbar-actions button{font-size:9px;padding:8px 7px}.finale-motion-head button{font-size:9px;padding:8px}}
+
+/* Keep one-finger performer orbit gestures from becoming browser pan gestures. */
+#arContainer,#arUI{touch-action:none;overscroll-behavior:contain}
