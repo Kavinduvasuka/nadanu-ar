@@ -292,6 +292,8 @@ function finishRecognitionIntro(){
  status.textContent='Welcome to Nadanu 3.0 · your AR show begins';
 }
 function resetPerformances(){
+ stringRevealStartedAt=0;
+ if(stringReveal){stringReveal.root.visible=false;stringReveal.lines.geometry.setDrawRange(0,0)}
  lastPresentedAct=-1;
  actBanner.hidden=false;
  presentAct(0);
@@ -309,7 +311,7 @@ replayActsButton?.addEventListener('click',()=>{
 const orbit={zoom:1,pointers:new Map(),distance:0};
 const BASE_SCALE=0.115; // Compact mini-stage: keep floor and actors in the camera frame.
 // The real image-anchor pose determines camera perspective in Three.js.
-const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,0,0));
+const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.52,0,0));
 function resetStageView(){
  orbit.zoom=1;markerDistanceZoom=markerDistanceTarget=1;initialMarkerDistance=0;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;filteredSensorX=filteredSensorY=0;stageSensorBase=null;lastManualOrbitAt=0;
  if(stage)stage.quaternion.copy(fixedStageTilt);
@@ -380,6 +382,8 @@ function textMesh(lines,w,h,x,y,z,size=74){
 // Original Stage Lights geometry and proportions, mounted as a complete
 // mini concert world on the printed invitation. Nothing is flattened to a plane.
 let stageWorld, halo, noteSprites=[], noteCooldown=0;
+let stringReveal=null,stringRevealStartedAt=0;
+const STRING_REVEAL_SECONDS=2.0;
 const stageV=new THREE.Vector3(), stageQ=new THREE.Quaternion(), stageUp=new THREE.Vector3(0,1,0);
 function createStage(root){
   // Recreated directly from stage-lights(2).html: open circular concert floor,
@@ -388,7 +392,7 @@ function createStage(root){
   // Fixed local offset from the centre of the printed invitation.
   // The parent MindAR anchor provides the image pose; do not modify its world pose.
   stage.position.set(0,0,.12);
-  stage.rotation.x=.42; // Base presentation tilt, stabilized against tracker wobble below.
+  stage.rotation.x=.52; // Slightly higher overhead view of the concert floor.
   stage.scale.setScalar(BASE_SCALE);
   root.add(stage);
   stageWorld=stage;
@@ -396,35 +400,50 @@ function createStage(root){
   const floor=new THREE.Mesh(new THREE.CircleGeometry(10,96),
     new THREE.MeshStandardMaterial({color:0x140a28,metalness:.75,roughness:.22,side:THREE.DoubleSide}));
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
-  // Projection-mapped Finale branding. No physical panel or opaque wall:
-  // translucent amber/cyan typography hangs behind the live performers,
-  // complemented by a subtle floor-gobo like a concert light projection.
-  const projectionGroup=new THREE.Group();
-  projectionGroup.position.set(0,4.6,-6.4);
-  const titleProjection=textMesh(['NADANU 3.0'],7.4,1.65,0,.75,.06,100);
-  const finaleProjection=textMesh(['GRAND FINALE'],7.0,1.35,0,-.66,.07,86);
-  titleProjection.material.opacity=.72;
-  finaleProjection.material.opacity=.82;
-  titleProjection.material.color.setHex(0xffd79a);
-  finaleProjection.material.color.setHex(0xffb460);
-  titleProjection.renderOrder=1;
-  finaleProjection.renderOrder=1;
-  projectionGroup.add(titleProjection,finaleProjection);
-  // Light accents make the letters look projected, not pasted on a wall.
-  const projectionGlow=new THREE.Mesh(
-    new THREE.PlaneGeometry(8.1,3.0),
-    new THREE.MeshBasicMaterial({color:0xa24cff,transparent:true,opacity:.065,
-      blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})
-  );
-  projectionGlow.position.z=-.12;
-  projectionGroup.add(projectionGlow);
-  stage.add(projectionGroup);
-  const floorProjection=textMesh(['NADANU 3.0'],5.2,1.10,0,.032,-4.5,85);
-  floorProjection.rotation.x=-Math.PI/2;
-  floorProjection.material.opacity=.26;
-  floorProjection.material.color.setHex(0xffa34d);
-  floorProjection.renderOrder=2;
-  stage.add(floorProjection);
+  // Opening string-art constellation. This is an ephemeral introduction,
+  // not a poster wall or a permanent background behind the performers.
+  const stringRoot=new THREE.Group();
+  stringRoot.position.set(0,3.55,-.95);
+  stringRoot.rotation.x=-.15;
+  stage.add(stringRoot);
+  const webPositions=[];
+  const tips=[];
+  const count=10;
+  for(let i=0;i<count;i++){
+    const angle=-Math.PI/2+i*Math.PI*2/count;
+    const radius=i%2===0?2.55:1.08;
+    tips.push(new THREE.Vector3(Math.cos(angle)*radius,Math.sin(angle)*radius,.16));
+  }
+  const addThread=(a,b)=>{
+    webPositions.push(a.x,a.y,a.z,b.x,b.y,b.z);
+  };
+  // Star perimeter followed by hand-strung chords across its interior.
+  for(let i=0;i<count;i++)addThread(tips[i],tips[(i+1)%count]);
+  for(let i=0;i<count;i++){
+    for(let jump=2;jump<=4;jump++){
+      const a=tips[i],b=tips[(i+jump)%count];
+      addThread(a,b);
+    }
+  }
+  for(let i=0;i<24;i++){
+    const a=tips[(i*7)%count];
+    const angle=i*Math.PI*2/24;
+    addThread(a,new THREE.Vector3(Math.cos(angle)*.43,Math.sin(angle)*.43,.65));
+  }
+  const strings=new THREE.BufferGeometry();
+  strings.setAttribute('position',new THREE.Float32BufferAttribute(webPositions,3));
+  strings.setDrawRange(0,0);
+  const stringMaterial=new THREE.LineBasicMaterial({
+    color:0xffc66e,transparent:true,opacity:.94,depthWrite:false,
+    blending:THREE.AdditiveBlending
+  });
+  const stringLines=new THREE.LineSegments(strings,stringMaterial);
+  stringRoot.add(stringLines);
+  const stringTitle=textMesh(['NADANU 3.0'],5.4,1.35,0,-3.15,.6,112);
+  stringTitle.material.opacity=0;
+  stringRoot.add(stringTitle);
+  stringReveal={root:stringRoot,lines:stringLines,material:stringMaterial,title:stringTitle,
+    segmentCount:webPositions.length/6};
   neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((color,i)=>{
     const ring=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),
       new THREE.MeshBasicMaterial({color,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
@@ -649,6 +668,9 @@ function setup() {
    }
   }
   const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
+  if(showStage&&!stringRevealStartedAt)stringRevealStartedAt=performance.now();
+  const revealProgress=stringRevealStartedAt?Math.min(1,(performance.now()-stringRevealStartedAt)/(STRING_REVEAL_SECONDS*1000)):0;
+  const stringPlaying=showStage && revealProgress<1 && selectedAct===null && !showInvitation;
   if(showStage && motionAllowed && motionSamples===0 && performance.now()-trackingTime>2400){
    updateARTiltStatus('NO TILT DATA · CHECK MOTION ACCESS OR DRAG',true);
   }
@@ -662,6 +684,16 @@ function setup() {
   stage.visible=showStage && !showInvitation;
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
+    if(stringReveal){
+      stringReveal.root.visible=stringPlaying;
+      if(stringPlaying){
+        const p=Math.min(1,revealProgress*1.4);
+        stringReveal.lines.geometry.setDrawRange(0,Math.floor(stringReveal.segmentCount*p)*2);
+        stringReveal.material.opacity=.84*Math.min(1,(1-revealProgress)*5);
+        stringReveal.title.material.opacity=Math.max(0,Math.min(1,(revealProgress-.35)*4))*Math.min(1,(1-revealProgress)*6);
+        stringReveal.root.rotation.y=Math.sin(revealProgress*Math.PI)*.12;
+      }
+    }
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
     // Slow, frame-rate-independent damping: stable even if mobile FPS varies.
@@ -670,12 +702,12 @@ function setup() {
     stageTiltY+=(stageTargetY-stageTiltY)*smoothing;
     // Smooth 3D orbit of the full stage + performers in screen-locked hybrid AR.
     // Keep the camera-space stage position fixed to avoid marker tracking jitter.
-    stage.quaternion.setFromEuler(new THREE.Euler(.42+stageTiltX,stageTiltY,0,'XYZ'));
+    stage.quaternion.setFromEuler(new THREE.Euler(.52+stageTiltX,stageTiltY,0,'XYZ'));
     // Preserve each 8-second act until its GLB has fully loaded.
     // A slow first download must never silently skip the solo dancer.
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
     const canAdvance=performerReady[activeAutoAct]||performerFailed[activeAutoAct];
-    if(tracked&&!showInvitation&&selectedAct===null&&canAdvance)sequenceTime+=dt;
+    if(tracked&&!showInvitation&&selectedAct===null&&canAdvance&&!stringPlaying)sequenceTime+=dt;
     // Load cinematic artwork before the last performance ends.
     if(sequenceTime>=ACT_SECONDS+1&&!finalePreloaded&&performerReady[2])preloadFinaleScene();
     // One complete three-act showcase, followed by the formal invitation.
@@ -688,7 +720,8 @@ function setup() {
       ? Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS))
       : selectedAct;
     if(!showInvitation)presentAct(index);
-    performers.forEach((p,i)=>p.visible=!showInvitation && i===index && performerReady[i]);
+    performers.forEach((p,i)=>p.visible=!showInvitation && !stringPlaying && i===index && performerReady[i]);
+    if(stringPlaying){actBanner.hidden=true;}else if(!showInvitation){actBanner.hidden=false;}
     if(!showInvitation&&!performerReady[index]){
       status.textContent=performerFailed[index]
         ? `${performerNames[index]} model unavailable — try refreshing the page.`
@@ -804,6 +837,7 @@ async function disposeARSession(){
   console.warn('MindAR shutdown warning:',err);
  }finally{
   initialMarkerDistance=0;markerDistanceZoom=markerDistanceTarget=1;
+  stringReveal=null;stringRevealStartedAt=0;
   if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;stableCamera=null;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
