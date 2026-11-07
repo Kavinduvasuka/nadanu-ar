@@ -410,7 +410,7 @@ function createStage(root){
   const tips=[];
   const stringStarPoints=10;
   for(let i=0;i<stringStarPoints;i++){
-    const angle=-Math.PI/2+i*Math.PI*2/count;
+    const angle=-Math.PI/2+i*Math.PI*2/stringStarPoints;
     const radius=i%2===0?2.55:1.08;
     tips.push(new THREE.Vector3(Math.cos(angle)*radius,Math.sin(angle)*radius,.16));
   }
@@ -818,8 +818,8 @@ async function startAR(){
    resetRecognitionIntro();
    if(invitationScanner)invitationScanner.hidden=true;
    disableSound();
-   await disposeARSession();
-   console.info('MindAR startup did not complete. Reload before retrying; inspect the FIRST console error.');
+   try{await disposeARSession();}catch(cleanupError){console.warn('AR startup cleanup:',cleanupError);}
+   console.info('MindAR startup did not complete. Inspect the first startup error.');
  }
  finally{busy=false;startButton.disabled=false;}
 }
