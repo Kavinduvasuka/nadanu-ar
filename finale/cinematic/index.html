@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Nadanu Grand Finale · 3D Invitation</title>
+<style>html,body{margin:0;width:100%;height:100%;background:radial-gradient(ellipse at 45% 45%,#57290d,#120805 80%);overflow:hidden;color:#ffdead;font-family:Arial,sans-serif}canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none}#hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:10px;text-align:center;letter-spacing:.07em;color:#ffe2ae;background:#201009ba;padding:8px 15px;border:1px solid #f4a24c45;border-radius:20px;white-space:nowrap;pointer-events:none}</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js"}}</script></head>
+<body><canvas id="stage"></canvas><div id="hint">PHONE MOTION · DRAG TO EXPLORE</div>
+<script type="module">
+import * as THREE from 'three';
+import {createAliveInvitation} from '../invitation-alive.js';
+const canvas=document.querySelector('#stage'),ren=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});ren.outputColorSpace=THREE.SRGBColorSpace;ren.setClearColor(0x000000,0);
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(38,1,.01,50);
+scene.add(new THREE.AmbientLight(0xffd4ae,1.8));const light=new THREE.DirectionalLight(0xffd69b,2.5);light.position.set(-1,2,3);scene.add(light);
+const group=new THREE.Group();scene.add(group);
+const texture=new THREE.TextureLoader().load('../assets/finale-invitation.webp');texture.colorSpace=THREE.SRGBColorSpace;
+const paper=new THREE.Mesh(new THREE.PlaneGeometry(1,2048/1441),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));paper.position.z=-.05;group.add(paper);
+const alive=createAliveInvitation(group);alive.root.visible=true;
+let wantX=0,wantY=0,curX=0,curY=0,prev=0,hold=false,pX=0,pY=0,bX=0,bY=0;
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+window.addEventListener('message',e=>{
+ if(e.origin!==location.origin||!e.data||e.data.type!=='nadanu-motion')return;
+ const d=e.data;
+ if(!hold){wantX=clamp(d.x,-.17,.17);wantY=clamp(d.y,-.23,.23);}
+});
+canvas.addEventListener('pointerdown',e=>{hold=true;pX=e.clientX;pY=e.clientY;bX=wantX;bY=wantY;canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(!hold)return;wantY=clamp(bY+(e.clientX-pX)/innerWidth*.55,-.24,.24);wantX=clamp(bX-(e.clientY-pY)/innerHeight*.48,-.18,.18)});
+canvas.addEventListener('pointerup',()=>hold=false);canvas.addEventListener('pointercancel',()=>hold=false);
+function resize(){const w=innerWidth,h=innerHeight;camera.aspect=w/Math.max(h,1);camera.position.z=Math.max(1.65/(2*Math.tan(camera.fov*Math.PI/360)),1.22/(2*Math.tan(camera.fov*Math.PI/360)*camera.aspect));camera.updateProjectionMatrix();ren.setSize(w,h,false);ren.setPixelRatio(Math.min(devicePixelRatio||1,1.5));}
+window.addEventListener('resize',resize);resize();
+function animate(t){requestAnimationFrame(animate);const dt=Math.min(.05,(t-prev||16)/1000);prev=t;const k=1-Math.exp(-dt*7);curX+=(wantX-curX)*k;curY+=(wantY-curY)*k;group.rotation.set(curX,curY,0);alive.update(dt);ren.render(scene,camera);}requestAnimationFrame(animate);
+</script></body></html>
