@@ -38,6 +38,9 @@ let mindarThree, initialized = false, running = false, busy = false, tracked = f
 let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
 let stageTargetX=0,stageTargetY=0,stageTiltX=0,stageTiltY=0,stageSensorBase=null;
 let filteredSensorX=0,filteredSensorY=0;
+// Drag is a persistent manual offset; sensors add to it instead of wiping it.
+let stageManualX=0,stageManualY=0;
+const STAGE_TOP_VIEW_MAX=1.08,STAGE_VIEW_MIN=-.30;
 let frozenStageRoot=null,stagePoseCaptured=false;
 let stableCamera=null;
 let initialMarkerDistance=0,markerDistanceZoom=1,markerDistanceTarget=1;
@@ -133,11 +136,15 @@ function receiveMotion(event){
    // so a shaky hand does not make the entire stage vibrate.
    const deadZone=angle=>Math.sign(angle)*Math.max(0,Math.abs(angle)-3);
    const desiredY=THREE.MathUtils.clamp(deadZone(diffGamma)*.019,-1.25,1.25);
-   const desiredX=THREE.MathUtils.clamp(-deadZone(diffBeta)*.013,-.42,.42);
-   filteredSensorY+=(desiredY-filteredSensorY)*.09;
-   filteredSensorX+=(desiredX-filteredSensorX)*.09;
-   if(Math.abs(filteredSensorY-stageTargetY)>.006)stageTargetY=filteredSensorY;
-   if(Math.abs(filteredSensorX-stageTargetX)>.006)stageTargetX=filteredSensorX;
+   // Beta controls the top-down reveal; a ~50 degree handset tilt can
+   // now reach the stage top view instead of hitting the old 0.42rad cap.
+   const desiredX=THREE.MathUtils.clamp(-deadZone(diffBeta)*.024,-.28,STAGE_TOP_VIEW_MAX);
+   filteredSensorY+=(desiredY-filteredSensorY)*.085;
+   filteredSensorX+=(desiredX-filteredSensorX)*.085;
+   const combinedY=THREE.MathUtils.clamp(stageManualY+filteredSensorY,-1.4,1.4);
+   const combinedX=THREE.MathUtils.clamp(stageManualX+filteredSensorX,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX);
+   if(Math.abs(combinedY-stageTargetY)>.004)stageTargetY=combinedY;
+   if(Math.abs(combinedX-stageTargetX)>.004)stageTargetX=combinedX;
   }
  }
  if(!finalMotionActive || !finaleSceneReady || performance.now()<finaleMotionUnlockedAt)return;
@@ -342,7 +349,7 @@ const BASE_SCALE=0.115; // Compact mini-stage: keep floor and actors in the came
 // The real image-anchor pose determines camera perspective in Three.js.
 const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,0,0));
 function resetStageView(){
- orbit.zoom=1;markerDistanceZoom=markerDistanceTarget=1;initialMarkerDistance=0;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;filteredSensorX=filteredSensorY=0;stageSensorBase=null;lastManualOrbitAt=0;
+ orbit.zoom=1;markerDistanceZoom=markerDistanceTarget=1;initialMarkerDistance=0;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;filteredSensorX=filteredSensorY=0;stageManualX=stageManualY=0;stageSensorBase=null;lastManualOrbitAt=0;
  if(stage)stage.quaternion.copy(fixedStageTilt);
  applyOrbit();
 }
@@ -373,8 +380,10 @@ function bindOrbitControls(){
   const old=pointers.get(e.pointerId);
   pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===1){
-   stageTargetY=THREE.MathUtils.clamp(stageTargetY+(e.clientX-old.x)*.012,-1.4,1.4);
-   stageTargetX=THREE.MathUtils.clamp(stageTargetX+(e.clientY-old.y)*.006,-.48,.48);
+   stageManualY=THREE.MathUtils.clamp(stageManualY+(e.clientX-old.x)*.012,-1.4,1.4);
+   stageManualX=THREE.MathUtils.clamp(stageManualX+(e.clientY-old.y)*.008,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX);
+   stageTargetY=THREE.MathUtils.clamp(stageManualY+filteredSensorY,-1.4,1.4);
+   stageTargetX=THREE.MathUtils.clamp(stageManualX+filteredSensorX,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX);
    lastManualOrbitAt=performance.now();
   }else if(pointers.size===2){
    const [a,b]=[...pointers.values()];
@@ -701,12 +710,14 @@ function setup() {
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
     // Slow, frame-rate-independent damping: stable even if mobile FPS varies.
-    const smoothing=1-Math.exp(-3.2*dt);
+    const smoothing=1-Math.exp(-4.3*dt);
     stageTiltX+=(stageTargetX-stageTiltX)*smoothing;
     stageTiltY+=(stageTargetY-stageTiltY)*smoothing;
     // Smooth 3D orbit of the full stage + performers in screen-locked hybrid AR.
     // Keep the camera-space stage position fixed to avoid marker tracking jitter.
-    stage.quaternion.setFromEuler(new THREE.Euler(.42+stageTiltX,stageTiltY,0,'XYZ'));
+    // Base 0.42 + positive tilt up to 1.08 => top-down stage view;
+    // stop short of flipping the performers upside down.
+    stage.quaternion.setFromEuler(new THREE.Euler(.42+THREE.MathUtils.clamp(stageTiltX,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX),stageTiltY,0,'XYZ'));
     if(stageWireframe)stageWireframe.quaternion.copy(stage.quaternion);
     // Preserve each 8-second act until its GLB has fully loaded.
     // A slow first download must never silently skip the solo dancer.
