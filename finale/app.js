@@ -36,7 +36,7 @@ dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
 gltfLoader.setDRACOLoader(dracoLoader);
 let mindarThree, initialized = false, running = false, busy = false, tracked = false;
 let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
-let screenStageRoot=null,stageTiltX=0,stageTiltY=0,stageTargetX=0,stageTargetY=0,stageSensorBase=null;
+let stageTargetX=0,stageTargetY=0,stageTiltX=0,stageTiltY=0,stageSensorBase=null;
 let trackerGeneration=0; // Invalidate late tracking events from a previous camera session.
 let stage, warmLight, violetLight;
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
@@ -77,8 +77,8 @@ function receiveMotion(event){
  motionSamples++;
  if(running && tracked && introCompleted && !showInvitation){
   if(!stageSensorBase)stageSensorBase={gamma:event.gamma,beta:event.beta};
-  stageTargetY=THREE.MathUtils.clamp((event.gamma-stageSensorBase.gamma)*.010,-.30,.30);
-  stageTargetX=THREE.MathUtils.clamp(-(event.beta-stageSensorBase.beta)*.008,-.20,.20);
+  stageTargetY=THREE.MathUtils.clamp((event.gamma-stageSensorBase.gamma)*.006,-.17,.17);
+  stageTargetX=THREE.MathUtils.clamp(-(event.beta-stageSensorBase.beta)*.005,-.12,.12);
  }
  if(!finalMotionActive)return;
  if(!motionReference) motionReference={gamma:event.gamma,beta:event.beta};
@@ -204,9 +204,8 @@ const BASE_SCALE=0.17;
 // The real image-anchor pose determines camera perspective in Three.js.
 const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,0));
 function resetStageView(){
- orbit.zoom=1;stageTiltX=stageTiltY=stageTargetX=stageTargetY=0;
- stageSensorBase=null;
- if(screenStageRoot)screenStageRoot.rotation.set(0,0,0);
+ orbit.zoom=1;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;stageSensorBase=null;
+ if(stage)stage.quaternion.copy(fixedStageTilt);
  applyOrbit();
 }
 function applyOrbit(){
@@ -230,10 +229,10 @@ function bindOrbitControls(){
   if(!running||!orbit.pointers.has(e.pointerId))return;
   const old=orbit.pointers.get(e.pointerId);
   orbit.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(orbit.pointers.size===1 && introCompleted && tracked){
-    stageTargetY=THREE.MathUtils.clamp(stageTargetY+(e.clientX-old.x)*.003,-.30,.30);
-    stageTargetX=THREE.MathUtils.clamp(stageTargetX+(e.clientY-old.y)*.002,-.20,.20);
-    stageSensorBase=null;
+  if(orbit.pointers.size===1 && tracked && introCompleted){
+   stageTargetY=THREE.MathUtils.clamp(stageTargetY+(e.clientX-old.x)*.002,-.17,.17);
+   stageTargetX=THREE.MathUtils.clamp(stageTargetX+(e.clientY-old.y)*.0015,-.12,.12);
+   stageSensorBase=null;
   }
   if(orbit.pointers.size===2){
     const [a,b]=[...orbit.pointers.values()];
@@ -420,28 +419,20 @@ function setup() {
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.2));
  const anchor=mindarThree.addAnchor(0),root=anchor.group;
  activeAnchor=anchor;activeRoot=root;
- // Marker detects visibility; actual stage is fixed relative to the phone camera.
- scene.add(camera);
- screenStageRoot=new THREE.Group();
- screenStageRoot.position.set(0,-.10,-3.2);
- screenStageRoot.visible=false;
- camera.add(screenStageRoot);
- resetStageView();
  scene.add(new THREE.HemisphereLight(0xffffff,0x34132a,2.8));
- warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);screenStageRoot.add(warmLight);
- violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);screenStageRoot.add(violetLight);
- createStage(screenStageRoot);
- aliveInvitation=createAliveInvitation(screenStageRoot);
+ warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
+ violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
+ createStage(root);
+ aliveInvitation=createAliveInvitation(root);
  bindOrbitControls();
  root.visible=false;
  anchor.onTargetFound=()=>{
   if(generation!==trackerGeneration)return; // Ignore callbacks from disposed camera.
   tracked=true;
   trackingTime=performance.now();
-  stage.quaternion.copy(fixedStageTilt);
+  resetStageView();
   stage.visible=false;
-  screenStageRoot.visible=false;
-  root.visible=false; // Hide anchor geometry; tracking continues.
+  root.visible=false; // Never show an old anchor pose during acquisition.
   showScanner('locked','Invitation detected · stabilizing stage…');
   status.textContent='Invitation detected · stabilizing tracking…';
  };
@@ -449,7 +440,6 @@ function setup() {
   if(generation!==trackerGeneration)return;
   tracked=false;
   stage.visible=false;
-  if(screenStageRoot)screenStageRoot.visible=false;
   root.visible=false;
   if(!introCompleted){
    introStartedAt=0;
@@ -469,19 +459,15 @@ function setup() {
   if(locked && !introCompleted && !introStartedAt)startRecognitionIntro();
   if(locked && introStartedAt && performance.now()-introStartedAt>=INTRO_DURATION_MS)finishRecognitionIntro();
   const showStage=locked && introCompleted;
-  root.visible=false;
-  if(screenStageRoot)screenStageRoot.visible=showStage;
+  root.visible=showStage;
   stage.visible=showStage && !showInvitation;
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
-    stage.quaternion.copy(fixedStageTilt);
-    if(screenStageRoot){
-     stageTiltX+=(stageTargetX-stageTiltX)*.12;
-     stageTiltY+=(stageTargetY-stageTiltY)*.12;
-     screenStageRoot.rotation.set(stageTiltX,stageTiltY,0);
-    }
+    stageTiltX+=(stageTargetX-stageTiltX)*.10;
+    stageTiltY+=(stageTargetY-stageTiltY)*.10;
+    stage.quaternion.setFromEuler(new THREE.Euler(.62+stageTiltX,stageTiltY,0,'XYZ'));
     // Preserve each 8-second act until its GLB has fully loaded.
     // A slow first download must never silently skip the solo dancer.
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
@@ -610,7 +596,6 @@ async function disposeARSession(){
  }catch(err){
   console.warn('MindAR shutdown warning:',err);
  }finally{
-  if(screenStageRoot){screenStageRoot.visible=false;screenStageRoot.parent?.remove(screenStageRoot);screenStageRoot=null;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
    try{renderer.dispose();}catch(_){}
