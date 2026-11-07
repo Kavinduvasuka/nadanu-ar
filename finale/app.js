@@ -62,7 +62,7 @@ function createStageWireframe(root){
   stageWireframe.scale.copy(stage.scale);
   root.add(stageWireframe);
   wireframeMat=new THREE.LineBasicMaterial({
-    color:0x8ae5e0,transparent:true,opacity:.26,depthWrite:false
+    color:0x8ae5e0,transparent:true,opacity:.55,depthWrite:false
   });
   const perimeter=new THREE.LineLoop(
     new THREE.BufferGeometry().setFromPoints(
@@ -425,11 +425,11 @@ function createStage(root){
   stageWorld=stage;
   const colors=[0xff3d9a,0x33e1ff,0xffc857];
   const floor=new THREE.Mesh(new THREE.RingGeometry(8.85,9.05,48),
-    new THREE.MeshBasicMaterial({color:0x79dfd4,transparent:true,opacity:.20,depthWrite:false,side:THREE.DoubleSide}));
+    new THREE.MeshBasicMaterial({color:0x79dfd4,transparent:true,opacity:.42,depthWrite:false,side:THREE.DoubleSide}));
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
   neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((color,i)=>{
     const ring=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),
-      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.10,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
+      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.20,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
     ring.rotation.x=-Math.PI/2;ring.position.y=.012+i*.002;stage.add(ring);return ring;
   });
   eqBars=[];
@@ -491,7 +491,7 @@ function updateStageEffects(t,dt,index){
     stageQ.setFromUnitVectors(stageUp,d.normalize());beam.quaternion.copy(stageQ);
     beam.scale.y=length/10;beam.material.opacity=0;
   });
-  neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.012*(i+1));r.material.opacity=.09;});
+  neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.012*(i+1));r.material.opacity=.19;});
   eqBars.forEach((bar,i)=>{const height=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;bar.scale.y=height;bar.position.y=height/2;bar.material.color.setHSL((i/40+t*.05)%1,.9,.55);});
   halo.material.color.setHSL((t*.08)%1,.9,.6);halo.scale.setScalar(1+pulse*.05);
   const positions=particles.geometry.attributes.position;
@@ -518,7 +518,19 @@ function normalizeGLB(gltf, desiredHeight, targetX=0, targetZ=0, maxWidth=6.7){
   object.scale.multiplyScalar(factor);
   object.position.set(-center.x*factor,-bounds.min.y*factor,-center.z*factor);
   wrap.add(object);wrap.position.set(targetX,0,targetZ);
-  object.traverse(o=>{if(o.isMesh||o.isSkinnedMesh){o.frustumCulled=false;o.castShadow=true;}});
+  object.traverse(o=>{
+    if(o.isMesh||o.isSkinnedMesh){
+      o.frustumCulled=false;o.castShadow=true;
+      // Preserve the original textures and alpha-cutout details; only restore
+      // full performer opacity. Do not change animation or sensor behavior.
+      const mats=Array.isArray(o.material)?o.material:[o.material];
+      for(const mat of mats){
+        if(!mat)continue;
+        mat.opacity=1;
+        mat.needsUpdate=true;
+      }
+    }
+  });
   return {wrap,object};
 }
 async function loadPerformers() {
@@ -677,7 +689,7 @@ function setup() {
   stage.visible=showStage && !showInvitation;
   if(stageWireframe){
     stageWireframe.visible=showStage && !showInvitation;
-    wireframeMat.opacity=.26;
+    wireframeMat.opacity=.55;
   }
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
