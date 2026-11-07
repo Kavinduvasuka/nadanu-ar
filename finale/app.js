@@ -40,6 +40,7 @@ let stageTargetX=0,stageTargetY=0,stageTiltX=0,stageTiltY=0,stageSensorBase=null
 let filteredSensorX=0,filteredSensorY=0;
 let frozenStageRoot=null,stagePoseCaptured=false;
 let stableCamera=null;
+let initialMarkerDistance=0,markerDistanceZoom=1,markerDistanceTarget=1;
 const STAGE_SCREEN_COVERAGE=.68;
 let targetLostAt=0,stageWasActive=false;
 const TRACKING_GRACE_MS=550;
@@ -297,7 +298,7 @@ const BASE_SCALE=0.115; // Compact mini-stage: keep floor and actors in the came
 // The real image-anchor pose determines camera perspective in Three.js.
 const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,0,0));
 function resetStageView(){
- orbit.zoom=1;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;filteredSensorX=filteredSensorY=0;stageSensorBase=null;lastManualOrbitAt=0;
+ orbit.zoom=1;markerDistanceZoom=markerDistanceTarget=1;initialMarkerDistance=0;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;filteredSensorX=filteredSensorY=0;stageSensorBase=null;lastManualOrbitAt=0;
  if(stage)stage.quaternion.copy(fixedStageTilt);
  applyOrbit();
 }
@@ -306,7 +307,7 @@ function applyOrbit(){
  // the stage floor instead of twisting independently in mid-air.
  performers.forEach((group,i)=>{
    group.rotation.set(0,0,0);
-   group.scale.setScalar((i===2?1.80:3.35)*orbit.zoom);
+   group.scale.setScalar((i===2?2.05:3.85)*orbit.zoom);
  });
 }
 function bindOrbitControls(){
@@ -568,6 +569,7 @@ function setup() {
   if(locked && !stagePoseCaptured && frozenStageRoot && stableCamera){
    root.updateWorldMatrix(true,false);
    root.matrixWorld.decompose(posePosition,poseRotation,poseScale);
+   initialMarkerDistance=Math.abs(posePosition.z);
    if(Number.isFinite(posePosition.x)&&Number.isFinite(posePosition.y)&&Number.isFinite(posePosition.z)){
     frozenStageRoot.position.copy(posePosition);
     frozenStageRoot.quaternion.copy(poseRotation);
@@ -591,6 +593,17 @@ function setup() {
     }
     stagePoseCaptured=true;
     stageSensorBase=null;
+   }
+  }
+  // Read live image-marker depth for real approach/retreat zoom.
+  // Do NOT follow marker translation or rotation (camera-locked stability).
+  if(locked && stagePoseCaptured && initialMarkerDistance>.1){
+   root.updateWorldMatrix(true,false);
+   const currentDepth=Math.abs(root.matrixWorld.elements[14]);
+   if(Number.isFinite(currentDepth)&&currentDepth>.1){
+    const desired=THREE.MathUtils.clamp(initialMarkerDistance/currentDepth,.78,1.38);
+    // Ignore less than 2.2% change to suppress camera tracking noise.
+    if(Math.abs(desired-markerDistanceTarget)>.022)markerDistanceTarget=desired;
    }
   }
   const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
@@ -647,7 +660,8 @@ function setup() {
     if(performerReady[index] && status.textContent.startsWith('Invitation detected')){
       status.textContent='Stage ready · move sideways for a 3D view · pinch to zoom';
     }
-    stage.scale.setScalar(BASE_SCALE);
+    markerDistanceZoom+=(markerDistanceTarget-markerDistanceZoom)*(1-Math.exp(-2.0*dt));
+    stage.scale.setScalar(BASE_SCALE*markerDistanceZoom);
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
   }
@@ -747,6 +761,7 @@ async function disposeARSession(){
  }catch(err){
   console.warn('MindAR shutdown warning:',err);
  }finally{
+  initialMarkerDistance=0;markerDistanceZoom=markerDistanceTarget=1;
   if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;stableCamera=null;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
@@ -802,12 +817,6 @@ function closeFinalMotion(){
 }
 document.getElementById('finaleEnableTilt')?.addEventListener('click',requestMotionFromStartGesture);
 arTiltButton?.addEventListener('click',requestMotionFromStartGesture);
-document.getElementById('finaleZoomIn')?.addEventListener('click',()=>{
- finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-zoom',factor:1.12},location.origin);
-});
-document.getElementById('finaleZoomOut')?.addEventListener('click',()=>{
- finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-zoom',factor:1/1.12},location.origin);
-});
 document.getElementById('finaleResetTilt')?.addEventListener('click',()=>{
  motionReference=null;finalX=finalY=smoothedX=smoothedY=0;finalZoom=1;
  finaleMotionUnlockedAt=performance.now()+900;
