@@ -38,6 +38,7 @@ let mindarThree, initialized = false, running = false, busy = false, tracked = f
 let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
 let stageTargetX=0,stageTargetY=0,stageTiltX=0,stageTiltY=0,stageSensorBase=null;
 let frozenStageRoot=null,stagePoseCaptured=false;
+let lastManualOrbitAt=0;
 let trackerGeneration=0; // Invalidate late tracking events from a previous camera session.
 let stage, warmLight, violetLight;
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
@@ -78,8 +79,11 @@ function receiveMotion(event){
  motionSamples++;
  if(running && tracked && introCompleted && !showInvitation){
   if(!stageSensorBase)stageSensorBase={gamma:event.gamma,beta:event.beta};
-  stageTargetY=THREE.MathUtils.clamp((event.gamma-stageSensorBase.gamma)*.006,-.17,.17);
-  stageTargetX=THREE.MathUtils.clamp(-(event.beta-stageSensorBase.beta)*.005,-.12,.12);
+  // Do not let device sensors immediately overwrite a finger-drag orbit.
+  if(performance.now()-lastManualOrbitAt>2200){
+   stageTargetY=THREE.MathUtils.clamp((event.gamma-stageSensorBase.gamma)*.018,-1.15,1.15);
+   stageTargetX=THREE.MathUtils.clamp(-(event.beta-stageSensorBase.beta)*.012,-.42,.42);
+  }
  }
  if(!finalMotionActive)return;
  if(!motionReference) motionReference={gamma:event.gamma,beta:event.beta};
@@ -205,7 +209,7 @@ const BASE_SCALE=0.17;
 // The real image-anchor pose determines camera perspective in Three.js.
 const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,0));
 function resetStageView(){
- orbit.zoom=1;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;stageSensorBase=null;
+ orbit.zoom=1;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;stageSensorBase=null;lastManualOrbitAt=0;
  if(stage)stage.quaternion.copy(fixedStageTilt);
  applyOrbit();
 }
@@ -218,40 +222,40 @@ function applyOrbit(){
 function bindOrbitControls(){
  if(orbitControlsBound)return;
  orbitControlsBound=true;
- const surface=document.querySelector('#arContainer');
- surface.style.touchAction='none';
- surface.addEventListener('pointerdown',e=>{
+ // Capture pointer events on the whole AR view. The scanner/HUD is layered above
+ // #arContainer, so listening only on the canvas misses ordinary finger drags.
+ const pointers=orbit.pointers;
+ const interactive=e=>e.target?.closest?.('button,a,input,select,textarea,dialog');
+ document.addEventListener('pointerdown',e=>{
+  if(!running||!tracked||!introCompleted||showInvitation||interactive(e))return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===2)orbit.distance=0;
+ },true);
+ document.addEventListener('pointermove',e=>{
+  if(!running||!tracked||!introCompleted||!pointers.has(e.pointerId))return;
+  const old=pointers.get(e.pointerId);
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===1){
+   stageTargetY=THREE.MathUtils.clamp(stageTargetY+(e.clientX-old.x)*.009,-1.15,1.15);
+   stageTargetX=THREE.MathUtils.clamp(stageTargetX+(e.clientY-old.y)*.005,-.42,.42);
+   lastManualOrbitAt=performance.now();
+  }else if(pointers.size===2){
+   const [a,b]=[...pointers.values()];
+   const distance=Math.hypot(a.x-b.x,a.y-b.y);
+   if(orbit.distance>0)orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*distance/orbit.distance,.65,2.1);
+   orbit.distance=distance;
+  }
+ },true);
+ const release=e=>{pointers.delete(e.pointerId);orbit.distance=0;};
+ document.addEventListener('pointerup',release,true);
+ document.addEventListener('pointercancel',release,true);
+ window.addEventListener('blur',()=>{pointers.clear();orbit.distance=0;});
+ document.querySelector('#arContainer')?.addEventListener('wheel',e=>{
   if(!running)return;
-  orbit.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  orbit.distance=0;
-  try{surface.setPointerCapture(e.pointerId);}catch(_){}
- });
- surface.addEventListener('pointermove',e=>{
-  if(!running||!orbit.pointers.has(e.pointerId))return;
-  const old=orbit.pointers.get(e.pointerId);
-  orbit.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(orbit.pointers.size===1 && tracked && introCompleted){
-   stageTargetY=THREE.MathUtils.clamp(stageTargetY+(e.clientX-old.x)*.002,-.17,.17);
-   stageTargetX=THREE.MathUtils.clamp(stageTargetX+(e.clientY-old.y)*.0015,-.12,.12);
-   stageSensorBase=null;
-  }
-  if(orbit.pointers.size===2){
-    const [a,b]=[...orbit.pointers.values()];
-    const distance=Math.hypot(a.x-b.x,a.y-b.y);
-    if(orbit.distance>0)orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*distance/orbit.distance,.65,2.1);
-    orbit.distance=distance;
-  }
- });
- const release=e=>{orbit.pointers.delete(e.pointerId);orbit.distance=0;};
- surface.addEventListener('pointerup',release);
- surface.addEventListener('pointercancel',release);
- surface.addEventListener('wheel',e=>{
-  if(!running)return;e.preventDefault();
+  e.preventDefault();
   orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*Math.exp(-e.deltaY*.001),.65,2.1);
  },{passive:false});
- document.querySelector('#resetViewButton')?.addEventListener('click',()=>{
-  resetStageView();
- });
+ document.querySelector('#resetViewButton')?.addEventListener('click',resetStageView);
 }
 
 function panelTexture(lines, fontSize=76) {
@@ -482,8 +486,8 @@ function setup() {
   if(showStage){
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
-    stageTiltX+=(stageTargetX-stageTiltX)*.10;
-    stageTiltY+=(stageTargetY-stageTiltY)*.10;
+    stageTiltX+=(stageTargetX-stageTiltX)*.17;
+    stageTiltY+=(stageTargetY-stageTiltY)*.17;
     // Virtual orbit driven by tilt: preserve captured stage placement; don't reapply tracker pose.
     stage.quaternion.setFromEuler(new THREE.Euler(.62+stageTiltX,stageTiltY,0,'XYZ'));
     // Preserve each 8-second act until its GLB has fully loaded.
