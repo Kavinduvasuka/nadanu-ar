@@ -40,7 +40,7 @@ export function createAliveInvitation(anchorRoot){
  srcImage.onload=()=>{
   for(let n=0;n<textParts.length;n++){
    const [x,y,w,h,z]=textParts[n],cv=document.createElement('canvas');cv.width=Math.min(700,w);cv.height=Math.max(1,Math.round(cv.width*h/w));
-   const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(srcImage,x,y,w,h,0,0,cv.width,cv.height);
+   const ctx=cv.getContext('2d',{willReadFrequently:true});const sx=srcImage.naturalWidth/1441,sy=srcImage.naturalHeight/2048;ctx.drawImage(srcImage,x*sx,y*sy,w*sx,h*sy,0,0,cv.width,cv.height);
    const pixels=ctx.getImageData(0,0,cv.width,cv.height);
    for(let k=0;k<pixels.data.length;k+=4){const r=pixels.data[k],g=pixels.data[k+1],b=pixels.data[k+2];
     // Remove dark poster texture and keep the bright ORIGINAL ink / star.
