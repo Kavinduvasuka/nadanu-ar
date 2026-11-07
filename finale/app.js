@@ -38,6 +38,8 @@ let mindarThree, initialized = false, running = false, busy = false, tracked = f
 let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
 let stageTargetX=0,stageTargetY=0,stageTiltX=0,stageTiltY=0,stageSensorBase=null;
 let frozenStageRoot=null,stagePoseCaptured=false;
+let stableCamera=null;
+const STAGE_SCREEN_COVERAGE=.68;
 let targetLostAt=0,stageWasActive=false;
 const TRACKING_GRACE_MS=550;
 const posePosition=new THREE.Vector3(),poseRotation=new THREE.Quaternion(),poseScale=new THREE.Vector3();
@@ -80,7 +82,7 @@ let motionSamples=0, motionPermissionPending=false;
 function receiveMotion(event){
  if(!motionAllowed || !Number.isFinite(event.gamma) || !Number.isFinite(event.beta))return;
  motionSamples++;
- if(running && tracked && introCompleted && !showInvitation){
+ if(running && stagePoseCaptured && introCompleted && !showInvitation){
   if(!stageSensorBase)stageSensorBase={gamma:event.gamma,beta:event.beta};
   // Do not let device sensors immediately overwrite a finger-drag orbit.
   if(performance.now()-lastManualOrbitAt>2200){
@@ -429,8 +431,10 @@ function setup() {
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.2));
  const anchor=mindarThree.addAnchor(0),root=anchor.group;
  activeAnchor=anchor;activeRoot=root;
- // Preserve the valid MindAR marker pose once, rather than following every jittery frame.
- // This group lives in the SAME scene and uses the SAME marker-scale 3D assets.
+ // Hybrid AR: preserve the working scene and camera projection.
+ // After recognition, the marker becomes a visibility gate, not a pose driver.
+ scene.add(camera);
+ stableCamera=camera;
  frozenStageRoot=new THREE.Group();frozenStageRoot.visible=false;scene.add(frozenStageRoot);
  stagePoseCaptured=false;
  scene.add(new THREE.HemisphereLight(0xffffff,0x34132a,2.8));
@@ -474,25 +478,33 @@ function setup() {
   if(locked && introCompleted && invitationScanner && !invitationScanner.hidden)hideScanner();
   if(locked && !introCompleted && !introStartedAt)startRecognitionIntro();
   if(locked && introStartedAt && performance.now()-introStartedAt>=INTRO_DURATION_MS)finishRecognitionIntro();
-  // Follow the real image pose with damping instead of freezing it forever.
-  // This preserves actual side-view parallax while suppressing tracking jitter.
-  if(locked && frozenStageRoot){
+  // Capture ONE valid marker pose; attach the complete existing stage to the
+  // camera without jumping. Future image pose jitter no longer moves the stage.
+  if(locked && !stagePoseCaptured && frozenStageRoot && stableCamera){
    root.updateWorldMatrix(true,false);
    root.matrixWorld.decompose(posePosition,poseRotation,poseScale);
-   if(!stagePoseCaptured){
+   if(Number.isFinite(posePosition.x)&&Number.isFinite(posePosition.y)&&Number.isFinite(posePosition.z)){
     frozenStageRoot.position.copy(posePosition);
     frozenStageRoot.quaternion.copy(poseRotation);
     frozenStageRoot.scale.copy(poseScale);
+    stableCamera.attach(frozenStageRoot);
+    // Maintain visible initial pose but fit the stage inside portrait screens.
+    if(stableCamera.isPerspectiveCamera && frozenStageRoot.position.z < -.15){
+     const depth=-frozenStageRoot.position.z;
+     const viewHeight=2*depth*Math.tan(THREE.MathUtils.degToRad(stableCamera.fov)*.5);
+     const viewWidth=viewHeight*stableCamera.aspect;
+     const naturalDiameter=20*BASE_SCALE;
+     const fit=Math.min(1,(Math.min(viewWidth,viewHeight)*STAGE_SCREEN_COVERAGE)/Math.max(.01,naturalDiameter));
+     if(Number.isFinite(fit)&&fit>0){
+      frozenStageRoot.scale.multiplyScalar(Math.max(.15,fit));
+      const safeX=Math.max(0,(viewWidth-naturalDiameter*fit)*.45);
+      const safeY=Math.max(0,(viewHeight-naturalDiameter*fit)*.40);
+      frozenStageRoot.position.x=THREE.MathUtils.clamp(frozenStageRoot.position.x,-safeX,safeX);
+      frozenStageRoot.position.y=THREE.MathUtils.clamp(frozenStageRoot.position.y,-safeY,safeY);
+     }
+    }
     stagePoseCaptured=true;
     stageSensorBase=null;
-   }else{
-    const distance=frozenStageRoot.position.distanceTo(posePosition);
-    // Soft-follow: smooth camera shake and rapid motion rather than snapping.
-    // Moderate catch-up at larger distances prevents the stage falling far behind.
-    const positionAlpha=distance<.006?.025:distance<.04?.055:.09;
-    frozenStageRoot.position.lerp(posePosition,positionAlpha);
-    frozenStageRoot.quaternion.slerp(poseRotation,.055);
-    frozenStageRoot.scale.lerp(poseScale,.06);
    }
   }
   const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
@@ -516,7 +528,7 @@ function setup() {
     // A slow first download must never silently skip the solo dancer.
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
     const canAdvance=performerReady[activeAutoAct]||performerFailed[activeAutoAct];
-    if(!showInvitation&&selectedAct===null&&canAdvance)sequenceTime+=dt;
+    if(tracked&&!showInvitation&&selectedAct===null&&canAdvance)sequenceTime+=dt;
     // One complete three-act showcase, followed by the formal invitation.
     if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
       showInvitation=true;
@@ -533,7 +545,7 @@ function setup() {
         ? `${performerNames[index]} model unavailable — try refreshing the page.`
         : `Preparing ${performerNames[index]} 3D model…`;
     }
-    for(const mixer of mixers)mixer.update(dt);
+    if(tracked)for(const mixer of mixers)mixer.update(dt);
     // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
     applyOrbit();
     // Lock to the invitation centre; delay the first reveal to avoid acquisition bounce.
@@ -640,7 +652,7 @@ async function disposeARSession(){
  }catch(err){
   console.warn('MindAR shutdown warning:',err);
  }finally{
-  if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;}
+  if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;stableCamera=null;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
    try{renderer.dispose();}catch(_){}
