@@ -75,6 +75,7 @@ const finaleMotion=document.getElementById('finaleMotion');
 const finaleMotionFrame=document.getElementById('finaleMotionFrame');
 const finaleMotionInfo=document.getElementById('finaleMotionInfo');
 let finalMotionActive=false,motionAllowed=false,motionReference=null;
+let finaleMotionUnlockedAt=0;
 let finalX=0,finalY=0,smoothedX=0,smoothedY=0,motionFrame=0;
 function setMotionStatus(text){if(finaleMotionInfo)finaleMotionInfo.textContent=text;}
 // Calibrated against the device position when the invitation is first shown.
@@ -109,7 +110,7 @@ function receiveMotion(event){
    if(Math.abs(filteredSensorX-stageTargetX)>.006)stageTargetX=filteredSensorX;
   }
  }
- if(!finalMotionActive)return;
+ if(!finalMotionActive || !finaleSceneReady || performance.now()<finaleMotionUnlockedAt)return;
  if(!motionReference)motionReference={gamma:event.gamma,beta:event.beta};
  const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
  finalY=clamp((event.gamma-motionReference.gamma)*.011,-.30,.30);
@@ -159,9 +160,11 @@ function requestMotionFromStartGesture(){
 }
 function forwardMotion(){
  if(!finalMotionActive)return;
- smoothedX+=(finalX-smoothedX)*.20;
- smoothedY+=(finalY-smoothedY)*.20;
- finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-motion',x:smoothedX,y:smoothedY},location.origin);
+ if(finaleSceneReady && performance.now()>=finaleMotionUnlockedAt){
+  smoothedX+=(finalX-smoothedX)*.20;
+  smoothedY+=(finalY-smoothedY)*.20;
+  finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-motion',x:smoothedX,y:smoothedY},location.origin);
+ }
  motionFrame=requestAnimationFrame(forwardMotion);
 }
 let finaleSceneReady=false;
@@ -169,12 +172,19 @@ window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==finaleMotionFrame?.contentWindow)return;
  if(event.data?.type!=='nadanu-scene-ready'||!finalMotionActive)return;
  finaleSceneReady=true;
+ // New invitation always starts front-facing and fitted inside the screen.
+ finaleMotionUnlockedAt=performance.now()+1200;
+ motionReference=null;
+ smoothedX=smoothedY=finalX=finalY=0;
+ finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin);
  finaleMotion.classList.add('scene-ready');
 });
 async function revealFinalMotion(){
  if(finalMotionActive)return;
  finalMotionActive=true;
  finaleSceneReady=false;
+ finaleMotionUnlockedAt=Infinity;
+ resetStageView(); // Clear concert orbit and zoom before the final invitation.
  finaleMotion.classList.remove('scene-ready');
  running=false;tracked=false;
  if(invitationScanner)invitationScanner.hidden=true;
@@ -746,7 +756,8 @@ document.getElementById('finaleEnableTilt')?.addEventListener('click',requestMot
 arTiltButton?.addEventListener('click',requestMotionFromStartGesture);
 document.getElementById('finaleResetTilt')?.addEventListener('click',()=>{
  motionReference=null;finalX=finalY=smoothedX=smoothedY=0;
- finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-reset-view'},location.origin);
+ finaleMotionUnlockedAt=performance.now()+900;
+ finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin);
  setMotionStatus(motionAllowed?'VIEW RESET · MOVE PHONE TO TILT':'VIEW RESET · DRAG TO TILT');
 });
 document.getElementById('finaleMotionClose')?.addEventListener('click',closeFinalMotion);
