@@ -224,7 +224,15 @@ main().catch(e=>{console.error(e);document.body.classList.add('fallback-original
 // Use the parent origin check to reject unrelated frame messages.
 window.addEventListener('message', event => {
  if(event.origin !== location.origin || !event.data) return;
- if(event.data.type === 'nadanu-reset-view') { targetRX=0;targetRY=0;root?.rotation.set(0,0,0);return; }
+ if(event.data.type === 'nadanu-reset-view') {
+  // Reset angles, position and camera zoom, including when coming from AR.
+  targetRX=targetRY=0;
+  dragX=dragY=0;
+  pointerDown=false;
+  if(root){root.rotation.set(0,0,0);root.position.set(0,0,0);root.scale.setScalar(1)}
+  if(camera){camera.zoom=1;camera.position.set(0,0,25);camera.lookAt(0,0,0);camera.updateProjectionMatrix()}
+  return;
+ }
  if(event.data.type !== 'nadanu-motion') return;
  if(pointerDown || comparison) return;
  const x=Number(event.data.x),y=Number(event.data.y);
