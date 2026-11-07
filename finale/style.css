@@ -706,3 +706,12 @@ body{font-family:"Audiowide",Arial,sans-serif}
 .finale-motion-foot>div{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}
 .finale-motion-foot a{text-decoration:none;display:inline-flex;align-items:center}
 @media(max-width:500px){.finale-motion-head span{font-size:9px}.finale-motion-foot button,.finale-motion-foot a{font-size:9px;padding:9px 10px}}
+
+/* Instant invitation preview while the original 3D art initializes. */
+#finaleMotionPlaceholder{position:absolute;inset:0;margin:auto;width:auto;max-width:min(96vw,calc(90dvh * 1441 / 2048));max-height:90dvh;object-fit:contain;z-index:1;pointer-events:none;transition:opacity .2s ease}
+#finaleMotionFrame{z-index:2;opacity:0;transition:opacity .25s ease}
+.finale-motion.scene-ready #finaleMotionFrame{opacity:1}
+.finale-motion.scene-ready #finaleMotionPlaceholder{opacity:0}
+.finale-motion-head,.finale-motion-foot{z-index:3}
+#finaleEnableTilt,#finaleResetTilt{pointer-events:auto;cursor:pointer;background:#200c0bd8;color:#ffe5c3;border:1px solid #ffb6577a;border-radius:9px;padding:8px 13px;font:800 10px Arial,sans-serif;letter-spacing:.4px}
+#finaleEnableTilt[hidden]{display:none}
