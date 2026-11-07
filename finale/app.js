@@ -77,6 +77,7 @@ const finaleMotionInfo=document.getElementById('finaleMotionInfo');
 let finalMotionActive=false,motionAllowed=false,motionReference=null;
 let finaleMotionUnlockedAt=0;
 let finalX=0,finalY=0,smoothedX=0,smoothedY=0,motionFrame=0;
+let finalZoom=1,zoomMotionAllowed=false,lastZoomMotionAt=0;
 function setMotionStatus(text){if(finaleMotionInfo)finaleMotionInfo.textContent=text;}
 // Calibrated against the device position when the invitation is first shown.
 // iOS requires an explicit tap to allow orientation; Android may grant automatically.
@@ -117,7 +118,37 @@ function receiveMotion(event){
  finalX=clamp(-(event.beta-motionReference.beta)*.008,-.23,.23);
  if(motionSamples===1 || motionSamples%120===0)setMotionStatus('PHONE TILT ACTIVE · MOVE YOUR PHONE OR DRAG');
 }
+function receiveZoomMotion(event){
+ if(!zoomMotionAllowed||!finalMotionActive||!finaleSceneReady||performance.now()<finaleMotionUnlockedAt)return;
+ // DeviceMotion acceleration approximates a push/pull gesture, not true depth.
+ // Use gravity-free readings to keep stationary or tilted phones stable.
+ const z=event.acceleration?.z;
+ if(!Number.isFinite(z))return;
+ const now=performance.now();
+ if(now-lastZoomMotionAt<45)return;
+ lastZoomMotionAt=now;
+ const strength=Math.max(0,Math.abs(z)-1.35);
+ if(strength<.15)return;
+ const impulse=Math.sign(-z)*Math.min(strength,5)*.0025;
+ finalZoom=THREE.MathUtils.clamp(finalZoom+impulse,.90,1.12);
+}
+function requestZoomMotionPermission(){
+ if(!('DeviceMotionEvent' in window))return;
+ try{
+  const permission=typeof DeviceMotionEvent.requestPermission==='function'
+   ?DeviceMotionEvent.requestPermission():Promise.resolve('granted');
+  Promise.resolve(permission).then(value=>{
+   zoomMotionAllowed=value==='granted';
+   if(zoomMotionAllowed){
+    window.removeEventListener('devicemotion',receiveZoomMotion,true);
+    window.addEventListener('devicemotion',receiveZoomMotion,true);
+   }
+  }).catch(error=>console.warn('Motion zoom permission:',error));
+ }catch(error){console.warn('Motion zoom permission:',error)}
+}
 function requestMotionFromStartGesture(){
+ // Request motion access inside the same user gesture on iOS.
+ requestZoomMotionPermission();
  if(!('DeviceOrientationEvent' in window)){
   motionAllowed=false;
   updateARTiltStatus('TILT SENSOR NOT AVAILABLE · DRAG TO ROTATE',false);
@@ -163,7 +194,7 @@ function forwardMotion(){
  if(finaleSceneReady && performance.now()>=finaleMotionUnlockedAt){
   smoothedX+=(finalX-smoothedX)*.20;
   smoothedY+=(finalY-smoothedY)*.20;
-  finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-motion',x:smoothedX,y:smoothedY},location.origin);
+  finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-motion',x:smoothedX,y:smoothedY,zoom:finalZoom},location.origin);
  }
  motionFrame=requestAnimationFrame(forwardMotion);
 }
@@ -175,7 +206,7 @@ window.addEventListener('message',event=>{
  // New invitation always starts front-facing and fitted inside the screen.
  finaleMotionUnlockedAt=performance.now()+1200;
  motionReference=null;
- smoothedX=smoothedY=finalX=finalY=0;
+ smoothedX=smoothedY=finalX=finalY=0;finalZoom=1;
  finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin);
  finaleMotion.classList.add('scene-ready');
 });
@@ -194,7 +225,7 @@ async function revealFinalMotion(){
  finaleMotion.hidden=false;
  setMotionStatus(motionAllowed?'MOVE PHONE OR DRAG TO EXPLORE 3D':'ENABLE PHONE TILT OR DRAG TO EXPLORE');
  document.getElementById('finaleEnableTilt').hidden=motionAllowed;
- smoothedX=smoothedY=finalX=finalY=0;
+ smoothedX=smoothedY=finalX=finalY=0;finalZoom=1;
  motionReference=null;
  cancelAnimationFrame(motionFrame);
  motionFrame=requestAnimationFrame(forwardMotion);
@@ -745,7 +776,7 @@ startButton.addEventListener('click',()=>{
  startAR();
 });
 function closeFinalMotion(){
- finalMotionActive=false;cancelAnimationFrame(motionFrame);
+ finalMotionActive=false;cancelAnimationFrame(motionFrame);finalZoom=1;
  finaleMotion.classList.remove('scene-ready');
  finaleMotion.hidden=true;
  finaleMotionFrame.removeAttribute('src');
@@ -755,7 +786,7 @@ function closeFinalMotion(){
 document.getElementById('finaleEnableTilt')?.addEventListener('click',requestMotionFromStartGesture);
 arTiltButton?.addEventListener('click',requestMotionFromStartGesture);
 document.getElementById('finaleResetTilt')?.addEventListener('click',()=>{
- motionReference=null;finalX=finalY=smoothedX=smoothedY=0;
+ motionReference=null;finalX=finalY=smoothedX=smoothedY=0;finalZoom=1;
  finaleMotionUnlockedAt=performance.now()+900;
  finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin);
  setMotionStatus(motionAllowed?'VIEW RESET · MOVE PHONE TO TILT':'VIEW RESET · DRAG TO TILT');
