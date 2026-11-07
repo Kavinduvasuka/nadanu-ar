@@ -396,6 +396,49 @@ function createStage(root){
   const floor=new THREE.Mesh(new THREE.CircleGeometry(10,96),
     new THREE.MeshStandardMaterial({color:0x140a28,metalness:.75,roughness:.22,side:THREE.DoubleSide}));
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
+  // NADANU GRAND FINALE · subdued digital invitation on the rear concert wall.
+  // The panel lives inside the same camera-locked stage, so it rotates with
+  // the performers and introduces no additional tracking jitter.
+  const wallWidth=7.2, wallHeight=wallWidth*2048/1441;
+  const wall=new THREE.Group();
+  wall.position.set(0,5.95,-7.2);
+  const backing=new THREE.Mesh(
+    new THREE.PlaneGeometry(wallWidth+.28,wallHeight+.28),
+    new THREE.MeshBasicMaterial({color:0x140b17,side:THREE.DoubleSide,depthWrite:true})
+  );
+  backing.position.z=-.045;wall.add(backing);
+  const invitationMaterial=new THREE.MeshBasicMaterial({
+    color:0xc4b3b4,transparent:true,opacity:.72,
+    side:THREE.DoubleSide,depthWrite:false,toneMapped:false
+  });
+  const invitationPanel=new THREE.Mesh(
+    new THREE.PlaneGeometry(wallWidth,wallHeight),
+    invitationMaterial
+  );
+  invitationPanel.position.z=.01;invitationPanel.renderOrder=1;wall.add(invitationPanel);
+  // A slim LED-wall border makes the poster read as part of the stage,
+  // not another full-screen digital poster.
+  const trimMat=new THREE.MeshBasicMaterial({color:0xff9c50});
+  const topTrim=new THREE.Mesh(new THREE.BoxGeometry(wallWidth+.30,.055,.05),trimMat);
+  const bottomTrim=topTrim.clone();
+  topTrim.position.y=wallHeight/2+.08;bottomTrim.position.y=-wallHeight/2-.08;
+  wall.add(topTrim,bottomTrim);
+  for(const side of [-1,1]){
+    const trim=new THREE.Mesh(new THREE.BoxGeometry(.055,wallHeight+.20,.05),trimMat);
+    trim.position.x=side*(wallWidth/2+.08);wall.add(trim);
+  }
+  stage.add(wall);
+  new THREE.TextureLoader().load(
+    './assets/finale-invitation.webp',
+    texture=>{
+      texture.encoding=THREE.sRGBEncoding;
+      texture.anisotropy=2;
+      invitationMaterial.map=texture;
+      invitationMaterial.needsUpdate=true;
+    },
+    undefined,
+    error=>console.warn('Stage invitation LED wall image unavailable:',error)
+  );
   neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((color,i)=>{
     const ring=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),
       new THREE.MeshBasicMaterial({color,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
