@@ -293,7 +293,7 @@ function finishRecognitionIntro(){
 }
 function resetPerformances(){
  popUpBeganAt=0;
- if(popUpWorld){popUpWorld.scale.y=.015;popUpWorld.position.y=-.3;}
+ if(popUpWorld){popUpWorld.scale.set(.58,.015,.58);popUpWorld.position.set(4.65,-.2,0);}
  lastPresentedAct=-1;
  actBanner.hidden=false;
  presentAct(0);
@@ -383,44 +383,45 @@ function textMesh(lines,w,h,x,y,z,size=74){
 // mini concert world on the printed invitation. Nothing is flattened to a plane.
 let stageWorld, halo, noteSprites=[], noteCooldown=0;
 let popUpWorld=null,popUpInvitation=null,popUpBeganAt=0;
-const POPUP_RISE_MS=1700;
+const POPUP_RISE_MS=1600;
 function makePopUpInvitation(stageRoot){
-  // The original invitation forms the tilted base of the 3D pop-up stage.
-  // No LED wall or floating poster behind the performing artists.
+  // Open-book layout: the entire original invitation stays on the LEFT page,
+  // and the three-dimensional concert sits on the RIGHT page.
+  // Neither the stage geometry nor the performers intersect the artwork.
   const card=new THREE.Group();
-  card.position.set(0,-2.65,-2.75);
-  card.rotation.x=-.67;
+  card.position.set(-5.25,.95,.6);
+  // Counter the slight forward stage tilt: text remains nearly upright.
+  card.rotation.set(-.41,.11,0);
   stageRoot.add(card);
-  const w=11.35,h=w*2048/1441;
+  const w=7.1,h=w*2048/1441;
   const material=new THREE.MeshBasicMaterial({
-    transparent:true,opacity:.99,depthTest:true,depthWrite:true,
-    side:THREE.DoubleSide,color:0xffffff
+    color:0xffffff,transparent:true,opacity:1,depthTest:true,
+    side:THREE.DoubleSide
   });
   const poster=new THREE.Mesh(new THREE.PlaneGeometry(w,h),material);
   card.add(poster);
   const texture=new THREE.TextureLoader().load(
     './assets/finale-invitation.webp',
-    tex=>{tex.colorSpace=THREE.SRGBColorSpace;material.map=tex;material.needsUpdate=true;},
-    undefined,err=>console.warn('Invitation pop-up artwork unavailable:',err)
+    tex=>{tex.encoding=THREE.sRGBEncoding;material.map=tex;material.needsUpdate=true;},
+    undefined,err=>console.warn('Original invitation artwork could not load:',err)
   );
-  texture.colorSpace=THREE.SRGBColorSpace;
-  material.map=texture;
-  material.needsUpdate=true;
+  texture.encoding=THREE.sRGBEncoding;
+  material.map=texture;material.needsUpdate=true;
   const border=new THREE.LineLoop(
     new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-w/2,-h/2,.026),
-      new THREE.Vector3(w/2,-h/2,.026),
-      new THREE.Vector3(w/2,h/2,.026),
-      new THREE.Vector3(-w/2,h/2,.026)
+      new THREE.Vector3(-w/2,-h/2,.024),
+      new THREE.Vector3(w/2,-h/2,.024),
+      new THREE.Vector3(w/2,h/2,.024),
+      new THREE.Vector3(-w/2,h/2,.024)
     ]),
-    new THREE.LineBasicMaterial({color:0xffd99b,transparent:true,opacity:.74})
+    new THREE.LineBasicMaterial({color:0xffd69a,transparent:true,opacity:.84})
   );
   card.add(border);
   const backing=new THREE.Mesh(
-    new THREE.BoxGeometry(w+.14,h+.14,.08),
-    new THREE.MeshBasicMaterial({color:0x37152d,side:THREE.DoubleSide})
+    new THREE.BoxGeometry(w+.12,h+.12,.12),
+    new THREE.MeshBasicMaterial({color:0x391a30})
   );
-  backing.position.z=-.085;card.add(backing);
+  backing.position.z=-.105;card.add(backing);
   popUpInvitation={card,texture,material};
 }
 const stageV=new THREE.Vector3(), stageQ=new THREE.Quaternion(), stageUp=new THREE.Vector3(0,1,0);
@@ -489,11 +490,13 @@ function createStage(root){
       sprite.visible=false;sprite.userData.life=0;performers[0].add(sprite);noteSprites.push(sprite);
     }
   });
-  // Keep the existing concert components together, so they emerge from
-  // the printed invitation as one coherent 3D pop-up structure.
+  // Move the complete real 3D stage to the right page of the open invitation.
+  // Keeping every part inside this group preserves lighting and animations.
   popUpWorld=new THREE.Group();
   const concertParts=stage.children.slice();
   for(const part of concertParts)popUpWorld.add(part);
+  popUpWorld.position.set(4.65,-.2,0);
+  popUpWorld.scale.set(.58,.015,.58);
   stage.add(popUpWorld);
   makePopUpInvitation(stage);
 
@@ -687,7 +690,7 @@ function setup() {
   stage.visible=showStage && !showInvitation;
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
-    if(popUpWorld){popUpWorld.scale.y=Math.max(.015,popUpEase);popUpWorld.position.y=-.3*(1-popUpEase);}
+    if(popUpWorld){popUpWorld.scale.y=Math.max(.015,.58*popUpEase);popUpWorld.position.y=-.2*(1-popUpEase);}
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
     // Slow, frame-rate-independent damping: stable even if mobile FPS varies.
