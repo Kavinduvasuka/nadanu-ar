@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import { createAliveInvitation } from './invitation-alive.js';
+import { createTiltPerformances } from './tilt-performances.js';
 
-// Nadanu 3.0 — sensor-based 3D invitation. No camera or MindAR APIs.
+// Nadanu 3.0 — hybrid camera background and motion tilt with 3 original GLB acts.
+// One Start gesture initiates both permission requests; browsers can show two prompts.
 const launch=document.querySelector('#startButton');
 const landing=document.querySelector('#landing');
 const viewer=document.querySelector('#tiltViewer');
 const canvas=document.querySelector('#tiltCanvas');
+const video=document.querySelector('#tiltCamera');
+const actTitle=document.querySelector('#tiltActTitle');
 const close=document.querySelector('#tiltClose');
 const reset=document.querySelector('#tiltReset');
 const motion=document.querySelector('#tiltMotion');
@@ -14,9 +18,11 @@ const note=document.querySelector('#tiltHint');
 const busy=document.querySelector('#message');
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
 let renderer,scene,camera,posterGroup,alive,frame=0,lastTime=0;
+let performers=null,performerRoot=null,actIndex=-1,cameraStream=null,sessionId=0;
 let targetX=0,targetY=0,targetZ=0,curX=0,curY=0;
 let playing=false,dragging=false,dragX=0,dragY=0,baseX=0,baseY=0;
 let motionActive=false,motionSeen=false,motionOrigin=null,soundOn=false;
+let backgroundStatus='Camera opening…';
 const soundtrack=new Audio('../auditions/assets/nadanu-retro-score.m4a');
 soundtrack.loop=true;soundtrack.preload='none';soundtrack.volume=.72;
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
@@ -33,7 +39,7 @@ function onMotion(event){
  targetX=clamp(-(beta-motionOrigin.beta)*.0045,-.16,.16);
  if(motion)motion.textContent='MOTION ON';
 }
-function listenMotion(){window.addEventListener('deviceorientation',onMotion,true);}
+function listenMotion(){window.removeEventListener('deviceorientation',onMotion,true);window.addEventListener('deviceorientation',onMotion,true);}
 async function enableMotion(){
  if(!('DeviceOrientationEvent' in window)){setHint('Motion sensor unavailable. Drag the invitation to explore its 3D depth.');return;}
  try{
@@ -81,7 +87,24 @@ function tick(now){
  curX+=(targetX-curX)*ease;curY+=(targetY-curY)*ease;
  posterGroup.rotation.x=curX;posterGroup.rotation.y=curY;
  posterGroup.position.y=Math.sin(now*.0005)*.006;
- if(alive)alive.update(dt);
+ if(performerRoot){performerRoot.rotation.x=curX;performerRoot.rotation.y=curY;}
+ if(performers){
+  const state=performers.update(dt);
+  const showingAct=!state.done;
+  posterGroup.visible=!showingAct;
+  performerRoot.visible=showingAct;
+  if(actTitle && state.index!==actIndex){
+   actIndex=state.index;
+   actTitle.textContent='ACT 0'+(actIndex+1)+' / 03 · '+state.label;
+  }
+  if(actTitle)actTitle.hidden=!showingAct;
+  if(showingAct&&state.loading)setHint('Preparing '+state.label+'… '+backgroundStatus);
+  if(!showingAct&&!window.__nadanuInviteRevealed){
+   window.__nadanuInviteRevealed=true;
+   setHint('Grand Finale invitation · move your phone or drag for 3D depth.');
+  }
+ }
+ if(alive && posterGroup.visible)alive.update(dt);
  renderer.render(scene,camera);
  frame=requestAnimationFrame(tick);
 }
@@ -90,18 +113,25 @@ function start(){
  try{
   viewer.hidden=false;viewer.style.display='flex';landing.style.display='none';
   scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x130907);
+  scene.background=null;
   scene.add(new THREE.AmbientLight(0xffd0a5,1.45));
   const key=new THREE.DirectionalLight(0xffdfb1,2.25);key.position.set(-1,1,2);scene.add(key);
   const accent=new THREE.PointLight(0xff6b17,2.4,3);accent.position.set(.7,-.35,.6);scene.add(accent);
   camera=new THREE.PerspectiveCamera(38,1,.01,50);
   posterGroup=new THREE.Group();scene.add(posterGroup);
-  renderer=new THREE.WebGLRenderer({canvas,alpha:false,antialias:true,powerPreference:'high-performance'});
+  renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
+  renderer.setClearColor(0x000000,0);
   renderer.outputColorSpace=THREE.SRGBColorSpace;
-  createPoster();resize();
+  createPoster();
+  performerRoot=new THREE.Group();scene.add(performerRoot);
+  performers=createTiltPerformances(performerRoot,t=>{if(playing&&actTitle)actTitle.textContent=t;});
+  posterGroup.visible=false;
+  performers.load().catch(e=>console.warn('Stage performer loading:',e));
+  window.__nadanuInviteRevealed=false;
+  actIndex=-1;resize();
   playing=true;curX=curY=targetX=targetY=0;
   lastTime=performance.now();frame=requestAnimationFrame(tick);
-  setHint('Move your phone to tilt the invitation, or swipe with your finger.');
+  setHint('Camera and motion opening · 3 original performances will play first.');
   // Android browsers may provide orientation events without explicit permission.
   // iOS gets a dedicated user-gesture permission button.
   if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission!=='function'){
@@ -113,9 +143,14 @@ function start(){
  }catch(e){console.error('3D invitation startup failed:',e);stop();if(busy)busy.textContent='3D preview could not start on this device. Please try Chrome or Safari.';}
 }
 function stop(){
- playing=false;cancelAnimationFrame(frame);window.removeEventListener('resize',resize);
+ playing=false;sessionId++;cancelAnimationFrame(frame);window.removeEventListener('resize',resize);
  window.removeEventListener('deviceorientation',onMotion,true);
  if(alive){alive.dispose();alive=null;}
+ if(performers){performers.dispose();performers=null;}
+ performerRoot=null;actIndex=-1;
+ if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+ if(video){video.pause();video.srcObject=null;video.hidden=true;}
+ if(actTitle)actTitle.hidden=true;
  renderer?.dispose();renderer=null;
  scene=null;camera=null;posterGroup=null;
  viewer.hidden=true;viewer.style.display='none';landing.style.display='';
@@ -123,7 +158,49 @@ function stop(){
  soundtrack.pause();soundOn=false;if(sound)sound.textContent='SOUND OFF';
  motionOrigin=null;motionActive=false;motionSeen=false;
 }
-launch?.addEventListener('click',start);
+// Both requests START in the SAME genuine user click, not inside a timer or await.
+launch?.addEventListener('click',()=>{
+ const id=++sessionId;
+ let sensorRequest=null;
+ if('DeviceOrientationEvent' in window){
+  try{
+   if(typeof DeviceOrientationEvent.requestPermission==='function'){
+    sensorRequest=DeviceOrientationEvent.requestPermission();
+   }else{sensorRequest=Promise.resolve('granted');}
+  }catch(e){sensorRequest=Promise.reject(e);}
+ }
+ let cameraRequest=null;
+ try{
+  if(navigator.mediaDevices?.getUserMedia){
+   cameraRequest=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+  }
+ }catch(e){cameraRequest=Promise.reject(e);}
+ start();
+ if(sensorRequest){
+  Promise.resolve(sensorRequest).then(v=>{
+   if(id!==sessionId||!playing)return;
+   if(v==='granted'){listenMotion();motionOrigin=null;if(motion)motion.textContent='MOTION ON';}
+   else setHint('Motion access denied · drag works, camera can still work.');
+  }).catch(e=>{console.warn('Motion request:',e);if(id===sessionId&&playing)setHint('Use finger drag for 3D movement.');});
+ }
+ if(cameraRequest){
+  Promise.resolve(cameraRequest).then(stream=>{
+   if(id!==sessionId||!playing){stream.getTracks().forEach(t=>t.stop());return;}
+   cameraStream=stream;
+   video.srcObject=stream;video.hidden=false;
+   backgroundStatus='Camera on';
+   video.play().catch(e=>console.warn('Background camera playback:',e));
+   setHint('Camera on · move your phone or drag to explore.');
+  }).catch(e=>{
+   backgroundStatus='Camera unavailable';
+   console.warn('Camera access unavailable:',e);
+   if(id===sessionId&&playing)setHint('Camera unavailable · 3D still works using touch or motion.');
+  });
+ }else{
+  backgroundStatus='Camera not supported';
+  if(playing)setHint('Camera not supported · 3D still works.');
+ }
+});
 close?.addEventListener('click',stop);
 reset?.addEventListener('click',()=>{targetX=targetY=curX=curY=0;motionOrigin=null;setHint('View reset. Move phone or drag to explore.');});
 motion?.addEventListener('click',enableMotion);
