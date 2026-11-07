@@ -489,10 +489,12 @@ function setup() {
     stageSensorBase=null;
    }else{
     const distance=frozenStageRoot.position.distanceTo(posePosition);
-    const positionAlpha=distance<.006?.045:distance<.04?.12:.22;
+    // Soft-follow: smooth camera shake and rapid motion rather than snapping.
+    // Moderate catch-up at larger distances prevents the stage falling far behind.
+    const positionAlpha=distance<.006?.025:distance<.04?.055:.09;
     frozenStageRoot.position.lerp(posePosition,positionAlpha);
-    frozenStageRoot.quaternion.slerp(poseRotation,.12);
-    frozenStageRoot.scale.lerp(poseScale,.12);
+    frozenStageRoot.quaternion.slerp(poseRotation,.055);
+    frozenStageRoot.scale.lerp(poseScale,.06);
    }
   }
   const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
