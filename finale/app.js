@@ -105,7 +105,7 @@ async function revealFinalMotion(){
  try{await disposeARSession();}catch(error){console.warn('Camera shutdown before invitation:',error);}
  arContainer.style.display='none';
  finaleMotion.hidden=false;
- finaleMotionFrame.src='./cinematic/index.html?v=original-master-20261107';
+ finaleMotionFrame.src='./cinematic/embed.html?v=artwork-only-20261107';
  smoothedX=smoothedY=finalX=finalY=0;motionReference=null;
  cancelAnimationFrame(motionFrame);
  motionFrame=requestAnimationFrame(forwardMotion);
