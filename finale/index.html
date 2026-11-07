@@ -205,17 +205,18 @@
     <strong id="actBannerTitle">SOLO SINGING</strong>
     <span id="actBannerCount" class="act-banner-count">ACT 01 / 03</span>
   </div>
-  <div id="finaleInvitation" class="finale-invitation" hidden role="region" aria-label="Grand Finale Invitation">
+  <div id="finaleInvitation" class="finale-invitation live-3d-finale" hidden role="region" aria-label="Live 3D Grand Finale Invitation">
     <div class="finale-invitation-card finale-poster-card">
-      <img class="finale-poster-image" src="./assets/finale-invitation.webp" alt="Nadanu 3.0 Grand Finale invitation poster" loading="eager" decoding="async">
-      <div class="finale-invitation-actions"><button type="button" id="replayActsButton">↻ WATCH PERFORMANCES AGAIN</button><button type="button" id="backToWebsiteButton">← BACK TO WEBSITE</button></div>
+      <div class="live-3d-heading"><strong>THE INVITATION IS ALIVE</strong><span>Move your camera around the invitation to see genuine 3D perspective</span></div>
+      <div class="finale-invitation-actions"><button type="button" id="replayActsButton">↻ REPLAY PERFORMANCES</button><button type="button" id="backToWebsiteButton">← EXIT AR</button>
+      <a class="finale-original-link" href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL INVITATION ↗</a></div>
     </div>
   </div>
   <div class="act-controls"><button id="soundButton">SOUND OFF</button></div>
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=recognition-intro-20261106"></script>
+<script type="module" src="./app.js?v=live-invite-ar-20261107"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
