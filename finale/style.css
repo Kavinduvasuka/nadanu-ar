@@ -733,3 +733,23 @@ body.tilt-open{overflow:hidden}
 @media(max-width:520px){.tilt-actions button{padding:10px 9px;font-size:9px}
  .tilt-bottom{gap:6px}.tilt-topbar button{padding:10px}.tilt-topbar strong{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.tilt-atmosphere{animation:none}}
+
+
+/* Hybrid Finale: live camera backdrop and 3D WebGL foreground. */
+.tilt-viewer .tilt-camera{
+ position:absolute;inset:0;width:100%;height:100%;
+ object-fit:cover;z-index:0;display:block;
+ transform:scaleX(1);
+}
+.tilt-viewer .tilt-camera[hidden]{display:none!important}
+.tilt-viewer #tiltCanvas{z-index:2}
+.tilt-viewer .tilt-topbar,.tilt-viewer .tilt-bottom{z-index:5}
+.tilt-viewer .tilt-act-title{
+ position:absolute;z-index:4;left:50%;top:calc(73px + env(safe-area-inset-top));
+ transform:translateX(-50%);min-width:180px;max-width:90vw;text-align:center;
+ padding:11px 17px;border:1px solid #ffcc7d89;border-radius:100px;
+ background:#1b0b21d9;color:#ffe7b4;box-shadow:0 0 22px #f86b3670;
+ font:800 clamp(11px,2.8vw,15px)/1.3 'Audiowide',Arial,sans-serif;
+ letter-spacing:.8px;pointer-events:none;backdrop-filter:blur(9px)
+}
+.tilt-viewer .tilt-act-title[hidden]{display:none!important}
