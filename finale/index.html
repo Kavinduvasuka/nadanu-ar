@@ -172,7 +172,7 @@
 <section id="finaleMotion" class="finale-motion" hidden aria-label="Interactive Grand Finale invitation">
   <img id="finaleMotionPlaceholder" src="./cinematic/assets/original.webp" alt="Grand Finale invitation" decoding="async"><iframe id="finaleMotionFrame" title="Nadanu original artwork cinematic 3D invitation" allow="fullscreen" loading="eager"></iframe>
   <div class="finale-motion-head"><span>NADANU 3.0 · GRAND FINALE</span><button id="finaleMotionBack" type="button">← BACK TO SITE</button><button id="finaleMotionClose" type="button">✕ EXIT</button></div>
-  <div class="finale-motion-foot"><p id="finaleMotionInfo">MOVE PHONE OR DRAG TO EXPLORE 3D</p><button id="finaleEnableTilt" type="button" hidden>ENABLE PHONE TILT</button><button id="finaleResetTilt" type="button">RESET VIEW</button><div><button id="finaleMotionReplay" type="button">↻ WATCH PERFORMANCES AGAIN</button><a href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL ↗</a></div></div>
+  <div class="finale-motion-foot"><p id="finaleMotionInfo">MOVE PHONE OR DRAG TO EXPLORE 3D</p><button id="finaleEnableTilt" type="button" hidden>ENABLE PHONE TILT</button><div class="finale-zoom-actions"><button id="finaleZoomOut" type="button" aria-label="Zoom out">−</button><span>ZOOM</span><button id="finaleZoomIn" type="button" aria-label="Zoom in">+</button></div><button id="finaleResetTilt" type="button">RESET VIEW</button><div><button id="finaleMotionReplay" type="button">↻ WATCH PERFORMANCES AGAIN</button><a href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL ↗</a></div></div>
 </section>
 <div id="arContainer"></div>
 <div id="arUI" hidden>
@@ -221,7 +221,7 @@
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=motion-zoom-20261107-20"></script>
+<script type="module" src="./app.js?v=instant-zoom-20261107-21"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
