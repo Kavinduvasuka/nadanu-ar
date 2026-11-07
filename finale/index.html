@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style.css?v=hybrid-rotate-fix-20261107-13">
+<link rel="stylesheet" href="./style.css?v=phone-tilt-20261107-14">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 <!-- Solo Dance optimized animated GLB deployed: Draco + WebP, 2026-11-06 -->
 </head>
@@ -217,11 +217,11 @@
       <a class="finale-original-link" href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL INVITATION ↗</a></div>
     </div>
   </div>
-  <div class="act-controls"><button id="soundButton">SOUND OFF</button></div>
+  <div class="act-controls"><button id="soundButton">SOUND OFF</button><button type="button" id="arEnableTilt">ENABLE PHONE TILT</button><span id="arTiltStatus" role="status" aria-live="polite">TAP ENABLE PHONE TILT</span></div>
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=hybrid-rotate-fix-20261107-13"></script>
+<script type="module" src="./app.js?v=phone-tilt-20261107-14"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
