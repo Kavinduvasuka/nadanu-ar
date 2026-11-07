@@ -1,0 +1,24 @@
+/* Finalists section — original Nadanu retro concert theme */
+.finalists-section{padding:clamp(54px,7vw,105px) 6%;max-width:1280px;margin:0 auto}
+.finalists-section .section-heading{margin-bottom:22px}
+.finalists-filters{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 15px}
+.finalists-filters button{color:#ffe9d2;background:#28121d;border:1px solid #ff98504f;border-radius:99px;padding:11px 16px;font:600 12px 'Audiowide',sans-serif;cursor:pointer;transition:background .22s,border-color .22s,transform .22s}
+.finalists-filters button[aria-pressed="true"],.finalists-filters button:hover{border-color:#ffb375;background:#963e26;box-shadow:0 0 15px #ff733a22;transform:translateY(-2px)}
+.finalists-count{font-size:12px;color:#eab69c;letter-spacing:.12em;margin:10px 0 22px}
+.finalists-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.finalist-card{border:1px solid #ff8d4c55;border-radius:15px;overflow:hidden;background:linear-gradient(150deg,#341724,#180b14);box-shadow:0 16px 35px #0006;transition:transform .26s,border-color .26s,box-shadow .26s;min-width:0}
+.finalist-card[hidden]{display:none!important}
+.finalist-card:hover{transform:translateY(-7px);border-color:#ffaf63;box-shadow:0 0 25px #ff6f3130,0 20px 40px #0007}
+.finalist-photo-frame{width:100%;aspect-ratio:3/4;position:relative;overflow:hidden;background:radial-gradient(circle at 45% 25%,#6f2d47,#170915 68%);display:grid;place-items:center}
+.finalist-photo-frame img{display:block;width:100%;height:100%;object-fit:cover;position:absolute;inset:0;transition:transform .4s ease}
+.finalist-card:hover .finalist-photo-frame img{transform:scale(1.07)}
+.finalist-photo-frame img[hidden]{display:none!important}
+.finalist-photo-fallback{display:none;text-align:center;letter-spacing:.2em;font:700 11px 'Audiowide',sans-serif;color:#ffb57c;padding:22px}
+.finalist-photo-missing .finalist-photo-fallback{display:block}
+.finalist-info{padding:16px 15px 20px}
+.finalist-category{font:600 10px 'Audiowide',sans-serif;color:#ffb670;text-transform:uppercase;letter-spacing:.1em}
+.finalist-info h3{font:600 clamp(15px,1.5vw,20px) 'Audiowide',sans-serif;color:#fff1df;line-height:1.4;overflow-wrap:anywhere;margin:9px 0 0}
+@media(max-width:980px){.finalists-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:690px){.finalists-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.finalists-section{padding:48px 6%}.finalist-info{padding:12px 11px 16px}.finalist-info h3{font-size:14px}.finalists-filters button{padding:10px 12px;font-size:10px}}
+@media(max-width:360px){.finalists-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.finalist-card,.finalist-photo-frame img{transition:none}}
