@@ -4,9 +4,10 @@
 const finalists=[["Anjula Pragathi","solo-singing","anjula-pragathi"],["Daphni Mendis","solo-singing","daphni-mendis"],["Imesha Uddheepani","solo-singing","imesha-uddheepani"],["Ishira Nipun","solo-singing","ishira-nipun"],["Kisandi Wethara","solo-singing","kisandi-wethara"],["Misheala Wanigaratnam","solo-singing","misheala-wanigaratnam"],["Omalmie Karunaratne","solo-singing","omalmie-karunaratne"],["Senesh Perera","solo-singing","senesh-perera"],["Tharinsa S. Liyanage","solo-singing","tharinsa-s-liyanage"],["Theekshana Ranaweera","solo-singing","theekshana-ranaweera"],["Vivekh Sivasithamparam","solo-singing","vivekh-sivasithamparam"],["Dinuka Thimansa","solo-dancing","dinuka-thimansa"],["Gigiri Perera","solo-dancing","gigiri-perera"],["Sanjana Mendis","solo-dancing","sanjana-mendis"],["Siluni Batuwantudawa","solo-dancing","siluni-batuwantudawa"],["Sithumini Dilarangi","solo-dancing","sithumini-dilarangi"],["Sanjana Mendis","group-dancing","sanjana-mendis"],["Sasemi Thisasna","group-dancing","sasemi-thisasna"]];
 const categories={'solo-singing':'Solo Singing','solo-dancing':'Solo Dancing','group-dancing':'Group Dancing'};
 const grid=document.getElementById('finalistsGrid');
+const pageCategory=document.body.dataset.finalistCategory||'all';
 const filters=document.querySelectorAll('[data-finalist-filter]');
 if(!grid)return;
-const cards=finalists.map(([name,category,slug],idx)=>{
+const cards=finalists.filter(([,category])=>pageCategory==='all'||category===pageCategory).map(([name,category,slug],idx)=>{
   const article=document.createElement('article');
   article.className='finalist-card';
   article.dataset.category=category;
@@ -42,5 +43,5 @@ function setFilter(filter){
  if(count)count.textContent=visible+' finalist'+(visible===1?'':'s');
 }
 for(const button of filters)button.addEventListener('click',()=>setFilter(button.dataset.finalistFilter));
-setFilter('all');
+setFilter(pageCategory);
 })();

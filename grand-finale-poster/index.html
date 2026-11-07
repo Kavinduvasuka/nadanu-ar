@@ -13,7 +13,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=grand-finale-zip-clone-20261107"><link rel="stylesheet" href="finalists.css?v=20261107-1">
+  <link rel="stylesheet" href="style.css?v=grand-finale-zip-clone-20261107"><link rel="stylesheet" href="finalists.css?v=20261107-2">
   <script
     type="importmap">{"imports":{"three":"./assets/three.module.js","three/addons/renderers/CSS3DRenderer.js":"./assets/CSS3DRenderer.js"}}</script>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Audiowide&display=swap" rel="stylesheet">
@@ -148,18 +148,30 @@
       <p class="category-note">Three performances. One Grand Finale stage.</p>
     </section>
     <section class="finalists-section reveal" id="finalists" aria-labelledby="finalistsTitle">
- <div class="section-heading"><div><p class="eyebrow section-kicker"><i></i> THE FINAL SPOTLIGHT</p><h2 id="finalistsTitle">Meet Our <em>Finalists.</em></h2></div>
- <p>Discover the performers competing at the Nadanu 3.0 Grand Finale.</p></div>
- <div class="finalists-filters" role="group" aria-label="Filter finalists by category">
-   <button type="button" data-finalist-filter="all" aria-pressed="true">All Finalists</button>
-   <button type="button" data-finalist-filter="solo-singing" aria-pressed="false">Solo Singing</button>
-   <button type="button" data-finalist-filter="solo-dancing" aria-pressed="false">Solo Dancing</button>
-   <button type="button" data-finalist-filter="group-dancing" aria-pressed="false">Group Dancing</button>
+ <div class="section-heading">
+  <div><p class="eyebrow section-kicker"><i></i> THE FINAL SPOTLIGHT</p>
+  <h2 id="finalistsTitle">Meet Our <em>Finalists.</em></h2></div>
+  <p>Choose a performance category to meet the finalists and view their photos.</p>
  </div>
- <p id="finalistsCount" class="finalists-count" aria-live="polite">18 finalists</p>
- <div id="finalistsGrid" class="finalists-grid"></div>
- </section>
- <section class="journey-section reveal" id="journey">
+ <div class="finalist-category-pages">
+  <a class="finalist-category-link" href="./solo-singing.html" aria-label="View Solo Singing finalists">
+   <span class="finalist-category-icon" aria-hidden="true">♫</span>
+   <span class="finalist-category-eyebrow">01 / VOCALS · 11 FINALISTS</span>
+   <strong>Solo Singing</strong><span class="finalist-category-action">MEET THE FINALISTS ↗</span>
+  </a>
+  <a class="finalist-category-link" href="./solo-dancing.html" aria-label="View Solo Dancing finalists">
+   <span class="finalist-category-icon" aria-hidden="true">✧</span>
+   <span class="finalist-category-eyebrow">02 / DANCE · 5 FINALISTS</span>
+   <strong>Solo Dancing</strong><span class="finalist-category-action">MEET THE FINALISTS ↗</span>
+  </a>
+  <a class="finalist-category-link" href="./group-dancing.html" aria-label="View Group Dancing finalists">
+   <span class="finalist-category-icon" aria-hidden="true">✦</span>
+   <span class="finalist-category-eyebrow">03 / DANCE · 2 ENTRIES</span>
+   <strong>Group Dancing</strong><span class="finalist-category-action">MEET THE FINALISTS ↗</span>
+  </a>
+ </div>
+</section>
+    <section class="journey-section reveal" id="journey">
       <p class="eyebrow section-kicker"><i></i> The Competition Journey</p>
       <h2>The Journey<br>To <em>The Grand Finale.</em></h2>
       <p class="section-lead">Every performance is a chance to stand out. Here's how the journey unfolds.</p>
@@ -283,4 +295,4 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
 });
 </script>
-<script defer src="./finalists.js?v=20261107-1"></script></body></html>
+</body></html>
