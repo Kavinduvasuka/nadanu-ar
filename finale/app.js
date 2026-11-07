@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MindARThree } from 'mindar-image-three';
+import { createAliveInvitation } from './invitation-alive.js';
 
 // Nadanu 3.0: ORIGINAL Stage Lights concert geometry + real GLB actors, anchored to the invitation.
 // Animations: singer.glb and solo-dancer.glb have embedded animation clips.
@@ -59,6 +60,7 @@ function presentAct(index){
 const finaleInvitation=document.getElementById('finaleInvitation');
 const replayActsButton=document.getElementById('replayActsButton');
 let showInvitation=false;
+let aliveInvitation=null;
 // Confirm invitation with a logo reveal before any actors are visible.
 // If tracking is lost midway, replay the reveal on reacquisition.
 const recognitionIntro=document.getElementById('recognitionIntro');
@@ -93,6 +95,7 @@ function resetPerformances(){
  presentAct(0);
  sequenceTime=0;
  showInvitation=false;
+ if(aliveInvitation)aliveInvitation.root.visible=false;
  if(finaleInvitation)finaleInvitation.hidden=true;
 }
 replayActsButton?.addEventListener('click',()=>{
@@ -315,6 +318,7 @@ function setup() {
  warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
  createStage(root);
+ aliveInvitation=createAliveInvitation(root);
  bindOrbitControls();
  root.visible=false;
  anchor.onTargetFound=()=>{
@@ -350,6 +354,7 @@ function setup() {
   const showStage=locked && introCompleted;
   root.visible=showStage;
   stage.visible=showStage && !showInvitation;
+  if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
@@ -364,6 +369,7 @@ function setup() {
       showInvitation=true;
       hideScanner();
       finaleInvitation.hidden=false;
+      if(aliveInvitation)aliveInvitation.root.visible=true;
       actBanner.hidden=true;
       status.textContent='You are cordially invited to the Nadanu 3.0 Grand Finale';
     }
@@ -494,6 +500,7 @@ async function disposeARSession(){
    try{video.srcObject?.getTracks().forEach(track=>track.stop());}catch(_){}
    try{video.srcObject=null;}catch(_){}
   }
+  if(aliveInvitation){aliveInvitation.dispose();aliveInvitation=null;}
   arContainer.replaceChildren();
   arContainer.style.display='none';
   mindarThree=null;activeRenderer=null;activeAnchor=null;activeRoot=null;
