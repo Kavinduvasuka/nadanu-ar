@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style.css?v=zip-neon-fixed-20261107-2">
+<link rel="stylesheet" href="./style.css?v=fast-tilt-20261107-3">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 <!-- Solo Dance optimized animated GLB deployed: Draco + WebP, 2026-11-06 -->
 </head>
@@ -170,9 +170,9 @@
   <p id="message" role="status" aria-live="polite"></p>
 </main>
 <section id="finaleMotion" class="finale-motion" hidden aria-label="Interactive Grand Finale invitation">
-  <iframe id="finaleMotionFrame" title="Nadanu original artwork cinematic 3D invitation" allow="fullscreen" loading="eager"></iframe>
+  <img id="finaleMotionPlaceholder" src="./cinematic/assets/original.webp" alt="Grand Finale invitation" decoding="async"><iframe id="finaleMotionFrame" title="Nadanu original artwork cinematic 3D invitation" allow="fullscreen" loading="eager"></iframe>
   <div class="finale-motion-head"><span>NADANU 3.0 · GRAND FINALE</span><button id="finaleMotionClose" type="button">✕ EXIT</button></div>
-  <div class="finale-motion-foot"><p id="finaleMotionInfo">MOVE PHONE OR DRAG TO EXPLORE 3D</p><div><button id="finaleMotionReplay" type="button">↻ WATCH PERFORMANCES AGAIN</button><a href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL ↗</a></div></div>
+  <div class="finale-motion-foot"><p id="finaleMotionInfo">MOVE PHONE OR DRAG TO EXPLORE 3D</p><button id="finaleEnableTilt" type="button" hidden>ENABLE PHONE TILT</button><button id="finaleResetTilt" type="button">RESET VIEW</button><div><button id="finaleMotionReplay" type="button">↻ WATCH PERFORMANCES AGAIN</button><a href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL ↗</a></div></div>
 </section>
 <div id="arContainer"></div>
 <div id="arUI" hidden>
@@ -221,7 +221,7 @@
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=finale-motion-ending-20261107-1"></script>
+<script type="module" src="./app.js?v=fast-tilt-20261107-3"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
