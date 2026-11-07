@@ -201,7 +201,7 @@ async function revealFinalMotion(){
  try{await disposeARSession();}catch(error){console.warn('Camera shutdown before invitation:',error);}
  if(!finalMotionActive)return;
  arContainer.style.display='none';
- finaleMotionFrame.src='./cinematic/embed.html?v=fast-tilt-20261107-3';
+ finaleMotionFrame.src='./cinematic/embed.html?v=final-fit-20261107-1';
 }
 
 // Confirm invitation with a logo reveal before any actors are visible.
