@@ -1,13 +1,12 @@
 /* Nadanu Grand Finale — inline category gallery, 3x2 grid and arrow pagination. */
 (() => {
 'use strict';
-const finalists=[["Anjula Pragathi","solo-singing","anjula-pragathi"],["Daphni Mendis","solo-singing","daphni-mendis"],["Imesha Uddheepani","solo-singing","imesha-uddheepani"],["Ishira Nipun","solo-singing","ishira-nipun"],["Kisandi Wethara","solo-singing","kisandi-wethara"],["Misheala Wanigaratnam","solo-singing","misheala-wanigaratnam"],["Omalmie Karunaratne","solo-singing","omalmie-karunaratne"],["Senesh Perera","solo-singing","senesh-perera"],["Tharinsa S. Liyanage","solo-singing","tharinsa-s-liyanage"],["Theekshana Ranaweera","solo-singing","theekshana-ranaweera"],["Vivekh Sivasithamparam","solo-singing","vivekh-sivasithamparam"],["Dinuka Thimansa","solo-dancing","dinuka-thimansa"],["Gigiri Perera","solo-dancing","gigiri-perera"],["Sanjana Mendis","solo-dancing","sanjana-mendis"],["Siluni Batuwantudawa","solo-dancing","siluni-batuwantudawa"],["Sithumini Dilarangi","solo-dancing","sithumini-dilarangi"],["Sanjana Mendis","group-dancing","sanjana-mendis"],["Sasemi Thisasna","group-dancing","sasemi-thisasna"]];
+const finalists=[["Anjula Pragathi","solo-singing","anjula-pragathi"],["Daphni Mendis","solo-singing","daphni-mendis"],["Imesha Uddheepani","solo-singing","imesha-uddheepani"],["Ishira Nipun","solo-singing","ishira-nipun"],["Kisandi Wethara","solo-singing","kisandi-wethara"],["Misheala Wanigaratnam","solo-singing","misheala-wanigaratnam"],["Omalmie Karunaratne","solo-singing","omalmie-karunaratne"],["Senesh Perera","solo-singing","senesh-perera"],["Tharinsa S. Liyanage","solo-singing","tharinsa-s-liyanage"],["Theekshana Ranaweera","solo-singing","theekshana-ranaweera"],["Vivekh Sivasithamparam","solo-singing","vivekh-sivasithamparam"],["Dinuka Thimansa","solo-dancing","dinuka-thimansa"],["Gigiri Perera","solo-dancing","gigiri-perera"],["Sanjana Mendis","solo-dancing","sanjana-mendis"],["Siluni Batuwantudawa","solo-dancing","siluni-batuwantudawa"],["Sithumini Dilarangi","solo-dancing","sithumini-dilarangi"],["Sasemi Thisasna","solo-dancing","sasemi-thisasna"]];
 const categoryData={
  'solo-singing':{title:'Solo Singing',subtitle:'Eleven voices. One stage. Meet our Grand Finale vocalists.',number:'01'},
- 'solo-dancing':{title:'Solo Dancing',subtitle:'Five solo dancers taking their moment in the spotlight.',number:'02'},
- 'group-dancing':{title:'Group Dancing',subtitle:'The dancers bringing energy and unity to the Grand Finale.',number:'03'}
+ 'solo-dancing':{title:'Solo Dancing',subtitle:'Six solo dancers taking their moment in the spotlight.',number:'02'}
 };
-const categories=['solo-singing','solo-dancing','group-dancing'];
+const categories=['solo-singing','solo-dancing'];
 const slides=[];
 for(const cat of categories){
  const people=finalists.filter(p=>p[1]===cat);

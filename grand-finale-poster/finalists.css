@@ -73,3 +73,7 @@
 @keyframes finalistsGalleryEnter{from{opacity:.35;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:650px){#landing .finalists-section{padding:40px 4%}#landing .finalists-showcase{padding:16px}#landing .finalists-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#landing .finalist-photo-frame{aspect-ratio:3/4}#landing .finalists-watermark{font-size:54px}#landing .finalist-info h3{font-size:12px}#landing .finalists-gallery-controls{margin-top:17px}}
 @media(prefers-reduced-motion:reduce){#landing .finalists-grid-enter{animation:none}}
+
+/* Only Solo Singing and Solo Dancing remain in the Grand Finale. */
+#landing .categories .neon-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:920px;margin-inline:auto}
+@media(max-width:560px){#landing .categories .neon-category-grid{grid-template-columns:1fr}}
