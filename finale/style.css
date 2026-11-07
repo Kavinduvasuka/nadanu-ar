@@ -724,3 +724,8 @@ body{font-family:"Audiowide",Arial,sans-serif}
 
 /* Keep one-finger performer orbit gestures from becoming browser pan gestures. */
 #arContainer,#arUI{touch-action:none;overscroll-behavior:contain}
+
+/* Visible tilt permission fallback for mobile AR. */
+#arEnableTilt[hidden]{display:none!important}
+#arEnableTilt{border-color:#ffc16b;background:#70301de8}
+#arTiltStatus{width:100%;text-align:center;font:700 9px/1.3 Arial,sans-serif;letter-spacing:.6px;color:#ffe0b8;text-shadow:0 1px 5px #000}
