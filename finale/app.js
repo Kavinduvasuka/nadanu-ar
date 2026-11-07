@@ -37,6 +37,7 @@ gltfLoader.setDRACOLoader(dracoLoader);
 let mindarThree, initialized = false, running = false, busy = false, tracked = false;
 let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
 let stageTargetX=0,stageTargetY=0,stageTiltX=0,stageTiltY=0,stageSensorBase=null;
+let filteredSensorX=0,filteredSensorY=0;
 let frozenStageRoot=null,stagePoseCaptured=false;
 let stableCamera=null;
 const STAGE_SCREEN_COVERAGE=.68;
@@ -97,8 +98,15 @@ function receiveMotion(event){
   if(performance.now()-lastManualOrbitAt>2200){
    const diffGamma=((event.gamma-stageSensorBase.gamma+540)%360)-180;
    const diffBeta=((event.beta-stageSensorBase.beta+540)%360)-180;
-   stageTargetY=THREE.MathUtils.clamp(diffGamma*.022,-1.35,1.35);
-   stageTargetX=THREE.MathUtils.clamp(-diffBeta*.015,-.46,.46);
+   // Ignore sensor noise below ~3 degrees. Low-pass orientation updates
+   // so a shaky hand does not make the entire stage vibrate.
+   const deadZone=angle=>Math.sign(angle)*Math.max(0,Math.abs(angle)-3);
+   const desiredY=THREE.MathUtils.clamp(deadZone(diffGamma)*.019,-1.25,1.25);
+   const desiredX=THREE.MathUtils.clamp(-deadZone(diffBeta)*.013,-.42,.42);
+   filteredSensorY+=(desiredY-filteredSensorY)*.09;
+   filteredSensorX+=(desiredX-filteredSensorX)*.09;
+   if(Math.abs(filteredSensorY-stageTargetY)>.006)stageTargetY=filteredSensorY;
+   if(Math.abs(filteredSensorX-stageTargetX)>.006)stageTargetX=filteredSensorX;
   }
  }
  if(!finalMotionActive)return;
@@ -123,7 +131,7 @@ function requestMotionFromStartGesture(){
   Promise.resolve(result).then(value=>{
    motionAllowed=value==='granted';
    if(motionAllowed){
-    motionSamples=0;motionReference=null;stageSensorBase=null;lastMotionEventAt=0;
+    motionSamples=0;motionReference=null;stageSensorBase=null;filteredSensorX=filteredSensorY=0;lastMotionEventAt=0;
     window.removeEventListener('deviceorientation',receiveMotion,true);
     window.addEventListener('deviceorientation',receiveMotion,true);
     updateARTiltStatus('TILT ALLOWED · CALIBRATING…',false);
@@ -234,7 +242,7 @@ const BASE_SCALE=0.115; // Compact mini-stage: keep floor and actors in the came
 // The real image-anchor pose determines camera perspective in Three.js.
 const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,0));
 function resetStageView(){
- orbit.zoom=1;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;stageSensorBase=null;lastManualOrbitAt=0;
+ orbit.zoom=1;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;filteredSensorX=filteredSensorY=0;stageSensorBase=null;lastManualOrbitAt=0;
  if(stage)stage.quaternion.copy(fixedStageTilt);
  applyOrbit();
 }
@@ -546,8 +554,10 @@ function setup() {
   if(showStage){
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
-    stageTiltX+=(stageTargetX-stageTiltX)*.17;
-    stageTiltY+=(stageTargetY-stageTiltY)*.17;
+    // Slow, frame-rate-independent damping: stable even if mobile FPS varies.
+    const smoothing=1-Math.exp(-3.2*dt);
+    stageTiltX+=(stageTargetX-stageTiltX)*smoothing;
+    stageTiltY+=(stageTargetY-stageTiltY)*smoothing;
     // Smooth 3D orbit of the full stage + performers in screen-locked hybrid AR.
     // Keep the camera-space stage position fixed to avoid marker tracking jitter.
     stage.quaternion.setFromEuler(new THREE.Euler(.62+stageTiltX,stageTiltY,0,'XYZ'));
