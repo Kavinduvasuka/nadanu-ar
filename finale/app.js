@@ -396,49 +396,35 @@ function createStage(root){
   const floor=new THREE.Mesh(new THREE.CircleGeometry(10,96),
     new THREE.MeshStandardMaterial({color:0x140a28,metalness:.75,roughness:.22,side:THREE.DoubleSide}));
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
-  // NADANU GRAND FINALE · subdued digital invitation on the rear concert wall.
-  // The panel lives inside the same camera-locked stage, so it rotates with
-  // the performers and introduces no additional tracking jitter.
-  const wallWidth=7.2, wallHeight=wallWidth*2048/1441;
-  const wall=new THREE.Group();
-  wall.position.set(0,5.95,-7.2);
-  const backing=new THREE.Mesh(
-    new THREE.PlaneGeometry(wallWidth+.28,wallHeight+.28),
-    new THREE.MeshBasicMaterial({color:0x140b17,side:THREE.DoubleSide,depthWrite:true})
+  // Projection-mapped Finale branding. No physical panel or opaque wall:
+  // translucent amber/cyan typography hangs behind the live performers,
+  // complemented by a subtle floor-gobo like a concert light projection.
+  const projectionGroup=new THREE.Group();
+  projectionGroup.position.set(0,4.6,-6.4);
+  const titleProjection=textMesh(['NADANU 3.0'],7.4,1.65,0,.75,.06,100);
+  const finaleProjection=textMesh(['GRAND FINALE'],7.0,1.35,0,-.66,.07,86);
+  titleProjection.material.opacity=.72;
+  finaleProjection.material.opacity=.82;
+  titleProjection.material.color.setHex(0xffd79a);
+  finaleProjection.material.color.setHex(0xffb460);
+  titleProjection.renderOrder=1;
+  finaleProjection.renderOrder=1;
+  projectionGroup.add(titleProjection,finaleProjection);
+  // Light accents make the letters look projected, not pasted on a wall.
+  const projectionGlow=new THREE.Mesh(
+    new THREE.PlaneGeometry(8.1,3.0),
+    new THREE.MeshBasicMaterial({color:0xa24cff,transparent:true,opacity:.065,
+      blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})
   );
-  backing.position.z=-.045;wall.add(backing);
-  const invitationMaterial=new THREE.MeshBasicMaterial({
-    color:0xc4b3b4,transparent:true,opacity:.72,
-    side:THREE.DoubleSide,depthWrite:false,toneMapped:false
-  });
-  const invitationPanel=new THREE.Mesh(
-    new THREE.PlaneGeometry(wallWidth,wallHeight),
-    invitationMaterial
-  );
-  invitationPanel.position.z=.01;invitationPanel.renderOrder=1;wall.add(invitationPanel);
-  // A slim LED-wall border makes the poster read as part of the stage,
-  // not another full-screen digital poster.
-  const trimMat=new THREE.MeshBasicMaterial({color:0xff9c50});
-  const topTrim=new THREE.Mesh(new THREE.BoxGeometry(wallWidth+.30,.055,.05),trimMat);
-  const bottomTrim=topTrim.clone();
-  topTrim.position.y=wallHeight/2+.08;bottomTrim.position.y=-wallHeight/2-.08;
-  wall.add(topTrim,bottomTrim);
-  for(const side of [-1,1]){
-    const trim=new THREE.Mesh(new THREE.BoxGeometry(.055,wallHeight+.20,.05),trimMat);
-    trim.position.x=side*(wallWidth/2+.08);wall.add(trim);
-  }
-  stage.add(wall);
-  new THREE.TextureLoader().load(
-    './assets/finale-invitation.webp',
-    texture=>{
-      texture.encoding=THREE.sRGBEncoding;
-      texture.anisotropy=2;
-      invitationMaterial.map=texture;
-      invitationMaterial.needsUpdate=true;
-    },
-    undefined,
-    error=>console.warn('Stage invitation LED wall image unavailable:',error)
-  );
+  projectionGlow.position.z=-.12;
+  projectionGroup.add(projectionGlow);
+  stage.add(projectionGroup);
+  const floorProjection=textMesh(['NADANU 3.0'],5.2,1.10,0,.032,-4.5,85);
+  floorProjection.rotation.x=-Math.PI/2;
+  floorProjection.material.opacity=.26;
+  floorProjection.material.color.setHex(0xffa34d);
+  floorProjection.renderOrder=2;
+  stage.add(floorProjection);
   neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((color,i)=>{
     const ring=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),
       new THREE.MeshBasicMaterial({color,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
