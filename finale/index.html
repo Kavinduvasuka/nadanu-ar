@@ -12,10 +12,13 @@
 <link rel="stylesheet" href="./style.css?v=auditions-mobile-layout-20261107-25">
 <style>
 #arInvitationOverlay[hidden]{display:none!important}
-#arInvitationOverlay{
- position:fixed;inset:0;z-index:3;pointer-events:none;
+/* Stack camera < invitation backdrop < transparent 3D performers. */
+#arContainer video{z-index:0!important}
+#arContainer #arInvitationOverlay{
+ position:absolute;inset:0;z-index:1;pointer-events:none;
  display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
+#arContainer canvas{position:absolute!important;z-index:2!important}
 #arInvitationOverlay img{
  display:block;width:96vw;height:88dvh;max-height:88vh;
  object-fit:contain;opacity:.72;pointer-events:none;
@@ -193,10 +196,12 @@
   <div class="finale-motion-head"><span>NADANU 3.0 · GRAND FINALE</span><button id="finaleMotionBack" type="button">← BACK TO SITE</button><button id="finaleMotionClose" type="button">✕ EXIT</button></div>
   <div class="finale-motion-foot"><p id="finaleMotionInfo">MOVE PHONE OR DRAG TO EXPLORE 3D</p><button id="finaleEnableTilt" type="button" hidden>ENABLE PHONE TILT</button><button id="finaleResetTilt" type="button">RESET VIEW</button><div><button id="finaleMotionReplay" type="button">↻ WATCH PERFORMANCES AGAIN</button><a href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL ↗</a></div></div>
 </section>
-<div id="arContainer"></div>
-<!-- Original invitation: actual viewport-fit overlay, visible only while tracked. -->
-<div id="arInvitationOverlay" hidden aria-hidden="true">
-  <img src="./assets/finale-invitation.webp" alt="" draggable="false">
+<div id="arContainer">
+  <!-- Placed INSIDE the AR layer so the invitation sits behind the 3D
+       performers, between the video feed and transparent WebGL canvas. -->
+  <div id="arInvitationOverlay" hidden aria-hidden="true">
+    <img src="./assets/finale-invitation.webp" alt="" draggable="false">
+  </div>
 </div>
 <div id="arUI" hidden>
   <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><div class="topbar-actions"><button id="resetViewButton" type="button">RESET VIEW</button><button id="arBackToSite" type="button">← BACK TO SITE</button><button id="stopButton" type="button">EXIT AR</button></div></div>
@@ -244,7 +249,7 @@
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=opaque-performers-mesh-stage-20261108-45"></script>
+<script type="module" src="./app.js?v=performers-in-front-20261108-46"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
