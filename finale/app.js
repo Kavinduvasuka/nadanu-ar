@@ -37,6 +37,7 @@ gltfLoader.setDRACOLoader(dracoLoader);
 let mindarThree, initialized = false, running = false, busy = false, tracked = false;
 let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
 let stageTargetX=0,stageTargetY=0,stageTiltX=0,stageTiltY=0,stageSensorBase=null;
+let frozenStageRoot=null,stagePoseCaptured=false;
 let trackerGeneration=0; // Invalidate late tracking events from a previous camera session.
 let stage, warmLight, violetLight;
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
@@ -206,6 +207,7 @@ const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,0
 function resetStageView(){
  orbit.zoom=1;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;stageSensorBase=null;
  if(stage)stage.quaternion.copy(fixedStageTilt);
+ if(frozenStageRoot)frozenStageRoot.rotation.set(0,0,0);
  applyOrbit();
 }
 function applyOrbit(){
@@ -419,27 +421,35 @@ function setup() {
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.2));
  const anchor=mindarThree.addAnchor(0),root=anchor.group;
  activeAnchor=anchor;activeRoot=root;
+ // Preserve the valid MindAR marker pose once, rather than following every jittery frame.
+ // This group lives in the SAME scene and uses the SAME marker-scale 3D assets.
+ frozenStageRoot=new THREE.Group();frozenStageRoot.visible=false;scene.add(frozenStageRoot);
+ stagePoseCaptured=false;
  scene.add(new THREE.HemisphereLight(0xffffff,0x34132a,2.8));
- warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
- violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
- createStage(root);
- aliveInvitation=createAliveInvitation(root);
+ warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);frozenStageRoot.add(warmLight);
+ violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);frozenStageRoot.add(violetLight);
+ createStage(frozenStageRoot);
+ aliveInvitation=createAliveInvitation(frozenStageRoot);
  bindOrbitControls();
  root.visible=false;
  anchor.onTargetFound=()=>{
   if(generation!==trackerGeneration)return; // Ignore callbacks from disposed camera.
   tracked=true;
   trackingTime=performance.now();
+  stagePoseCaptured=false;
   resetStageView();
   stage.visible=false;
-  root.visible=false; // Never show an old anchor pose during acquisition.
+  frozenStageRoot.visible=false;
+  root.visible=false; // Tracking-only anchor; stage will use its captured pose.
   showScanner('locked','Invitation detected · stabilizing stage…');
   status.textContent='Invitation detected · stabilizing tracking…';
  };
  anchor.onTargetLost=()=>{
   if(generation!==trackerGeneration)return;
   tracked=false;
+  stagePoseCaptured=false;
   stage.visible=false;
+  if(frozenStageRoot)frozenStageRoot.visible=false;
   root.visible=false;
   if(!introCompleted){
    introStartedAt=0;
@@ -447,7 +457,7 @@ function setup() {
   }
   // Guide the visitor to reacquire the printed image even after the final AR scene.
   showScanner('searching','Invitation lost · stage paused. Frame the invitation to resume.');
-  status.textContent='Point camera at the printed Grand Finale invitation';
+  status.textContent='Invitation lost · stage paused. Reframe the artwork to resume';
  };
  renderer.setAnimationLoop(()=>{
   if(generation!==trackerGeneration||!running)return;
@@ -458,8 +468,16 @@ function setup() {
   if(locked && showInvitation && invitationScanner && !invitationScanner.hidden)hideScanner();
   if(locked && !introCompleted && !introStartedAt)startRecognitionIntro();
   if(locked && introStartedAt && performance.now()-introStartedAt>=INTRO_DURATION_MS)finishRecognitionIntro();
-  const showStage=locked && introCompleted;
-  root.visible=showStage;
+  // Copy one stabilized marker pose into the independent stage.
+  if(locked && !stagePoseCaptured && frozenStageRoot){
+   root.updateWorldMatrix(true,false);
+   root.matrixWorld.decompose(frozenStageRoot.position,frozenStageRoot.quaternion,frozenStageRoot.scale);
+   stagePoseCaptured=true;
+   stageSensorBase=null;
+  }
+  const showStage=locked && introCompleted && stagePoseCaptured;
+  root.visible=false;
+  if(frozenStageRoot)frozenStageRoot.visible=showStage;
   stage.visible=showStage && !showInvitation;
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
@@ -467,6 +485,7 @@ function setup() {
     // Moving around the invitation creates genuine perspective and parallax.
     stageTiltX+=(stageTargetX-stageTiltX)*.10;
     stageTiltY+=(stageTargetY-stageTiltY)*.10;
+    // Virtual orbit driven by tilt: preserve captured stage placement; don't reapply tracker pose.
     stage.quaternion.setFromEuler(new THREE.Euler(.62+stageTiltX,stageTiltY,0,'XYZ'));
     // Preserve each 8-second act until its GLB has fully loaded.
     // A slow first download must never silently skip the solo dancer.
@@ -596,6 +615,7 @@ async function disposeARSession(){
  }catch(err){
   console.warn('MindAR shutdown warning:',err);
  }finally{
+  if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
    try{renderer.dispose();}catch(_){}
@@ -610,7 +630,7 @@ async function disposeARSession(){
   arContainer.replaceChildren();
   arContainer.style.display='none';
   mindarThree=null;activeRenderer=null;activeAnchor=null;activeRoot=null;
-  initialized=false;tracked=false;stageSensorBase=null;
+  initialized=false;tracked=false;stageSensorBase=null;stagePoseCaptured=false;
   orbit.pointers.clear();orbit.distance=0;orbit.zoom=1;
   applyOrbit();
   clock.stop();lastFrame=0;trackingTime=0;
