@@ -205,6 +205,10 @@ const CINEMATIC_FRAME_URL='./cinematic/embed.html?v=instant-zoom-20261107-3';
 function preloadFinaleScene(){
  if(finalePreloaded)return;
  finalePreloaded=true;
+ // Keep an offscreen, full-size frame alive so mobile browsers can load and
+ // render WebGL before the finale, instead of suspending a display:none iframe.
+ finaleMotion.hidden=false;
+ finaleMotion.classList.add('prewarming');
  finaleMotionFrame.src=CINEMATIC_FRAME_URL;
 }
 window.addEventListener('message',event=>{
@@ -225,7 +229,8 @@ async function revealFinalMotion(){
  finaleMotionUnlockedAt=Infinity;
  if(!finalePreloaded)preloadFinaleScene();
  resetStageView(); // Clear concert orbit and zoom before the final invitation.
- finaleMotion.classList.remove('scene-ready');
+ finaleMotion.classList.remove('prewarming');
+ if(finaleSceneReady)finaleMotion.classList.add('scene-ready');
  running=false;tracked=false;
  if(invitationScanner)invitationScanner.hidden=true;
  if(recognitionIntro)recognitionIntro.hidden=true;
@@ -635,7 +640,7 @@ function setup() {
     const canAdvance=performerReady[activeAutoAct]||performerFailed[activeAutoAct];
     if(tracked&&!showInvitation&&selectedAct===null&&canAdvance)sequenceTime+=dt;
     // Load cinematic artwork before the last performance ends.
-    if(sequenceTime>=ACT_SECONDS*2+2&&!finalePreloaded&&performerReady[2])preloadFinaleScene();
+    if(sequenceTime>=ACT_SECONDS+1&&!finalePreloaded&&performerReady[2])preloadFinaleScene();
     // One complete three-act showcase, followed by the formal invitation.
     if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
       showInvitation=true;
@@ -808,7 +813,7 @@ startButton.addEventListener('click',()=>{
 });
 function closeFinalMotion(){
  finalMotionActive=false;cancelAnimationFrame(motionFrame);finalZoom=1;
- finaleMotion.classList.remove('scene-ready');
+ finaleMotion.classList.remove('scene-ready','prewarming');
  finaleMotion.hidden=true;
  finaleMotionFrame.removeAttribute('src');
  finalePreloaded=false;finaleSceneReady=false;
