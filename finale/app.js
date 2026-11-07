@@ -230,7 +230,15 @@ async function revealFinalMotion(){
  if(!finalePreloaded)preloadFinaleScene();
  resetStageView(); // Clear concert orbit and zoom before the final invitation.
  finaleMotion.classList.remove('prewarming');
- if(finaleSceneReady)finaleMotion.classList.add('scene-ready');
+ // Keep a fully-prepared 3D invitation visible immediately at handoff.
+ if(finaleSceneReady){
+  finaleMotion.classList.add('scene-ready');
+  motionReference=null;smoothedX=smoothedY=finalX=finalY=0;finalZoom=1;
+  finaleMotionUnlockedAt=performance.now()+1200;
+  finaleMotionFrame.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin);
+ }else{
+  finaleMotion.classList.remove('scene-ready');
+ }
  running=false;tracked=false;
  if(invitationScanner)invitationScanner.hidden=true;
  if(recognitionIntro)recognitionIntro.hidden=true;
