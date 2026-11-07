@@ -48,31 +48,11 @@ const posePosition=new THREE.Vector3(),poseRotation=new THREE.Quaternion(),poseS
 let lastManualOrbitAt=0;
 let trackerGeneration=0; // Invalidate late tracking events from a previous camera session.
 let stage, warmLight, violetLight;
-let screenInvitation=null,stageWireframe=null,wireframeMat=null,stageRevealAt=0;
+let stageWireframe=null,wireframeMat=null,stageRevealAt=0;
 const STAGE_MESH_REVEAL_MS=1100;
-// Screen-fitted camera-facing 3D invitation; transparent behind the concert.
-// Its pose does not interfere with the existing image-target tracker.
-function createScreenInvitation(camera){
-  const tex=new THREE.TextureLoader().load('./assets/finale-invitation.webp',
-    image=>{image.encoding=THREE.sRGBEncoding;},
-    undefined,error=>console.warn('Invitation overlay could not load:',error));
-  tex.encoding=THREE.sRGBEncoding;
-  const material=new THREE.MeshBasicMaterial({
-    map:tex,transparent:true,opacity:.54,
-    depthTest:true,depthWrite:false,side:THREE.DoubleSide
-  });
-  const plane=new THREE.Mesh(new THREE.PlaneGeometry(1,1),material);
-  plane.position.z=-3;
-  plane.visible=false;
-  camera.add(plane);
-  screenInvitation={plane,tex,material};
-}
-function fitScreenInvitation(camera){
-  if(!screenInvitation||!camera?.isPerspectiveCamera)return;
-  const d=3,viewH=2*d*Math.tan(THREE.MathUtils.degToRad(camera.fov)*.5);
-  const viewW=viewH*camera.aspect,ratio=1441/2048;
-  const h=Math.min(viewH*.88,viewW*.89/ratio);
-  screenInvitation.plane.scale.set(h*ratio,h,1);
+const arInvitationOverlay=document.getElementById('arInvitationOverlay');
+function setInvitationOverlay(visible){
+ if(arInvitationOverlay)arInvitationOverlay.hidden=!visible;
 }
 function createStageWireframe(root){
   stageWireframe=new THREE.Group();
@@ -345,7 +325,7 @@ function finishRecognitionIntro(){
 }
 function resetPerformances(){
  stageRevealAt=0;
- if(screenInvitation)screenInvitation.plane.visible=false;
+ setInvitationOverlay(false);
  if(stageWireframe)stageWireframe.visible=false;
  lastPresentedAct=-1;
  actBanner.hidden=false;
@@ -449,7 +429,7 @@ function createStage(root){
   stageWorld=stage;
   const colors=[0xff3d9a,0x33e1ff,0xffc857];
   const floor=new THREE.Mesh(new THREE.CircleGeometry(10,96),
-    new THREE.MeshStandardMaterial({color:0x140a28,metalness:.75,roughness:.22,side:THREE.DoubleSide}));
+    new THREE.MeshBasicMaterial({color:0x49eaff,wireframe:true,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide}));
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
   neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((color,i)=>{
     const ring=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),
@@ -460,7 +440,7 @@ function createStage(root){
   for(let i=0;i<40;i++){
     const a=i/40*Math.PI*2;
     const bar=new THREE.Mesh(new THREE.BoxGeometry(.16,1,.16),
-      new THREE.MeshBasicMaterial({color:0xffffff}));
+      new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:.75,depthWrite:false}));
     bar.position.set(Math.sin(a)*9,0,Math.cos(a)*9);stage.add(bar);eqBars.push(bar);
   }
   halo=new THREE.Mesh(new THREE.TorusGeometry(2.4,.04,12,96),
@@ -472,7 +452,7 @@ function createStage(root){
     light.position.set(Math.cos(i*2.1)*6,9,Math.sin(i*2.1)*6);
     light.target.position.set(0,1,0);stage.add(light,light.target);stageSpots.push(light);
     const beam=new THREE.Mesh(new THREE.ConeGeometry(2.1,10,32,1,true),
-      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+      new THREE.MeshBasicMaterial({color,wireframe:true,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
     stage.add(beam);beamCones.push(beam);
   });
   const count=500,positions=new Float32Array(count*3);
@@ -596,8 +576,6 @@ function setup() {
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);frozenStageRoot.add(violetLight);
  createStage(frozenStageRoot);
  createStageWireframe(frozenStageRoot);
- createScreenInvitation(camera);
- fitScreenInvitation(camera);
  aliveInvitation=createAliveInvitation(frozenStageRoot);
  bindOrbitControls();
  root.visible=false;
@@ -622,7 +600,7 @@ function setup() {
   if(generation!==trackerGeneration)return;
   tracked=false;
   targetLostAt=performance.now();
-  if(screenInvitation)screenInvitation.plane.visible=false;
+  setInvitationOverlay(false);
   if(stageWireframe)stageWireframe.visible=false;
   if(stage)stage.visible=false;
   if(recognitionIntro && !introCompleted)resetRecognitionIntro();
@@ -686,11 +664,8 @@ function setup() {
   const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
   if(showStage && !stageRevealAt)stageRevealAt=performance.now();
   const meshProgress=showStage?THREE.MathUtils.clamp((performance.now()-stageRevealAt)/STAGE_MESH_REVEAL_MS,0,1):0;
-  if(screenInvitation){
-    fitScreenInvitation(camera);
-    screenInvitation.plane.visible=locked && stagePoseCaptured && !showInvitation;
-    screenInvitation.material.opacity=showStage?.54:.63;
-  }
+  // Viewport-fitted overlay stays independent of the 3D camera frustum.
+  setInvitationOverlay(locked && stagePoseCaptured && !showInvitation);
   if(showStage && motionAllowed && motionSamples===0 && performance.now()-trackingTime>2400){
    updateARTiltStatus('NO TILT DATA · CHECK MOTION ACCESS OR DRAG',true);
   }
@@ -701,10 +676,11 @@ function setup() {
   stageWasActive=showStage;
   root.visible=false;
   if(frozenStageRoot)frozenStageRoot.visible=showStage;
-  stage.visible=showStage && !showInvitation && meshProgress>=.76;
+  // Render the concert in mesh/wireframe style throughout all 3 acts.
+  stage.visible=showStage && !showInvitation;
   if(stageWireframe){
-    stageWireframe.visible=showStage && !showInvitation && meshProgress<1;
-    wireframeMat.opacity=.72*(1-THREE.MathUtils.smoothstep(meshProgress,.65,1));
+    stageWireframe.visible=showStage && !showInvitation;
+    wireframeMat.opacity=.82;
   }
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
@@ -846,12 +822,13 @@ async function disposeARSession(){
  if(anchor){anchor.onTargetFound=null;anchor.onTargetLost=null;}
  if(root)root.visible=false;
  if(stage)stage.visible=false;
+ setInvitationOverlay(false);
  try{
   if(instance)await instance.stop();
  }catch(err){
   console.warn('MindAR shutdown warning:',err);
  }finally{
-  if(screenInvitation){screenInvitation.plane.parent?.remove(screenInvitation.plane);screenInvitation.plane.geometry.dispose();screenInvitation.material.dispose();screenInvitation.tex.dispose();screenInvitation=null;}
+  setInvitationOverlay(false);
   if(stageWireframe){stageWireframe.traverse(o=>{if(o.geometry)o.geometry.dispose();});stageWireframe.parent?.remove(stageWireframe);stageWireframe=null;}
   if(wireframeMat){wireframeMat.dispose();wireframeMat=null;}
   stageRevealAt=0;
