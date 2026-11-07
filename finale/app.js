@@ -309,7 +309,7 @@ replayActsButton?.addEventListener('click',()=>{
 const orbit={zoom:1,pointers:new Map(),distance:0};
 const BASE_SCALE=0.115; // Compact mini-stage: keep floor and actors in the camera frame.
 // The real image-anchor pose determines camera perspective in Three.js.
-const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.52,0,0));
+const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,0,0));
 function resetStageView(){
  orbit.zoom=1;markerDistanceZoom=markerDistanceTarget=1;initialMarkerDistance=0;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;filteredSensorX=filteredSensorY=0;stageSensorBase=null;lastManualOrbitAt=0;
  if(stage)stage.quaternion.copy(fixedStageTilt);
@@ -426,7 +426,7 @@ function createStage(root){
   // Fixed local offset from the centre of the printed invitation.
   // The parent MindAR anchor provides the image pose; do not modify its world pose.
   stage.position.set(0,0,.12);
-  stage.rotation.x=.52; // Slightly higher overhead view of the concert floor.
+  stage.rotation.x=.42; // Restore original front-facing concert stage viewing angle.
   stage.scale.setScalar(BASE_SCALE);
   root.add(stage);
   stageWorld=stage;
@@ -685,7 +685,7 @@ function setup() {
     stageTiltY+=(stageTargetY-stageTiltY)*smoothing;
     // Smooth 3D orbit of the full stage + performers in screen-locked hybrid AR.
     // Keep the camera-space stage position fixed to avoid marker tracking jitter.
-    stage.quaternion.setFromEuler(new THREE.Euler(.52+stageTiltX,stageTiltY,0,'XYZ'));
+    stage.quaternion.setFromEuler(new THREE.Euler(.42+stageTiltX,stageTiltY,0,'XYZ'));
     // Preserve each 8-second act until its GLB has fully loaded.
     // A slow first download must never silently skip the solo dancer.
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
