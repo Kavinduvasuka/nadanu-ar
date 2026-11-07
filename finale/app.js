@@ -380,6 +380,47 @@ function textMesh(lines,w,h,x,y,z,size=74){
 // Original Stage Lights geometry and proportions, mounted as a complete
 // mini concert world on the printed invitation. Nothing is flattened to a plane.
 let stageWorld, halo, noteSprites=[], noteCooldown=0;
+let invitationStageCard=null;
+// Only the stage composition changes. Camera tracking, sensors, performer
+// models/animations and the separate final 3D invitation remain untouched.
+function addInvitationStageCard(root){
+  const group=new THREE.Group();
+  // The card begins above the performers; the stage sits below its bottom edge.
+  // Counter-tilt the stage's original 0.42-radian viewing angle.
+  group.position.set(0,8.55,-1.9);
+  group.rotation.x=-.42;
+  root.add(group);
+  const width=8.25,height=width*2048/1441;
+  const artworkMaterial=new THREE.MeshBasicMaterial({
+    color:0xffffff,side:THREE.DoubleSide,depthWrite:true
+  });
+  const poster=new THREE.Mesh(new THREE.PlaneGeometry(width,height),artworkMaterial);
+  poster.position.z=.07;
+  group.add(poster);
+  const tex=new THREE.TextureLoader().load(
+    './assets/finale-invitation.webp',
+    t=>{t.encoding=THREE.sRGBEncoding;artworkMaterial.map=t;artworkMaterial.needsUpdate=true;},
+    undefined,error=>console.warn('Original invitation texture unavailable:',error)
+  );
+  tex.encoding=THREE.sRGBEncoding;
+  artworkMaterial.map=tex;artworkMaterial.needsUpdate=true;
+  const rear=new THREE.Mesh(
+    new THREE.BoxGeometry(width+.1,height+.1,.12),
+    new THREE.MeshStandardMaterial({color:0x281327,metalness:.3,roughness:.65})
+  );
+  rear.position.z=-.06;group.add(rear);
+  const trim=new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-width/2,-height/2,.085),
+      new THREE.Vector3(width/2,-height/2,.085),
+      new THREE.Vector3(width/2,height/2,.085),
+      new THREE.Vector3(-width/2,height/2,.085)
+    ]),
+    new THREE.LineBasicMaterial({color:0xffd49c,transparent:true,opacity:.7})
+  );
+  group.add(trim);
+  invitationStageCard={group,tex,artworkMaterial};
+}
 const stageV=new THREE.Vector3(), stageQ=new THREE.Quaternion(), stageUp=new THREE.Vector3(0,1,0);
 function createStage(root){
   // Recreated directly from stage-lights(2).html: open circular concert floor,
@@ -446,6 +487,29 @@ function createStage(root){
       sprite.visible=false;sprite.userData.life=0;performers[0].add(sprite);noteSprites.push(sprite);
     }
   });
+  // Existing concert world is unchanged internally: performers, lights,
+  // rings, equalizers and animations remain parented exactly as before.
+  const miniConcert=new THREE.Group();
+  for(const item of stage.children.slice())miniConcert.add(item);
+  miniConcert.scale.setScalar(.52);
+  miniConcert.position.set(0,-2.4,2.1);
+  stage.add(miniConcert);
+  // Small physical concert lip, extending forward beneath the invitation.
+  const platform=new THREE.Mesh(
+    new THREE.CylinderGeometry(5.25,5.35,.48,72),
+    new THREE.MeshStandardMaterial({color:0x27112e,metalness:.72,roughness:.26})
+  );
+  platform.position.set(0,-2.67,2.1);
+  stage.add(platform);
+  const rim=new THREE.Mesh(
+    new THREE.TorusGeometry(5.28,.055,8,96),
+    new THREE.MeshBasicMaterial({color:0xffbc63})
+  );
+  rim.rotation.x=Math.PI/2;
+  rim.position.set(0,-2.39,2.1);
+  stage.add(rim);
+  addInvitationStageCard(stage);
+
 }
 function updateStageEffects(t,dt,index){
   const pulse=Math.pow(1-((t*2)%1),3),sw=index===2?1.6:1;
@@ -775,6 +839,7 @@ async function disposeARSession(){
   console.warn('MindAR shutdown warning:',err);
  }finally{
   initialMarkerDistance=0;markerDistanceZoom=markerDistanceTarget=1;
+  if(invitationStageCard){invitationStageCard.tex.dispose();invitationStageCard.artworkMaterial.dispose();invitationStageCard=null;}
   if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;stableCamera=null;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
