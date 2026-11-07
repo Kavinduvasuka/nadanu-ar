@@ -23,6 +23,8 @@ const files={
 let renderer,scene,camera,root,bgMesh,FX,frameRequested=0;
 const all={},animated=[],bulbs=[],reels=[],particles=[],equalizerBars=[],rings=[],shimmerCards=[],tubeLights=[],cassetteSpools=[];
 let elapsed=0,playing=true,comparison=false,speed=1,targetRX=0,targetRY=0,pointerDown=false,dragX=0,dragY=0,autoOrbit=true,previous=0;
+let targetZoom=1,lastPinchDistance=0,pinchActive=false,manualZoomUntil=0;
+const touchPoints=new Map();
 const gs={};
 function material(color=0xffffff,props={}){return new THREE.MeshStandardMaterial({color,metalness:.52,roughness:.38,...props})}
 function setStatus(s){stats.textContent=s}
@@ -138,8 +140,34 @@ async function main(){
  gs.frameLights=[sideA,sideB];
  const cv=document.querySelector('#scene');
  function resize(){const b=viewport.getBoundingClientRect();renderer.setSize(b.width,b.height,false)}new ResizeObserver(resize).observe(viewport);resize();
- cv.addEventListener('pointerdown',e=>{pointerDown=true;dragX=e.clientX;dragY=e.clientY;cv.setPointerCapture(e.pointerId)});
- cv.addEventListener('pointermove',e=>{if(!pointerDown||comparison)return;targetRY=THREE.MathUtils.clamp(targetRY+(e.clientX-dragX)*.0015,-.24,.24);targetRX=THREE.MathUtils.clamp(targetRX+(e.clientY-dragY)*.001,-.14,.14);dragX=e.clientX;dragY=e.clientY});cv.addEventListener('pointerup',()=>pointerDown=false);cv.addEventListener('pointercancel',()=>pointerDown=false);
+ cv.addEventListener('pointerdown',e=>{
+  touchPoints.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  pointerDown=touchPoints.size===1;dragX=e.clientX;dragY=e.clientY;
+  if(touchPoints.size===2){pinchActive=true;lastPinchDistance=0;pointerDown=false}
+  cv.setPointerCapture(e.pointerId);
+ });
+ cv.addEventListener('pointermove',e=>{
+  if(!touchPoints.has(e.pointerId)||comparison)return;
+  if(e.cancelable)e.preventDefault();
+  touchPoints.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(touchPoints.size===2){
+   const [a,b]=[...touchPoints.values()];
+   const distance=Math.hypot(a.x-b.x,a.y-b.y);
+   if(lastPinchDistance>0)targetZoom=THREE.MathUtils.clamp(targetZoom*distance/lastPinchDistance,.86,1.12);
+   lastPinchDistance=distance;pinchActive=true;manualZoomUntil=performance.now()+2800;
+  }else if(pointerDown){
+   targetRY=THREE.MathUtils.clamp(targetRY+(e.clientX-dragX)*.0015,-.24,.24);
+   targetRX=THREE.MathUtils.clamp(targetRX+(e.clientY-dragY)*.001,-.14,.14);
+  }
+  dragX=e.clientX;dragY=e.clientY;
+ });
+ const endPointer=e=>{
+  touchPoints.delete(e.pointerId);lastPinchDistance=0;
+  pointerDown=false;
+  if(touchPoints.size===0)pinchActive=false;
+ };
+ cv.addEventListener('pointerup',endPointer);
+ cv.addEventListener('pointercancel',endPointer);
  // The original artwork is front-facing at zero rotation; tilt applies only to this root.
  root.rotation.set(0,0,0);targetRX=targetRY=0;
  const buttons={pause:document.getElementById('pause'),compare:document.getElementById('compare'),reset:document.getElementById('reset'),speed:document.getElementById('speed')};
@@ -154,6 +182,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.043,(now-previ
  const t=elapsed,phase=Math.min(1,t/4.8);
  // Three-dimensional floating print; motion is restrained and positions remain aligned.
  root.rotation.x+=(targetRX-root.rotation.x)*.055;root.rotation.y+=(targetRY-root.rotation.y)*.055;
+ if(camera){camera.zoom+=(targetZoom-camera.zoom)*.075;camera.updateProjectionMatrix()}
  root.position.y=(Math.sin(t*.4)*.014);
  if(gs.disc){gs.disc.g.rotation.z=-t*1.26;gs.disc.shine.rotation.z=t*2.7;gs.disc.shine.material.opacity=.1+.13*Math.sin(t*3.5)**2}
  reels.forEach((r,i)=>r.rotation.z=t*(i%2?-5.9:6.4));
@@ -226,9 +255,9 @@ window.addEventListener('message', event => {
  if(event.origin !== location.origin || !event.data) return;
  if(event.data.type === 'nadanu-reset-view') {
   // Reset angles, position and camera zoom, including when coming from AR.
-  targetRX=targetRY=0;
+  targetRX=targetRY=0;targetZoom=1;
   dragX=dragY=0;
-  pointerDown=false;
+  pointerDown=false;pinchActive=false;lastPinchDistance=0;touchPoints.clear();manualZoomUntil=0;
   if(root){root.rotation.set(0,0,0);root.position.set(0,0,0);root.scale.setScalar(1)}
   if(camera){camera.zoom=1;camera.position.set(0,0,25);camera.lookAt(0,0,0);camera.updateProjectionMatrix()}
   return;
@@ -236,6 +265,8 @@ window.addEventListener('message', event => {
  if(event.data.type !== 'nadanu-motion') return;
  if(pointerDown || comparison) return;
  const x=Number(event.data.x),y=Number(event.data.y);
+ const zoom=Number(event.data.zoom);
+ if(Number.isFinite(zoom)&&!pinchActive&&performance.now()>manualZoomUntil)targetZoom=THREE.MathUtils.clamp(zoom,.90,1.12);
  if(!Number.isFinite(x)||!Number.isFinite(y))return;
  targetRX=THREE.MathUtils.clamp(x,-.23,.23);
  targetRY=THREE.MathUtils.clamp(y,-.30,.30);
