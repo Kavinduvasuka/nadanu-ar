@@ -292,6 +292,8 @@ function finishRecognitionIntro(){
  status.textContent='Welcome to Nadanu 3.0 · your AR show begins';
 }
 function resetPerformances(){
+ popUpBeganAt=0;
+ if(popUpWorld){popUpWorld.scale.y=.015;popUpWorld.position.y=-.3;}
  lastPresentedAct=-1;
  actBanner.hidden=false;
  presentAct(0);
@@ -380,6 +382,47 @@ function textMesh(lines,w,h,x,y,z,size=74){
 // Original Stage Lights geometry and proportions, mounted as a complete
 // mini concert world on the printed invitation. Nothing is flattened to a plane.
 let stageWorld, halo, noteSprites=[], noteCooldown=0;
+let popUpWorld=null,popUpInvitation=null,popUpBeganAt=0;
+const POPUP_RISE_MS=1700;
+function makePopUpInvitation(stageRoot){
+  // The original invitation forms the tilted base of the 3D pop-up stage.
+  // No LED wall or floating poster behind the performing artists.
+  const card=new THREE.Group();
+  card.position.set(0,-2.65,-2.75);
+  card.rotation.x=-.67;
+  stageRoot.add(card);
+  const w=11.35,h=w*2048/1441;
+  const material=new THREE.MeshBasicMaterial({
+    transparent:true,opacity:.99,depthTest:true,depthWrite:true,
+    side:THREE.DoubleSide,color:0xffffff
+  });
+  const poster=new THREE.Mesh(new THREE.PlaneGeometry(w,h),material);
+  card.add(poster);
+  const texture=new THREE.TextureLoader().load(
+    './assets/finale-invitation.webp',
+    tex=>{tex.colorSpace=THREE.SRGBColorSpace;material.map=tex;material.needsUpdate=true;},
+    undefined,err=>console.warn('Invitation pop-up artwork unavailable:',err)
+  );
+  texture.colorSpace=THREE.SRGBColorSpace;
+  material.map=texture;
+  material.needsUpdate=true;
+  const border=new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-w/2,-h/2,.026),
+      new THREE.Vector3(w/2,-h/2,.026),
+      new THREE.Vector3(w/2,h/2,.026),
+      new THREE.Vector3(-w/2,h/2,.026)
+    ]),
+    new THREE.LineBasicMaterial({color:0xffd99b,transparent:true,opacity:.74})
+  );
+  card.add(border);
+  const backing=new THREE.Mesh(
+    new THREE.BoxGeometry(w+.14,h+.14,.08),
+    new THREE.MeshBasicMaterial({color:0x37152d,side:THREE.DoubleSide})
+  );
+  backing.position.z=-.085;card.add(backing);
+  popUpInvitation={card,texture,material};
+}
 const stageV=new THREE.Vector3(), stageQ=new THREE.Quaternion(), stageUp=new THREE.Vector3(0,1,0);
 function createStage(root){
   // Recreated directly from stage-lights(2).html: open circular concert floor,
@@ -446,6 +489,14 @@ function createStage(root){
       sprite.visible=false;sprite.userData.life=0;performers[0].add(sprite);noteSprites.push(sprite);
     }
   });
+  // Keep the existing concert components together, so they emerge from
+  // the printed invitation as one coherent 3D pop-up structure.
+  popUpWorld=new THREE.Group();
+  const concertParts=stage.children.slice();
+  for(const part of concertParts)popUpWorld.add(part);
+  stage.add(popUpWorld);
+  makePopUpInvitation(stage);
+
 }
 function updateStageEffects(t,dt,index){
   const pulse=Math.pow(1-((t*2)%1),3),sw=index===2?1.6:1;
@@ -620,6 +671,9 @@ function setup() {
    }
   }
   const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
+  if(showStage&&!popUpBeganAt)popUpBeganAt=performance.now();
+  const popUpProgress=popUpBeganAt?THREE.MathUtils.clamp((performance.now()-popUpBeganAt)/POPUP_RISE_MS,0,1):0;
+  const popUpEase=1-Math.pow(1-popUpProgress,3);
   if(showStage && motionAllowed && motionSamples===0 && performance.now()-trackingTime>2400){
    updateARTiltStatus('NO TILT DATA · CHECK MOTION ACCESS OR DRAG',true);
   }
@@ -633,6 +687,7 @@ function setup() {
   stage.visible=showStage && !showInvitation;
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
+    if(popUpWorld){popUpWorld.scale.y=Math.max(.015,popUpEase);popUpWorld.position.y=-.3*(1-popUpEase);}
     // Keep local stage orientation constant while MindAR tracks the invitation.
     // Moving around the invitation creates genuine perspective and parallax.
     // Slow, frame-rate-independent damping: stable even if mobile FPS varies.
@@ -646,7 +701,7 @@ function setup() {
     // A slow first download must never silently skip the solo dancer.
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
     const canAdvance=performerReady[activeAutoAct]||performerFailed[activeAutoAct];
-    if(tracked&&!showInvitation&&selectedAct===null&&canAdvance)sequenceTime+=dt;
+    if(tracked&&!showInvitation&&selectedAct===null&&canAdvance&&popUpProgress>=1)sequenceTime+=dt;
     // Load cinematic artwork before the last performance ends.
     if(sequenceTime>=ACT_SECONDS+1&&!finalePreloaded&&performerReady[2])preloadFinaleScene();
     // One complete three-act showcase, followed by the formal invitation.
@@ -659,7 +714,7 @@ function setup() {
       ? Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS))
       : selectedAct;
     if(!showInvitation)presentAct(index);
-    performers.forEach((p,i)=>p.visible=!showInvitation && i===index && performerReady[i]);
+    performers.forEach((p,i)=>p.visible=!showInvitation && popUpProgress>=.7 && i===index && performerReady[i]);
     if(!showInvitation&&!performerReady[index]){
       status.textContent=performerFailed[index]
         ? `${performerNames[index]} model unavailable — try refreshing the page.`
@@ -775,6 +830,8 @@ async function disposeARSession(){
   console.warn('MindAR shutdown warning:',err);
  }finally{
   initialMarkerDistance=0;markerDistanceZoom=markerDistanceTarget=1;
+  if(popUpInvitation){popUpInvitation.texture.dispose();popUpInvitation.material.dispose();popUpInvitation=null;}
+  popUpWorld=null;popUpBeganAt=0;
   if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;stableCamera=null;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
