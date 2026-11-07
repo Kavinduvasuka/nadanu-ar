@@ -61,6 +61,56 @@ const finaleInvitation=document.getElementById('finaleInvitation');
 const replayActsButton=document.getElementById('replayActsButton');
 let showInvitation=false;
 let aliveInvitation=null;
+
+const finaleMotion=document.getElementById('finaleMotion');
+const finaleMotionFrame=document.getElementById('finaleMotionFrame');
+const finaleMotionInfo=document.getElementById('finaleMotionInfo');
+let finalMotionActive=false,motionAllowed=false,motionReference=null;
+let finalX=0,finalY=0,smoothedX=0,smoothedY=0,motionFrame=0;
+function setMotionStatus(text){if(finaleMotionInfo)finaleMotionInfo.textContent=text;}
+function receiveMotion(event){
+ if(!motionAllowed || !Number.isFinite(event.gamma) || !Number.isFinite(event.beta))return;
+ if(!motionReference)motionReference={gamma:event.gamma,beta:event.beta};
+ const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+ finalY=clamp((event.gamma-motionReference.gamma)*.006,-.23,.23);
+ finalX=clamp(-(event.beta-motionReference.beta)*.0045,-.17,.17);
+}
+function requestMotionFromStartGesture(){
+ if(!('DeviceOrientationEvent' in window)){setMotionStatus('DRAG TO EXPLORE · SENSOR NOT AVAILABLE');return;}
+ try{
+  const result=typeof DeviceOrientationEvent.requestPermission==='function'
+   ?DeviceOrientationEvent.requestPermission():Promise.resolve('granted');
+  Promise.resolve(result).then(value=>{
+   motionAllowed=value==='granted';
+   if(motionAllowed){motionReference=null;window.addEventListener('deviceorientation',receiveMotion,true);}
+   else setMotionStatus('DRAG TO EXPLORE · SENSOR ACCESS NOT GRANTED');
+  }).catch(e=>{console.warn('Motion permission:',e);setMotionStatus('DRAG TO EXPLORE · SENSOR ACCESS UNAVAILABLE');});
+ }catch(e){console.warn('Motion permission:',e);}
+}
+function forwardMotion(){
+ if(!finalMotionActive)return;
+ smoothedX+=(finalX-smoothedX)*.11;
+ smoothedY+=(finalY-smoothedY)*.11;
+ finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-motion',x:smoothedX,y:smoothedY},location.origin);
+ motionFrame=requestAnimationFrame(forwardMotion);
+}
+async function revealFinalMotion(){
+ if(finalMotionActive)return;
+ finalMotionActive=true;
+ running=false;tracked=false;
+ if(invitationScanner)invitationScanner.hidden=true;
+ if(recognitionIntro)recognitionIntro.hidden=true;
+ arUI.hidden=true;
+ setMotionStatus(motionAllowed?'MOVE PHONE OR DRAG TO EXPLORE 3D':'DRAG THE INVITATION TO EXPLORE 3D');
+ try{await disposeARSession();}catch(error){console.warn('Camera shutdown before invitation:',error);}
+ arContainer.style.display='none';
+ finaleMotion.hidden=false;
+ finaleMotionFrame.src='./cinematic/index.html?v=original-master-20261107';
+ smoothedX=smoothedY=finalX=finalY=0;motionReference=null;
+ cancelAnimationFrame(motionFrame);
+ motionFrame=requestAnimationFrame(forwardMotion);
+}
+
 // Confirm invitation with a logo reveal before any actors are visible.
 // If tracking is lost midway, replay the reveal on reacquisition.
 const recognitionIntro=document.getElementById('recognitionIntro');
@@ -369,11 +419,8 @@ function setup() {
     // One complete three-act showcase, followed by the formal invitation.
     if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
       showInvitation=true;
-      hideScanner();
-      finaleInvitation.hidden=false;
-      if(aliveInvitation)aliveInvitation.root.visible=true;
       actBanner.hidden=true;
-      status.textContent='You are cordially invited to the Nadanu 3.0 Grand Finale';
+      void revealFinalMotion();
     }
     const index=selectedAct===null
       ? Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS))
@@ -530,9 +577,21 @@ async function stopAR(){
  finally{busy=false;}
 }
 startButton.addEventListener('click',()=>{
- // Must unlock Web Audio in the direct tap gesture, before camera and network awaits.
+ // The SAME user tap requests motion and camera. iOS may show separate prompts.
+ requestMotionFromStartGesture();
  enableSound().catch(e=>console.warn('Audio could not start:',e));
  startAR();
+});
+function closeFinalMotion(){
+ finalMotionActive=false;cancelAnimationFrame(motionFrame);
+ finaleMotion.hidden=true;
+ finaleMotionFrame.removeAttribute('src');
+ disableSound();resetPerformances();selectedAct=null;
+ landing.style.display='block';message.textContent='';
+}
+document.getElementById('finaleMotionClose')?.addEventListener('click',closeFinalMotion);
+document.getElementById('finaleMotionReplay')?.addEventListener('click',()=>{
+ closeFinalMotion();startAR();
 });
 stopButton.addEventListener('click',stopAR);
 document.getElementById('backToWebsiteButton')?.addEventListener('click',stopAR);
