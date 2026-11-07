@@ -169,6 +169,11 @@
   </footer>
   <p id="message" role="status" aria-live="polite"></p>
 </main>
+<section id="finaleMotion" class="finale-motion" hidden aria-label="Interactive Grand Finale invitation">
+  <iframe id="finaleMotionFrame" title="Nadanu original artwork cinematic 3D invitation" allow="fullscreen" loading="eager"></iframe>
+  <div class="finale-motion-head"><span>NADANU 3.0 · GRAND FINALE</span><button id="finaleMotionClose" type="button">✕ EXIT</button></div>
+  <div class="finale-motion-foot"><p id="finaleMotionInfo">MOVE PHONE OR DRAG TO EXPLORE 3D</p><div><button id="finaleMotionReplay" type="button">↻ WATCH PERFORMANCES AGAIN</button><a href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL ↗</a></div></div>
+</section>
 <div id="arContainer"></div>
 <div id="arUI" hidden>
   <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><div class="topbar-actions"><button id="resetViewButton" type="button">RESET ACTORS</button><button id="stopButton" type="button">EXIT AR</button></div></div>
@@ -216,7 +221,7 @@
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=live-invite-ar-20261107"></script>
+<script type="module" src="./app.js?v=finale-motion-ending-20261107-1"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
