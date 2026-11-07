@@ -48,6 +48,58 @@ const posePosition=new THREE.Vector3(),poseRotation=new THREE.Quaternion(),poseS
 let lastManualOrbitAt=0;
 let trackerGeneration=0; // Invalidate late tracking events from a previous camera session.
 let stage, warmLight, violetLight;
+let screenInvitation=null,stageWireframe=null,wireframeMat=null,stageRevealAt=0;
+const STAGE_MESH_REVEAL_MS=1100;
+// Screen-fitted camera-facing 3D invitation; transparent behind the concert.
+// Its pose does not interfere with the existing image-target tracker.
+function createScreenInvitation(camera){
+  const tex=new THREE.TextureLoader().load('./assets/finale-invitation.webp',
+    image=>{image.encoding=THREE.sRGBEncoding;},
+    undefined,error=>console.warn('Invitation overlay could not load:',error));
+  tex.encoding=THREE.sRGBEncoding;
+  const material=new THREE.MeshBasicMaterial({
+    map:tex,transparent:true,opacity:.54,
+    depthTest:true,depthWrite:false,side:THREE.DoubleSide
+  });
+  const plane=new THREE.Mesh(new THREE.PlaneGeometry(1,1),material);
+  plane.position.z=-3;
+  plane.visible=false;
+  camera.add(plane);
+  screenInvitation={plane,tex,material};
+}
+function fitScreenInvitation(camera){
+  if(!screenInvitation||!camera?.isPerspectiveCamera)return;
+  const d=3,viewH=2*d*Math.tan(THREE.MathUtils.degToRad(camera.fov)*.5);
+  const viewW=viewH*camera.aspect,ratio=1441/2048;
+  const h=Math.min(viewH*.88,viewW*.89/ratio);
+  screenInvitation.plane.scale.set(h*ratio,h,1);
+}
+function createStageWireframe(root){
+  stageWireframe=new THREE.Group();
+  stageWireframe.position.copy(stage.position);
+  stageWireframe.rotation.copy(stage.rotation);
+  stageWireframe.scale.copy(stage.scale);
+  root.add(stageWireframe);
+  wireframeMat=new THREE.LineBasicMaterial({
+    color:0x58efff,transparent:true,opacity:.72,depthWrite:false
+  });
+  const mesh=new THREE.LineSegments(
+    new THREE.WireframeGeometry(new THREE.CylinderGeometry(9.35,9.35,.5,28,2)),
+    wireframeMat
+  );
+  mesh.position.y=-.25;stageWireframe.add(mesh);
+  for(let i=0;i<3;i++){
+    const loop=new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(Array.from({length:65},(_,j)=>{
+        const a=j/64*Math.PI*2,r=2.6+i*2.5;
+        return new THREE.Vector3(Math.cos(a)*r,.018,Math.sin(a)*r);
+      })),
+      wireframeMat
+    );
+    stageWireframe.add(loop);
+  }
+  stageWireframe.visible=false;
+}
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
 let selectedAct=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
@@ -292,6 +344,9 @@ function finishRecognitionIntro(){
  status.textContent='Welcome to Nadanu 3.0 · your AR show begins';
 }
 function resetPerformances(){
+ stageRevealAt=0;
+ if(screenInvitation)screenInvitation.plane.visible=false;
+ if(stageWireframe)stageWireframe.visible=false;
  lastPresentedAct=-1;
  actBanner.hidden=false;
  presentAct(0);
@@ -540,6 +595,9 @@ function setup() {
  warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);frozenStageRoot.add(warmLight);
  violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);frozenStageRoot.add(violetLight);
  createStage(frozenStageRoot);
+ createStageWireframe(frozenStageRoot);
+ createScreenInvitation(camera);
+ fitScreenInvitation(camera);
  aliveInvitation=createAliveInvitation(frozenStageRoot);
  bindOrbitControls();
  root.visible=false;
@@ -549,6 +607,7 @@ function setup() {
   tracked=true;targetLostAt=0;
   if(firstLock){
    trackingTime=performance.now();
+   stageRevealAt=0;
    resetStageView();
    stage.visible=false;
    frozenStageRoot.visible=false;
@@ -563,6 +622,10 @@ function setup() {
   if(generation!==trackerGeneration)return;
   tracked=false;
   targetLostAt=performance.now();
+  if(screenInvitation)screenInvitation.plane.visible=false;
+  if(stageWireframe)stageWireframe.visible=false;
+  if(stage)stage.visible=false;
+  if(recognitionIntro && !introCompleted)resetRecognitionIntro();
   // Short interruptions are tolerated. The render loop pauses and hides the
   // stage only after the invitation has genuinely been lost for a moment.
   root.visible=false;
@@ -573,7 +636,8 @@ function setup() {
   // MindAR can retain an old anchor matrix temporarily on iOS. Hide both the
   // complete stage and its lights until NEW invitation tracking has stabilized.
   const locked=tracked && performance.now()-trackingTime>=650;
-  const inGrace=!tracked && stagePoseCaptured && targetLostAt>0 && performance.now()-targetLostAt<TRACKING_GRACE_MS;
+  // Focus lost: never keep stale marker-locked AR objects on camera.
+  const inGrace=false;
   if(locked && introCompleted && invitationScanner && !invitationScanner.hidden)hideScanner();
   if(locked && !introCompleted && !introStartedAt)startRecognitionIntro();
   if(locked && introStartedAt && performance.now()-introStartedAt>=INTRO_DURATION_MS)finishRecognitionIntro();
@@ -620,6 +684,13 @@ function setup() {
    }
   }
   const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
+  if(showStage && !stageRevealAt)stageRevealAt=performance.now();
+  const meshProgress=showStage?THREE.MathUtils.clamp((performance.now()-stageRevealAt)/STAGE_MESH_REVEAL_MS,0,1):0;
+  if(screenInvitation){
+    fitScreenInvitation(camera);
+    screenInvitation.plane.visible=locked && stagePoseCaptured && !showInvitation;
+    screenInvitation.material.opacity=showStage?.54:.63;
+  }
   if(showStage && motionAllowed && motionSamples===0 && performance.now()-trackingTime>2400){
    updateARTiltStatus('NO TILT DATA · CHECK MOTION ACCESS OR DRAG',true);
   }
@@ -630,7 +701,11 @@ function setup() {
   stageWasActive=showStage;
   root.visible=false;
   if(frozenStageRoot)frozenStageRoot.visible=showStage;
-  stage.visible=showStage && !showInvitation;
+  stage.visible=showStage && !showInvitation && meshProgress>=.76;
+  if(stageWireframe){
+    stageWireframe.visible=showStage && !showInvitation && meshProgress<1;
+    wireframeMat.opacity=.72*(1-THREE.MathUtils.smoothstep(meshProgress,.65,1));
+  }
   if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
     // Keep local stage orientation constant while MindAR tracks the invitation.
@@ -642,11 +717,12 @@ function setup() {
     // Smooth 3D orbit of the full stage + performers in screen-locked hybrid AR.
     // Keep the camera-space stage position fixed to avoid marker tracking jitter.
     stage.quaternion.setFromEuler(new THREE.Euler(.42+stageTiltX,stageTiltY,0,'XYZ'));
+    if(stageWireframe)stageWireframe.quaternion.copy(stage.quaternion);
     // Preserve each 8-second act until its GLB has fully loaded.
     // A slow first download must never silently skip the solo dancer.
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
     const canAdvance=performerReady[activeAutoAct]||performerFailed[activeAutoAct];
-    if(tracked&&!showInvitation&&selectedAct===null&&canAdvance)sequenceTime+=dt;
+    if(tracked&&!showInvitation&&selectedAct===null&&canAdvance&&meshProgress>=1)sequenceTime+=dt;
     // Load cinematic artwork before the last performance ends.
     if(sequenceTime>=ACT_SECONDS+1&&!finalePreloaded&&performerReady[2])preloadFinaleScene();
     // One complete three-act showcase, followed by the formal invitation.
@@ -675,6 +751,7 @@ function setup() {
     }
     markerDistanceZoom+=(markerDistanceTarget-markerDistanceZoom)*(1-Math.exp(-2.0*dt));
     stage.scale.setScalar(BASE_SCALE*markerDistanceZoom);
+    if(stageWireframe)stageWireframe.scale.copy(stage.scale);
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
   }
@@ -774,6 +851,10 @@ async function disposeARSession(){
  }catch(err){
   console.warn('MindAR shutdown warning:',err);
  }finally{
+  if(screenInvitation){screenInvitation.plane.parent?.remove(screenInvitation.plane);screenInvitation.plane.geometry.dispose();screenInvitation.material.dispose();screenInvitation.tex.dispose();screenInvitation=null;}
+  if(stageWireframe){stageWireframe.traverse(o=>{if(o.geometry)o.geometry.dispose();});stageWireframe.parent?.remove(stageWireframe);stageWireframe=null;}
+  if(wireframeMat){wireframeMat.dispose();wireframeMat=null;}
+  stageRevealAt=0;
   initialMarkerDistance=0;markerDistanceZoom=markerDistanceTarget=1;
   if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;stableCamera=null;}
   if(renderer){
