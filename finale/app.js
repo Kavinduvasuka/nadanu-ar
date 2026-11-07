@@ -522,7 +522,8 @@ function setup() {
       const safeX=Math.max(0,(viewWidth-naturalDiameter*fit)*.45);
       const safeY=Math.max(0,(viewHeight-naturalDiameter*fit)*.40);
       frozenStageRoot.position.x=THREE.MathUtils.clamp(frozenStageRoot.position.x,-safeX,safeX);
-      frozenStageRoot.position.y=THREE.MathUtils.clamp(frozenStageRoot.position.y,-safeY,safeY);
+      // Keep the miniature concert below the centre, clear of the top HUD.
+      frozenStageRoot.position.y=-Math.max(viewHeight*.11,Math.min(safeY,viewHeight*.16));
      }
     }
     stagePoseCaptured=true;
