@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style.css?v=hybrid-camera-motion-20261107-1">
+<link rel="stylesheet" href="./style.css?v=zip-neon-fixed-20261107-2">
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.147.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.147.0/examples/jsm/","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
 <!-- Solo Dance optimized animated GLB deployed: Draco + WebP, 2026-11-06 -->
 </head>
@@ -46,7 +46,7 @@
       <h1 class="animated-hero-title"><span>THE STAGE</span><br><span>IS SET.</span><br><em>YOU'RE<br>INVITED.</em></h1>
       <p class="intro">The spotlight is ready. The finalists are set. Be part of a grand celebration of music, dance and unforgettable talent at the <strong>Nadanu 3.0 Grand Finale.</strong></p>
       <div class="hero-actions">
-        <button id="startButton" type="button" class="primary">Start 3D Experience <span>↗</span></button>
+        <button id="startButton" type="button" class="primary">Start invitation AR <span>↗</span></button>
         <a class="secondary" href="./world.html?v=autoplay-acts-20261106">Explore 3D stage <span>▷</span></a>
       </div>
       <p class="camera-note">On your phone, allow camera access and frame the printed Grand Finale invitation. The 3D performance appears when the artwork is recognized.</p>
@@ -122,7 +122,7 @@
 </div>
   </section>
   <section class="how" id="journey" aria-label="Experience the invitation in AR">
-    <div><small>01 / OPEN</small><p>Explore 3D Invitation.</p></div>
+    <div><small>01 / OPEN</small><p>Start invitation AR.</p></div>
     <div><small>02 / SCAN</small><p>Frame the printed invitation.</p></div>
     <div><small>03 / EXPERIENCE</small><p>Watch the stage come alive.</p></div>
   </section>
@@ -131,7 +131,7 @@
     <p class="eyebrow"><i></i> NADANU 3.0 / GRAND FINALE</p>
     <h2>THE STAGE IS WAITING.<br><em>EXPERIENCE THE GRAND FINALE.</em></h2>
     <p>Point your camera at the official Grand Finale invitation and watch the performers come alive in AR.</p>
-    <button type="button" id="footerStartAR" class="primary">Explore 3D Invitation <span>↗</span></button>
+    <button type="button" id="footerStartAR" class="primary">START INVITATION AR <span>↗</span></button>
   </section>
   <footer class="site-footer" id="contact">
     <div class="footer-main">
@@ -169,32 +169,12 @@
   </footer>
   <p id="message" role="status" aria-live="polite"></p>
 </main>
-<section id="tiltViewer" class="tilt-viewer" hidden aria-label="Nadanu interactive camera and motion 3D invitation">
-  <div class="tilt-atmosphere" aria-hidden="true"></div>
-  <video id="tiltCamera" class="tilt-camera" autoplay muted playsinline hidden aria-label="Live camera background"></video>
-  <canvas id="tiltCanvas" aria-label="Interactive 3D Grand Finale invitation"></canvas>
-  <div id="tiltActTitle" class="tilt-act-title" hidden role="status">ACT 01 / 03 · SOLO SINGING</div>
-  <header class="tilt-topbar">
-    <div><span class="tilt-eyebrow">NADANU 3.0 · GRAND FINALE</span><strong>THE INVITATION IS ALIVE</strong></div>
-    <button id="tiltClose" type="button" aria-label="Close 3D invitation">✕ CLOSE</button>
-  </header>
-  <div class="tilt-bottom">
-    <p id="tiltHint" role="status">Starting camera and motion…</p>
-    <div class="tilt-actions">
-      <button id="tiltMotion" type="button">◈ ENABLE MOTION</button>
-      <button id="tiltReset" type="button">↻ RESET VIEW</button>
-      <button id="tiltSound" type="button">♪ SOUND OFF</button>
-    </div>
-    <a href="./assets/finale-invitation.webp" target="_blank" rel="noopener">VIEW ORIGINAL INVITATION ↗</a>
-    <small>CAMERA + MOTION · TOUCH DRAG FALLBACK</small>
-  </div>
-</section>
 <div id="arContainer"></div>
 <div id="arUI" hidden>
   <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><div class="topbar-actions"><button id="resetViewButton" type="button">RESET ACTORS</button><button id="stopButton" type="button">EXIT AR</button></div></div>
   <div id="invitationScanner" class="invitation-scanner" data-scan-state="preparing" aria-label="Grand Finale invitation scanner">
     <p class="scan-eyebrow"><span aria-hidden="true"></span> NADANU / INVITATION RECOGNITION</p>
-    <div class="scan-mode">3D Invitation</div>
+    <div class="scan-mode">INVITATION AR</div>
     <div class="scan-viewfinder" aria-hidden="true">
       <div class="scan-grid"></div>
       <span class="scan-corner-id scan-corner-one">01</span>
@@ -236,7 +216,7 @@
   <div id="trackingStatus" class="tracking">Point camera at the Grand Finale invitation</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./tilt-experience.js?v=hybrid-camera-motion-20261107-1"></script>
+<script type="module" src="./app.js?v=live-invite-ar-20261107"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
