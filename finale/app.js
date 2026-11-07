@@ -408,8 +408,8 @@ function createStage(root){
   stage.add(stringRoot);
   const webPositions=[];
   const tips=[];
-  const count=10;
-  for(let i=0;i<count;i++){
+  const stringStarPoints=10;
+  for(let i=0;i<stringStarPoints;i++){
     const angle=-Math.PI/2+i*Math.PI*2/count;
     const radius=i%2===0?2.55:1.08;
     tips.push(new THREE.Vector3(Math.cos(angle)*radius,Math.sin(angle)*radius,.16));
@@ -418,15 +418,15 @@ function createStage(root){
     webPositions.push(a.x,a.y,a.z,b.x,b.y,b.z);
   };
   // Star perimeter followed by hand-strung chords across its interior.
-  for(let i=0;i<count;i++)addThread(tips[i],tips[(i+1)%count]);
-  for(let i=0;i<count;i++){
+  for(let i=0;i<stringStarPoints;i++)addThread(tips[i],tips[(i+1)%stringStarPoints]);
+  for(let i=0;i<stringStarPoints;i++){
     for(let jump=2;jump<=4;jump++){
-      const a=tips[i],b=tips[(i+jump)%count];
+      const a=tips[i],b=tips[(i+jump)%stringStarPoints];
       addThread(a,b);
     }
   }
   for(let i=0;i<24;i++){
-    const a=tips[(i*7)%count];
+    const a=tips[(i*7)%stringStarPoints];
     const angle=i*Math.PI*2/24;
     addThread(a,new THREE.Vector3(Math.cos(angle)*.43,Math.sin(angle)*.43,.65));
   }
