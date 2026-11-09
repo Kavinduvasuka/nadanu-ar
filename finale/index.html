@@ -67,10 +67,23 @@
 (()=>{
  const viewer=document.getElementById('viewer'),frame=document.getElementById('viewerFrame');
  const open=()=>{viewer.hidden=false;document.body.classList.add('viewer-open');if(!frame.src)frame.src='./cinematic/embed.html?v=direct-3d-20261109-1';document.getElementById('viewerClose').focus();};
- const close=()=>{viewer.hidden=true;document.body.classList.remove('viewer-open');frame.src='';};
+ const close=()=>{sensorReference=null;viewer.hidden=true;document.body.classList.remove('viewer-open');frame.src='';};
  document.querySelectorAll('[data-open-3d]').forEach(b=>b.addEventListener('click',open));
  document.getElementById('viewerClose').addEventListener('click',close);
  document.getElementById('viewerReset').addEventListener('click',()=>frame.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin));
+ let sensorReference=null;
+ window.addEventListener('deviceorientation',event=>{
+  if(viewer.hidden || !Number.isFinite(event.gamma) || !Number.isFinite(event.beta))return;
+  if(!sensorReference)sensorReference={gamma:event.gamma,beta:event.beta};
+  const gamma=((event.gamma-sensorReference.gamma+540)%360)-180;
+  const beta=((event.beta-sensorReference.beta+540)%360)-180;
+  frame.contentWindow?.postMessage({
+   type:'nadanu-motion',
+   x:Math.max(-.18,Math.min(.18,-beta*.005)),
+   y:Math.max(-.26,Math.min(.26,gamma*.007)),
+   zoom:1
+  },location.origin);
+ },true);
  document.getElementById('viewerTilt').addEventListener('click',async()=>{
   try {
    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
