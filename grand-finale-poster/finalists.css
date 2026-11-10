@@ -91,3 +91,9 @@
 #landing .finalists-pending p{margin:0;font:600 clamp(11px,2vw,15px) 'Audiowide',sans-serif;letter-spacing:.1em;color:#ffb983;line-height:1.7}
 @media(max-width:850px){#landing .categories .neon-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){#landing .categories .neon-category-grid{grid-template-columns:1fr}#landing .finalists-pending{min-height:250px;padding:25px 14px}}
+
+/* Photo framing: fully show uploaded contestant photographs without cutting off faces. */
+#landing .finalist-photo-frame{aspect-ratio:3/4}
+#landing .finalist-photo-frame img{width:100%;height:100%;object-fit:contain!important;object-position:center center!important}
+#landing .finalist-card--sanjana .finalist-photo-frame img{object-fit:contain!important;object-position:center center!important}
+#landing .finalist-info h3{overflow-wrap:anywhere}
