@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MindARThree } from 'mindar-image-three';
-import { createAliveInvitation } from './invitation-alive.js';
+import { createAliveInvitation } from '../finale/invitation-alive.js';
 
 // Nadanu 3.0: ORIGINAL Stage Lights concert geometry + real GLB actors, anchored to the Grand Finale poster.
 // Animations: singer.glb and solo-dancer.glb have embedded animation clips.
