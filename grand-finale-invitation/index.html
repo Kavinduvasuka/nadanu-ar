@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1a0905">
+<meta name="description" content="You are cordially invited to Nadanu 3.0 Grand Finale, presented by the Computing Society of ICBT. Explore the official invitation in an interactive cinematic 3D experience.">
+<title>Nadanu 3.0 | Grand Finale Invitation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./finale-3d.css?v=2">
+</head>
+<body>
+<div class="ambient" aria-hidden="true"><i></i><i></i><i></i></div>
+<header class="header">
+  <a class="brand" href="#home" aria-label="Nadanu Grand Finale home">
+    <img class="header-logo" src="../auditions/assets/logo.webp" alt="Nadanu 3.0 official star logo" width="64" height="68" decoding="async"><span class="header-brand-copy"><strong class="header-event-title">Nadanu <em>3.0 | 2026</em></strong><small class="header-organizer">By Computing Society of ICBT Campus</small></span>
+  </a>
+  <nav class="navigation" aria-label="Page navigation">
+    <a href="#invitation">Invitation</a><a href="#experience">3D Experience</a><a href="#details">Details</a>
+  </nav>
+  <button class="header-cta" data-open-3d>EXPLORE 3D <span aria-hidden="true">↗</span></button>
+</header>
+<main id="home">
+  <section class="hero" aria-labelledby="hero-heading">
+    <div class="hero-copy">
+      <div class="eyebrow"><span class="spark"></span> THE GRAND FINALE · 2026</div>
+      <h1 id="hero-heading"><span>THE FINAL</span><span class="hot">SHOWDOWN.</span><span class="script">You're Invited.</span></h1>
+      <p class="hero-description">You are cordially invited to the <strong>Grand Finale of Nadanu 3.0</strong>, presented by the Computing Society of ICBT. Explore your official invitation in an immersive 3D experience.</p>
+      <div class="hero-actions">
+        <button class="btn btn-main" data-open-3d>EXPERIENCE 3D INVITATION <span aria-hidden="true">↗</span></button>
+      </div>
+      <div class="event-mini"><span><b>26 NOV</b><small>Grand Finale</small></span><span><b>12:30 PM</b><small>Onwards</small></span><span><b>ICBT</b><small>Colombo Campus</small></span></div>
+    </div>
+    <div class="poster-panel" id="invitation">
+      <div class="poster-halo" aria-hidden="true"></div>
+      <div class="poster-frame">
+        <span class="poster-label">THE OFFICIAL INVITATION</span>
+        <img id="officialPoster" src="./assets/invitation-05.webp" onerror="this.onerror=null;this.src='./assets/finale-invitation.webp'" alt="Official Nadanu 3.0 Grand Finale invitation poster: 26 November, 12:30 PM onwards, ICBT Colombo Campus Amphitheatre" width="1441" height="2048" fetchpriority="high">
+      </div>
+      <div class="poster-caption"><span><span class="live-dot"></span> THE GRAND FINALE AWAITS</span><span>FEEL THE BEAT · OWN THE STAGE</span></div>
+    </div>
+  </section>
+  <section id="experience" class="experience section invitation-experience">
+    <div class="section-heading"><p class="eyebrow">AN EXCLUSIVE INVITATION</p><h2>YOUR INVITATION<br><em>COMES ALIVE IN 3D.</em></h2><p>Enjoy the original Grand Finale invitation with cinematic depth and movement. Open it instantly — no camera scanning required.</p></div>
+    <div class="experience-grid">
+      <article class="experience-card accent-gold"><span class="card-num">THE INTERACTIVE INVITATION</span><div class="card-symbol">✧</div><h3>Explore in 3D</h3><p>Drag to explore the artwork, or move your phone for a subtle 3D perspective.</p><button data-open-3d class="card-action">OPEN 3D INVITATION <span>↗</span></button></article>
+    </div>
+  </section>
+  <section class="details section" id="details">
+    <p class="eyebrow">SAVE THE DATE</p>
+    <h2>ONE STAGE.<br><em>ENDLESS TALENT.</em></h2>
+    <div class="details-row"><div><span>DATE</span><strong>26 November 2026</strong></div><div><span>TIME</span><strong>12:30 PM Onwards</strong></div><div><span>VENUE</span><strong>ICBT Colombo Campus Amphitheatre</strong></div></div>
+    <p class="invitation-line">We would be honoured by your presence.</p>
+  </section>
+</main>
+<footer class="footer"><div><strong>NADANU 3.0</strong><span>FEEL THE BEAT. OWN THE STAGE.</span></div><div class="social"><a href="https://www.instagram.com/csoficbt/" target="_blank" rel="noopener noreferrer">Instagram</a><a href="https://www.facebook.com/profile.php?id=61560469306166" target="_blank" rel="noopener noreferrer">Facebook</a><a href="https://www.tiktok.com/@csoficbt" target="_blank" rel="noopener noreferrer">TikTok</a></div><small>© 2026 COMPUTING SOCIETY OF ICBT</small></footer>
+<section id="viewer" class="viewer" hidden role="dialog" aria-modal="true" aria-label="3D Grand Finale invitation">
+ <div class="viewer-header"><span>NADANU 3.0 <span class="viewer-sub">/ 3D INVITATION</span></span><div><button id="viewerReset" type="button">RESET VIEW</button><button id="viewerClose" class="viewer-close" type="button">✕ CLOSE</button></div></div>
+ <iframe id="viewerFrame" title="Interactive 3D Nadanu Grand Finale invitation" allow="fullscreen; accelerometer; gyroscope" loading="lazy"></iframe>
+ <div class="viewer-footer"><span>DRAG TO EXPLORE · MOVE YOUR PHONE FOR 3D</span><button id="viewerTilt" type="button">ENABLE PHONE TILT</button></div>
+</section>
+<script>
+(()=>{
+ const viewer=document.getElementById('viewer'),frame=document.getElementById('viewerFrame');
+ const open=()=>{viewer.hidden=false;document.body.classList.add('viewer-open');if(!frame.src)frame.src='./cinematic/embed.html?v=direct-3d-20261109-1';document.getElementById('viewerClose').focus();};
+ const close=()=>{sensorReference=null;viewer.hidden=true;document.body.classList.remove('viewer-open');frame.src='';};
+ document.querySelectorAll('[data-open-3d]').forEach(b=>b.addEventListener('click',open));
+ document.getElementById('viewerClose').addEventListener('click',close);
+ document.getElementById('viewerReset').addEventListener('click',()=>frame.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin));
+ let sensorReference=null;
+ window.addEventListener('deviceorientation',event=>{
+  if(viewer.hidden || !Number.isFinite(event.gamma) || !Number.isFinite(event.beta))return;
+  if(!sensorReference)sensorReference={gamma:event.gamma,beta:event.beta};
+  const gamma=((event.gamma-sensorReference.gamma+540)%360)-180;
+  const beta=((event.beta-sensorReference.beta+540)%360)-180;
+  frame.contentWindow?.postMessage({
+   type:'nadanu-motion',
+   x:Math.max(-.18,Math.min(.18,-beta*.005)),
+   y:Math.max(-.26,Math.min(.26,gamma*.007)),
+   zoom:1
+  },location.origin);
+ },true);
+ document.getElementById('viewerTilt').addEventListener('click',async()=>{
+  try {
+   if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+    const result=await DeviceOrientationEvent.requestPermission();if(result!=='granted')return;
+   }
+   document.getElementById('viewerTilt').textContent='PHONE TILT ON';
+  }catch(e){console.warn('Phone tilt permission unavailable:',e);}
+ });
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!viewer.hidden)close();});
+})();
+</script>
+</body>
+</html>
