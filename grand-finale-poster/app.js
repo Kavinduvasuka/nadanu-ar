@@ -117,8 +117,10 @@ let motionSamples=0, motionPermissionPending=false, lastMotionEventAt=0;
 const arTiltButton=document.getElementById('arEnableTilt');
 const arTiltStatus=document.getElementById('arTiltStatus');
 function updateARTiltStatus(message,enableButton=false){
+ // Permissions are requested on the main website's Start AR click.
+ // This Grand Finale experience never displays an extra tilt button.
  if(arTiltStatus)arTiltStatus.textContent=message;
- if(arTiltButton)arTiltButton.hidden=!enableButton;
+ if(arTiltButton)arTiltButton.hidden=true;
 }
 function receiveMotion(event){
  if(!motionAllowed || !Number.isFinite(event.gamma) || !Number.isFinite(event.beta))return;
@@ -208,25 +210,25 @@ function requestMotionFromStartGesture(){
     window.addEventListener('deviceorientation',receiveMotion,true);
     updateARTiltStatus('TILT ALLOWED · CALIBRATING…',false);
     setMotionStatus('PHONE TILT ENABLED · MOVE PHONE OR DRAG');
-    document.getElementById('finaleEnableTilt').hidden=true;
+    if(document.getElementById('finaleEnableTilt'))document.getElementById('finaleEnableTilt').hidden=true;
   }else{
     updateARTiltStatus('ALLOW PHONE TILT TO ROTATE PERFORMERS',true);
     setMotionStatus('ENABLE PHONE TILT OR DRAG TO EXPLORE');
-    document.getElementById('finaleEnableTilt').hidden=false;
+    if(document.getElementById('finaleEnableTilt'))document.getElementById('finaleEnableTilt').hidden=true;
   }
   }).catch(error=>{
    console.warn('Orientation permission:',error);
    motionAllowed=false;
    updateARTiltStatus('TILT PERMISSION NEEDED · TAP ENABLE',true);
    setMotionStatus('TAP ENABLE PHONE TILT OR DRAG');
-   document.getElementById('finaleEnableTilt').hidden=false;
+   if(document.getElementById('finaleEnableTilt'))document.getElementById('finaleEnableTilt').hidden=true;
   }).finally(()=>{motionPermissionPending=false;});
  }catch(error){
   motionPermissionPending=false;
   motionAllowed=false;
   console.warn('Orientation permission:',error);
   updateARTiltStatus('TILT PERMISSION NEEDED · TAP ENABLE',true);
-  document.getElementById('finaleEnableTilt').hidden=false;
+  if(document.getElementById('finaleEnableTilt'))document.getElementById('finaleEnableTilt').hidden=true;
  }
 }
 function forwardMotion(){
@@ -894,7 +896,7 @@ document.getElementById('finaleResetTilt')?.addEventListener('click',()=>{
 document.getElementById('finaleMotionClose')?.addEventListener('click',closeFinalMotion);
 document.getElementById('finaleMotionBack')?.addEventListener('click',closeFinalMotion);
 document.getElementById('finaleMotionReplay')?.addEventListener('click',()=>{
- closeFinalMotion();startAR();
+ closeFinalMotion();void enableSound();void startAR();
 });
 stopButton.addEventListener('click',stopAR);
 document.getElementById('arBackToSite')?.addEventListener('click',stopAR);
@@ -924,16 +926,19 @@ soundtrack.volume=.95;
 soundtrack.muted=false;
 soundtrack.playsInline=true;
 let soundStarting=false;
+let musicNeedsGesture=false;
 function setSoundFeedback(text){
  const node=document.getElementById('soundStatus');
  if(node)node.textContent=text||'';
 }
 function updateSoundButton(){
  if(!soundButton)return;
- // Label is the action the user can take, not the current sound state.
- soundButton.textContent=soundEnabled?'♫ MUSIC OFF':'♫ MUSIC ON';
+ soundButton.textContent=soundEnabled?'♫ MUSIC OFF':'♫ ENABLE MUSIC';
  soundButton.setAttribute('aria-pressed',String(soundEnabled));
  soundButton.classList.toggle('active',soundEnabled);
+ // Music starts automatically. Show a fallback only if the browser blocks
+ // unmuted playback after cross-page navigation.
+ soundButton.hidden=soundEnabled||soundStarting||!musicNeedsGesture;
 }
 function disableSound(){
  soundEnabled=false;
@@ -949,7 +954,9 @@ function enableSound(){
  // require a real gesture after a cross-page AR navigation.
  if(soundStarting)return Promise.resolve();
  soundStarting=true;
+ musicNeedsGesture=false;
  setSoundFeedback('STARTING MUSIC…');
+ updateSoundButton();
  soundtrack.muted=false;
  soundtrack.volume=.95;
  let attempt;
@@ -958,11 +965,13 @@ function enableSound(){
  return Promise.resolve(attempt).then(()=>{
   soundStarting=false;
   soundEnabled=!soundtrack.paused;
-  setSoundFeedback(soundEnabled?'MUSIC PLAYING':'TAP MUSIC ON TO START');
+  musicNeedsGesture=!soundEnabled;
+  setSoundFeedback(soundEnabled?'MUSIC PLAYING':'TAP ENABLE MUSIC');
   updateSoundButton();
  }).catch(error=>{
   soundStarting=false;
   soundEnabled=false;
+  musicNeedsGesture=true;
   setSoundFeedback(error?.name==='NotAllowedError'
     ?'BROWSER BLOCKED AUDIO · TAP MUSIC ON AGAIN'
     :'MUSIC COULD NOT PLAY · CHECK CONNECTION');
@@ -976,6 +985,7 @@ soundButton?.addEventListener('click',()=>{
 });
 soundtrack.addEventListener('error',()=>{
  soundStarting=false; soundEnabled=false;
+ musicNeedsGesture=false;
  setSoundFeedback('MUSIC FILE COULD NOT LOAD');
  updateSoundButton();
  console.warn('Grand Finale soundtrack load error',soundtrack.error?.code);
@@ -991,9 +1001,9 @@ window.__nadanuARReady = true;
 // a second click on this page. Keep the regular Start button as a fallback
 // when camera permissions have been blocked by the browser.
 if (new URLSearchParams(window.location.search).get('autostart') === '1') {
-  // Main website already requested camera and motion permissions on its
-  // click. Register orientation tracking as this AR document starts.
-  // If Safari needs a new gesture, the Enable Phone Tilt button remains.
+  // The main website requests camera and motion permission on its launch tap.
+  // Auto-start everything here; browsers may require a fresh tap for audio.
   requestMotionFromStartGesture();
+  void enableSound();
   void startAR();
 }
