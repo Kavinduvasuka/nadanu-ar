@@ -957,3 +957,11 @@ updateSoundButton();
 
 // AR module initialized: lets the landing page distinguish loading errors from camera issues.
 window.__nadanuARReady = true;
+
+// A click on the Grand Finale website launches this page with ?autostart=1.
+// Start the same working MindAR camera flow immediately, without requiring
+// a second click on this page. Keep the regular Start button as a fallback
+// when camera permissions have been blocked by the browser.
+if (new URLSearchParams(window.location.search).get('autostart') === '1') {
+  void startAR();
+}
