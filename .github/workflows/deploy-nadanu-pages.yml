@@ -35,8 +35,8 @@ jobs:
             --exclude='.git/' \
             --exclude='.github/' \
             --exclude='auditions/assets/post 10.png' \
-            --exclude='invitation/assets/post 10.png' \
-            --exclude='finale/assets/finale-invitation.png'
+            --exclude='audition-invitation/assets/post 10.png' \
+            --exclude='grand-finale-invitation/assets/finale-invitation.png'
           du -sh _site
       # Each new push creates a fresh workflow run with exactly one Pages artifact.
       # Avoid re-running failed jobs in a completed run: GitHub can retain the
