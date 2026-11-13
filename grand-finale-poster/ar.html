@@ -214,12 +214,11 @@
       <div class="finale-invitation-actions"><button type="button" id="replayActsButton">↻ WATCH PERFORMANCES AGAIN</button><button type="button" id="backToWebsiteButton">← BACK TO WEBSITE</button></div>
     </div>
   </div>
-  <div class="act-controls"><button id="soundButton">SOUND OFF</button></div>
-  <div class="act-controls"><button id="arEnableTilt" type="button">ENABLE PHONE TILT</button><span id="arTiltStatus" role="status" aria-live="polite">TAP ENABLE PHONE TILT</span></div>
+  <div class="act-controls"><button id="soundButton" type="button" aria-pressed="false">♫ MUSIC ON</button><button id="arEnableTilt" type="button">ENABLE PHONE TILT</button><span id="arTiltStatus" role="status" aria-live="polite">TAP ENABLE PHONE TILT</span></div>
 <div id="trackingStatus" class="tracking">Point camera at the Grand Finale poster</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=camera-tilt-permissions-20261113-4"></script>
+<script type="module" src="./app.js?v=music-controls-fix-20261113-5"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
