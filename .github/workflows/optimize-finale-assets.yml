@@ -34,8 +34,8 @@ jobs:
           python3 - <<'PY'
           from PIL import Image,ImageOps
           import os
-          src='finale/assets/finale-invitation.png'
-          dst='finale/assets/finale-invitation.webp'
+          src='grand-finale-invitation/assets/finale-invitation.png'
+          dst='grand-finale-invitation/assets/finale-invitation.webp'
           with Image.open(src) as im:
               im=ImageOps.exif_transpose(im)
               im.thumbnail((1800,2500),Image.Resampling.LANCZOS)
@@ -55,7 +55,7 @@ jobs:
                   data=json.loads(f.read(jsz))
                   return len(data.get('animations',[])),len(data.get('meshes',[]))
           for name in ('singer.glb','group_dancers.glb'):
-              src='finale/assets/'+name
+              src='grand-finale-invitation/assets/'+name
               tmp='/tmp/'+name
               before=os.path.getsize(src)
               animations,meshes=metadata(src)
@@ -83,7 +83,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import os,subprocess
-          for folder in ('auditions/assets','invitation/assets'):
+          for folder in ('auditions/assets','audition-invitation/assets'):
               for name in os.listdir(folder):
                   if not name.lower().endswith('.mp4'):continue
                   src=os.path.join(folder,name)
@@ -107,7 +107,7 @@ jobs:
       - name: Use optimized web image on Finale page
         run: |
           python3 - <<'PY'
-          p='finale/index.html'
+          p='grand-finale-invitation/index.html'
           s=open(p,encoding='utf-8').read()
           s=s.replace('./assets/finale-invitation.png','./assets/finale-invitation.webp')
           s=s.replace('style.css?v=nadanu-star-header-20261106','style.css?v=optimized-assets-20261106')
@@ -117,7 +117,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add finale/index.html finale/assets/finale-invitation.webp finale/assets/singer.glb finale/assets/group_dancers.glb auditions/assets/*.mp4 invitation/assets/*.mp4
+          git add grand-finale-invitation/index.html grand-finale-invitation/assets/finale-invitation.webp grand-finale-invitation/assets/singer.glb grand-finale-invitation/assets/group_dancers.glb auditions/assets/*.mp4 audition-invitation/assets/*.mp4
           if ! git diff --cached --quiet; then
             git commit -m 'Compress Nadanu invitation image, performance GLBs, and show videos'
             git pull --rebase origin main
