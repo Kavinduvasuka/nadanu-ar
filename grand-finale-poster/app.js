@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MindARThree } from 'mindar-image-three';
-import { createAliveInvitation } from '../finale/invitation-alive.js';
+import { createAliveInvitation } from '../grand-finale-invitation/invitation-alive.js';
 
 // Nadanu 3.0: ORIGINAL Stage Lights concert geometry + real GLB actors, anchored to the Grand Finale poster.
 // Animations: singer.glb and solo-dancer.glb have embedded animation clips.
@@ -515,9 +515,9 @@ function normalizeGLB(gltf, desiredHeight, targetX=0, targetZ=0, maxWidth=6.7){
 }
 async function loadPerformers() {
  const assets=[
-  {path:'../finale/assets/singer.glb',index:0,height:2.25,x:0,z:0,maxWidth:3,name:'Singer'},
-  {path:'../finale/assets/solo-dancer.glb?v=optimized-20261106',index:1,height:2.25,x:0.55,z:0,maxWidth:3,name:'Solo dancer'},
-  {path:'../finale/assets/group_dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
+  {path:'../grand-finale-invitation/assets/singer.glb',index:0,height:2.25,x:0,z:0,maxWidth:3,name:'Singer'},
+  {path:'../grand-finale-invitation/assets/solo-dancer.glb?v=optimized-20261106',index:1,height:2.25,x:0.55,z:0,maxWidth:3,name:'Solo dancer'},
+  {path:'../grand-finale-invitation/assets/group_dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
  ];
  // Load performers one at a time after the live camera opens. Concurrent
  // Draco decode on mobile can block video rendering and look like a frozen stage.
