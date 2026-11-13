@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#160c07">
 <meta name="description" content="Nadanu 3.0 Grand Finale — an immersive 3D Grand Finale poster experience from the Computing Society of ICBT.">
-<title>Nadanu 3.0 | Grand Finale Poster 3D AR</title>
+<title>Nadanu 3.0 | Grand Finale Poster AR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bungee&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
@@ -169,7 +169,10 @@
   </footer>
   <p id="message" role="status" aria-live="polite"></p>
 </main>
-<div id="arContainer"></div>
+<div id="arContainer">
+  <div id="arInvitationOverlay" hidden aria-hidden="true">
+    <img src="./assets/grand-finale-poster.webp" alt="" draggable="false">
+  </div></div>
 <div id="arUI" hidden>
   <div class="topbar"><strong>NADANU 3.0 · GRAND FINALE</strong><div class="topbar-actions"><button id="resetViewButton" type="button">RESET ACTORS</button><button id="stopButton" type="button">EXIT AR</button></div></div>
   <div id="invitationScanner" class="invitation-scanner" data-scan-state="preparing" aria-label="Grand Finale poster scanner">
@@ -212,10 +215,11 @@
     </div>
   </div>
   <div class="act-controls"><button id="soundButton">SOUND OFF</button></div>
-  <div id="trackingStatus" class="tracking">Point camera at the Grand Finale poster</div>
+  <div class="act-controls"><button id="arEnableTilt" type="button">ENABLE PHONE TILT</button><span id="arTiltStatus" role="status" aria-live="polite">TAP ENABLE PHONE TILT</span></div>
+<div id="trackingStatus" class="tracking">Point camera at the Grand Finale poster</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=recognition-intro-20261106"></script>
+<script type="module" src="./app.js?v=stage-mesh-tilt-20261113-1-recognition-intro-20261106"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
@@ -250,4 +254,26 @@ box.addEventListener('pointerenter',()=>{poster.style.transform='perspective(900
 box.addEventListener('pointermove',e=>{const r=box.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;poster.style.transform=`perspective(900px) rotateX(${(-y*5).toFixed(2)}deg) rotateY(${(x*5).toFixed(2)}deg) scale(1.025)`});
 box.addEventListener('pointerleave',()=>{poster.style.transform=atRest});
 })();
-</script></body></html>
+</script>
+<section id="finaleMotion" class="poster-finale-overlay" hidden aria-label="Grand Finale poster">
+  <div class="poster-finale-top"><strong>NADANU 3.0 · GRAND FINALE</strong><button id="finaleMotionClose" type="button">✕ EXIT</button></div>
+  <img src="./assets/grand-finale-poster.webp" alt="Grand Finale official poster">
+  <div class="poster-finale-controls"><button id="finaleMotionBack" type="button">← BACK TO WEBSITE</button><button id="finaleMotionReplay" type="button">↻ REPLAY 3D PERFORMANCES</button></div>
+  <span id="finaleMotionInfo" hidden></span><iframe id="finaleMotionFrame" hidden title="Unused cinematic view"></iframe>
+  <button id="finaleEnableTilt" type="button" hidden>ENABLE TILT</button><button id="finaleResetTilt" type="button" hidden>RESET VIEW</button>
+</section>
+<style>
+#arInvitationOverlay[hidden],#finaleMotion[hidden]{display:none!important}
+#arContainer video{z-index:0!important}
+#arContainer #arInvitationOverlay{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden}
+#arContainer canvas{position:absolute!important;z-index:2!important}
+#arInvitationOverlay img{width:96vw;height:88dvh;max-height:88vh;object-fit:contain;opacity:.82;pointer-events:none;-webkit-mask-image:radial-gradient(ellipse 34% 28% at 50% 67%,rgba(0,0,0,.08) 0%,rgba(0,0,0,.42) 64%,#000 100%);mask-image:radial-gradient(ellipse 34% 28% at 50% 67%,rgba(0,0,0,.08) 0%,rgba(0,0,0,.42) 64%,#000 100%)}
+.poster-finale-overlay{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at center,#42180d,#090504 78%);padding:70px 12px 85px;overflow:hidden}
+.poster-finale-overlay>img{display:block;width:auto;max-width:96vw;max-height:calc(100dvh - 165px);height:auto;object-fit:contain;border-radius:8px;box-shadow:0 0 40px #ff823322}
+.poster-finale-top,.poster-finale-controls{position:absolute;left:12px;right:12px;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.poster-finale-top{top:calc(10px + env(safe-area-inset-top))}
+.poster-finale-controls{bottom:calc(13px + env(safe-area-inset-bottom))}
+.poster-finale-overlay button{background:#60240fed;border:1px solid #f6ab667f;padding:12px 13px;color:#fff5dc;border-radius:8px;font:700 10px Audiowide,sans-serif;cursor:pointer}
+.poster-finale-overlay strong{font:14px Bungee,sans-serif;color:#ffd276}
+</style>
+</body></html>
