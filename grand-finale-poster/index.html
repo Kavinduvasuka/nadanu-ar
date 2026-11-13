@@ -351,9 +351,36 @@ document.addEventListener('DOMContentLoaded',()=>{
 /* Launch the dedicated Grand Finale AR page, which reuses the
    Invitation's stable 3D mesh and device-tilt engine. */
 document.querySelectorAll('#startAR,#scrollStartAR,[data-register]').forEach(button=>{
- button.addEventListener('click',event=>{
+ button.addEventListener('click',async event=>{
   event.preventDefault();
-  window.location.href='./ar.html?autostart=1&v=stage-mesh-tilt-20261113-2';
+  if(button.dataset.launching==='1')return;
+  button.dataset.launching='1';
+  const previous=button.textContent;
+  button.textContent='REQUESTING CAMERA & TILT PERMISSIONS…';
+  // Initiate both requests directly within the click's user gesture.
+  // iOS Safari requires this for DeviceOrientationEvent.requestPermission.
+  let orientation=Promise.resolve('unsupported'),motion=Promise.resolve('unsupported');
+  try{
+   if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function')
+    orientation=DeviceOrientationEvent.requestPermission();
+  }catch(err){orientation=Promise.reject(err);}
+  try{
+   if(typeof DeviceMotionEvent!=='undefined' && typeof DeviceMotionEvent.requestPermission==='function')
+    motion=DeviceMotionEvent.requestPermission();
+  }catch(err){motion=Promise.reject(err);}
+  let camera=Promise.resolve(null);
+  try{
+   if(navigator.mediaDevices?.getUserMedia)
+    camera=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'}}});
+  }catch(err){camera=Promise.reject(err);}
+  const results=await Promise.allSettled([orientation,motion,camera]);
+  if(results[2].status==='fulfilled'&&results[2].value){
+   results[2].value.getTracks().forEach(track=>track.stop());
+  }
+  // The AR page will use the granted camera permission to open the scanner.
+  // It also offers an Enable Phone Tilt button for browsers that require a
+  // second user gesture after cross-document navigation.
+  window.location.href='./ar.html?autostart=1&v=permissions-20261113-4';
  });
 });
 </script>
