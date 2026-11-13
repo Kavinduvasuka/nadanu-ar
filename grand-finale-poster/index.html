@@ -54,7 +54,7 @@
         <p class="eyebrow"><i></i> The Stage Is Waiting</p>
         <h1 id="hero-title">Feel The Beat.<br><em>Own The Stage.</em></h1>
         <p class="intro">The finalists take the stage for Nadanu 3.0. Three performance categories. One unforgettable Grand Finale.</p>
-        <div class="hero-actions"><button id="startAR" type="button" class="primary">Start Grand Finale AR
+        <div class="hero-actions"><button id="startAR" type="button" class="primary">START GRAND FINALE AR
             <span>&#8599;</span></button><button id="preview" type="button" class="secondary">Explore 3D Stage
             <span>&#8599;</span></button></div>
         <p class="camera-note">On your phone, allow camera access and frame the official Grand Finale poster.</p>
@@ -63,7 +63,7 @@
         </div>
       </div>
       <div class="poster-display">
-        <div class="poster-glow"></div><img src="assets/grand-finale-poster.png" alt="Nadanu 3.0 official Grand Finale poster"
+        <div class="poster-glow"></div><img src="assets/grand-finale-poster.webp" alt="Nadanu 3.0 official Grand Finale poster"
           class="poster"><span class="poster-stamp">GRAND FINALE<br>FEEL THE BEAT</span><span
           class="vertical-note">NADANU / GRAND FINALE 3.0</span>
       </div>
@@ -199,14 +199,14 @@
       <div class="ar-showcase-copy">
         <p class="eyebrow"><i></i> MORE THAN A POSTER</p>
         <h2>Watch The Stage<br><em>Come Alive.</em></h2>
-        <p>Explore the Nadanu 3.0 Grand Finale 3D stage with the original singer and dancers. Poster scanning becomes available when the new poster target is compiled.</p>
+        <p>Explore the Nadanu 3.0 Grand Finale 3D stage with the original singer and dancers. Point your phone camera at the Grand Finale poster to unlock the 3D concert stage.</p>
         <div class="ar-showcase-actions"><button type="button" id="scrollStartAR" class="primary">Start Poster AR
             &#8599;</button><button type="button" id="scrollPreview" class="secondary">Explore 3D Stage &#8599;</button>
         </div>
         <p class="camera-note">Camera access is requested after you open the poster AR experience.</p>
       </div>
       <div class="ar-showcase-visual">
-        <div class="ar-poster-glow"></div><img src="assets/grand-finale-poster.png" alt="Official Nadanu 3.0 poster to scan"
+        <div class="ar-poster-glow"></div><img src="assets/grand-finale-poster.webp" alt="Official Nadanu 3.0 poster to scan"
           loading="lazy"><span class="ar-scan-label">SCAN · DETECT · EXPERIENCE</span>
       </div>
     </section>
@@ -257,7 +257,7 @@
           <h3>EVENT DETAILS</h3>
           <p><strong>26 NOVEMBER 2026</strong><br>1:30 AM onwards</p>
           <p>ICBT Colombo Campus<br>Amphitheater</p>
-          <a href="assets/grand-finale-poster.png" target="_blank" rel="noopener noreferrer">View Grand Finale Poster &#8599;</a>
+          <a href="assets/grand-finale-poster.webp" target="_blank" rel="noopener noreferrer">View Grand Finale Poster &#8599;</a>
         </div>
       </div>
       <div class="footer-bottom">
@@ -310,7 +310,7 @@
   </div>
   <div id="finaleInvitation" class="finale-invitation" hidden role="region" aria-label="Grand Finale Poster">
     <div class="finale-invitation-card finale-poster-card">
-      <img class="finale-poster-image" src="./assets/grand-finale-poster.png" alt="Nadanu 3.0 Grand Finale invitation poster" loading="eager" decoding="async">
+      <img class="finale-poster-image" src="./assets/grand-finale-poster.webp" alt="Nadanu 3.0 Grand Finale invitation poster" loading="eager" decoding="async">
       <div class="finale-invitation-actions"><button type="button" id="replayActsButton">↻ WATCH PERFORMANCES AGAIN</button><button type="button" id="backToWebsiteButton">← BACK TO WEBSITE</button></div>
     </div>
   </div>
@@ -348,97 +348,14 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 <script>
-/* Direct-to-camera control. Keep this independent of the 3D module CDN so a
-   missing tracker or network error cannot make Start AR an inert button. */
-(()=>{
-'use strict';
-let previewStream=null,previewVideo=null,opening=false;
-let trackerAvailable=false;
-const main=document.getElementById('landing');
-const ui=document.getElementById('arUI');
-const cameraLayer=document.getElementById('arContainer');
-const notice=document.getElementById('message');
-const scanner=document.getElementById('invitationScanner');
-const scanText=document.getElementById('scannerMessage');
-const arStyles=document.getElementById('arRuntimeStyles');
-const arEngineButton=document.getElementById('startButton');
-const exit=document.getElementById('stopButton');
-const targetReady=fetch('./assets/grand-finale-poster.mind?v=direct-camera-20261107',{method:'HEAD',cache:'no-cache'})
- .then(r=>{trackerAvailable=r.ok;return r.ok})
- .catch(()=>false);
-function showStatus(message){if(notice)notice.textContent=message}
-function endPreview(){
- if(previewStream){for(const track of previewStream.getTracks())track.stop();}
- previewStream=null;
- if(previewVideo){previewVideo.pause();previewVideo.srcObject=null;previewVideo.remove();previewVideo=null;}
- cameraLayer?.querySelectorAll('.camera-fallback-video').forEach(el=>el.remove());
- cameraLayer.style.display='none';
- if(ui)ui.hidden=true;
- if(scanner)scanner.hidden=true;
- if(main)main.style.display='';
- if(arStyles)arStyles.media='not all';
- document.body.classList.remove('camera-preview-active');
- opening=false;
- showStatus('');
-}
-async function startCameraPreview(){
- if(opening||previewStream)return;
- if(!navigator.mediaDevices?.getUserMedia||!window.isSecureContext){
-   showStatus('Camera needs HTTPS and a supported browser. Open this website directly in Chrome or Safari.');
-   return;
- }
- opening=true;
- if(arStyles)arStyles.media='all';
- if(main)main.style.display='none';
- if(ui)ui.hidden=false;
- if(cameraLayer)cameraLayer.style.display='block';
- document.body.classList.add('camera-preview-active');
- if(scanner){scanner.hidden=false;scanner.dataset.scanState='searching';}
- if(scanText)scanText.textContent='Camera is opening…';
- const tracking=document.getElementById('trackingStatus');if(tracking)tracking.hidden=true;
- const intro=document.getElementById('recognitionIntro');if(intro)intro.hidden=true;
- const banner=document.getElementById('actBanner');if(banner)banner.hidden=true;
- const invitation=document.getElementById('finaleInvitation');if(invitation)invitation.hidden=true;
- try{
-   // Important: invoke getUserMedia as part of the actual user click.
-   const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'}}});
-   previewStream=stream;
-   const video=document.createElement('video');
-   video.className='camera-fallback-video';
-   video.setAttribute('playsinline','');
-   video.muted=true;video.autoplay=true;video.playsInline=true;video.srcObject=stream;
-   cameraLayer.appendChild(video);previewVideo=video;
-   await video.play();
-   if(scanText)scanText.textContent='Camera ready. Poster scanning will be enabled when the Grand Finale tracking file is added.';
-   showStatus('');
- }catch(err){
-   const failure=(err&&err.name==='NotAllowedError')?'Camera permission was denied. Allow camera access in browser settings.':
-      'Could not start camera: '+(err?.message||String(err));
-   endPreview();showStatus(failure);
- }finally{opening=false;}
-}
-function startFromButton(){
- if(opening||previewStream)return;
- if(trackerAvailable&&window.__nadanuARReady&&arEngineButton){
-   arEngineButton.click();return;
- }
- // Fallback camera preview while the poster-specific .mind target is missing.
- startCameraPreview();
-}
-for(const button of document.querySelectorAll('#startAR,#scrollStartAR,[data-register]')){
- button.addEventListener('click',startFromButton);
-}
-exit?.addEventListener('click',event=>{
- if(previewStream||opening){
-   event.stopImmediatePropagation();
-   endPreview();
- }
-},true);
-window.addEventListener('pagehide',()=>{if(previewStream)endPreview()});
-targetReady.then(ready=>{
- if(!ready){console.info('Grand Finale .mind tracking target is pending; camera preview mode available.');}
+/* Launch the dedicated Grand Finale AR page, which reuses the
+   Invitation's stable 3D mesh and device-tilt engine. */
+document.querySelectorAll('#startAR,#scrollStartAR,[data-register]').forEach(button=>{
+ button.addEventListener('click',event=>{
+  event.preventDefault();
+  window.location.href='./ar.html?v=stage-mesh-tilt-20261113-1';
+ });
 });
-})();
 </script>
 <script defer src="./finalists.js?v=finalists-24-20261110"></script>
-<script type="module" src="./app.js?v=inline-camera-20261107"></script></body></html>
+</body></html>
