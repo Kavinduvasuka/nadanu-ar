@@ -214,11 +214,11 @@
       <div class="finale-invitation-actions"><button type="button" id="replayActsButton">↻ WATCH PERFORMANCES AGAIN</button><button type="button" id="backToWebsiteButton">← BACK TO WEBSITE</button></div>
     </div>
   </div>
-  <div class="act-controls"><button id="soundButton" type="button" aria-pressed="false">♫ MUSIC ON</button><button id="arEnableTilt" type="button">ENABLE PHONE TILT</button><span id="arTiltStatus" role="status" aria-live="polite">TAP ENABLE PHONE TILT</span></div>
+  <div class="act-controls"><button id="soundButton" type="button" aria-pressed="false" hidden>♫ MUSIC ON</button><button id="arEnableTilt" type="button" hidden>ENABLE PHONE TILT</button><span id="arTiltStatus" role="status" aria-live="polite"></span><span id="soundStatus" role="status" aria-live="polite"></span></div>
 <div id="trackingStatus" class="tracking">Point camera at the Grand Finale poster</div>
 </div>
 <script defer src="./landing-effects.js?v=zip-neon-fixed-20261107-2"></script>
-<script type="module" src="./app.js?v=music-controls-fix-20261113-5"></script>
+<script type="module" src="./app.js?v=automatic-permissions-music-20261113-6"></script>
 <script>
 (function(){
  const button=document.getElementById('startButton');
@@ -274,5 +274,9 @@ box.addEventListener('pointerleave',()=>{poster.style.transform=atRest});
 .poster-finale-controls{bottom:calc(13px + env(safe-area-inset-bottom))}
 .poster-finale-overlay button{background:#60240fed;border:1px solid #f6ab667f;padding:12px 13px;color:#fff5dc;border-radius:8px;font:700 10px Audiowide,sans-serif;cursor:pointer}
 .poster-finale-overlay strong{font:14px Bungee,sans-serif;color:#ffd276}
+#arUI #arEnableTilt{display:none!important}
+#arUI .act-controls button[hidden]{display:none!important}
+#arUI .act-controls{align-items:center}
+#arUI #soundStatus,#arUI #arTiltStatus{font-size:10px;font-weight:700;color:#ffe0a5;text-shadow:0 1px 6px #000;text-align:center}
 </style>
 </body></html>
