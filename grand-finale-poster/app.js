@@ -918,41 +918,69 @@ for(const button of document.querySelectorAll('[data-act]')){
 // Audio is independent of the heavy 3D models and never blocks camera setup.
 const soundButton=document.getElementById('soundButton');
 const soundtrack=new Audio('../auditions/assets/nadanu-retro-score.m4a');
-soundtrack.preload='none'; // Delay network work until the visitor actually starts AR.
+soundtrack.preload='auto';
 soundtrack.loop=true;
-soundtrack.volume=.95; // Louder than the Auditions page's .72 volume.
+soundtrack.volume=.95;
+soundtrack.muted=false;
 soundtrack.playsInline=true;
+let soundStarting=false;
+function setSoundFeedback(text){
+ const node=document.getElementById('soundStatus');
+ if(node)node.textContent=text||'';
+}
 function updateSoundButton(){
  if(!soundButton)return;
- soundButton.textContent=soundEnabled?'SOUND ON':'SOUND OFF';
+ // Label is the action the user can take, not the current sound state.
+ soundButton.textContent=soundEnabled?'♫ MUSIC OFF':'♫ MUSIC ON';
  soundButton.setAttribute('aria-pressed',String(soundEnabled));
+ soundButton.classList.toggle('active',soundEnabled);
 }
 function disableSound(){
  soundEnabled=false;
+ soundStarting=false;
  soundtrack.pause();
  try{soundtrack.currentTime=0;}catch(_){}
+ setSoundFeedback('');
  updateSoundButton();
 }
 function enableSound(){
- if(soundEnabled)return Promise.resolve();
- soundEnabled=true;
- updateSoundButton();
- // Call play() synchronously within the click handler, before any await.
- return soundtrack.play().catch(err=>{
-  soundEnabled=false;
+ if(soundEnabled&&!soundtrack.paused)return Promise.resolve();
+ // Invoke play() synchronously from the MUSIC ON tap. Safari and Chrome
+ // require a real gesture after a cross-page AR navigation.
+ if(soundStarting)return Promise.resolve();
+ soundStarting=true;
+ setSoundFeedback('STARTING MUSIC…');
+ soundtrack.muted=false;
+ soundtrack.volume=.95;
+ let attempt;
+ try{attempt=soundtrack.play();}
+ catch(error){attempt=Promise.reject(error)}
+ return Promise.resolve(attempt).then(()=>{
+  soundStarting=false;
+  soundEnabled=!soundtrack.paused;
+  setSoundFeedback(soundEnabled?'MUSIC PLAYING':'TAP MUSIC ON TO START');
   updateSoundButton();
-  console.warn('Soundtrack could not play:',err);
+ }).catch(error=>{
+  soundStarting=false;
+  soundEnabled=false;
+  setSoundFeedback(error?.name==='NotAllowedError'
+    ?'BROWSER BLOCKED AUDIO · TAP MUSIC ON AGAIN'
+    :'MUSIC COULD NOT PLAY · CHECK CONNECTION');
+  updateSoundButton();
+  console.warn('Grand Finale soundtrack play failed:',error);
  });
 }
 soundButton?.addEventListener('click',()=>{
- if(soundEnabled)disableSound();
- else enableSound();
+ if(soundEnabled&&!soundtrack.paused)disableSound();
+ else void enableSound();
 });
 soundtrack.addEventListener('error',()=>{
- console.warn('Nadanu soundtrack could not load; check the audio asset.');
- soundEnabled=false;
+ soundStarting=false; soundEnabled=false;
+ setSoundFeedback('MUSIC FILE COULD NOT LOAD');
  updateSoundButton();
+ console.warn('Grand Finale soundtrack load error',soundtrack.error?.code);
 });
+soundtrack.addEventListener('ended',()=>{soundEnabled=false;updateSoundButton();});
 updateSoundButton();
 
 // AR module initialized: lets the landing page distinguish loading errors from camera issues.
