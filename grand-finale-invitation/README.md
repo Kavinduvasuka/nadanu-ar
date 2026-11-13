@@ -9,7 +9,7 @@ Copy your compiled `finale.mind` into `assets/finale.mind`. Optionally copy the 
 Open this folder in VS Code and run a local server (e.g. `py -m http.server 8000`), then open `http://localhost:8000`. On a phone, use GitHub Pages HTTPS for camera access; a plain LAN HTTP URL may not enable the camera. Print the invitation or show it on another screen as a target.
 
 ## Publish later
-Place these files under `/finale` in your GitHub Pages repository, maintaining the `assets` folder. The target page should be `https://kavinduvasuka.github.io/nadanu-ar/finale/` if you deploy to the repo's root Pages site.
+Place these files under `/finale` in your GitHub Pages repository, maintaining the `assets` folder. The target page should be `https://kavinduvasuka.github.io/nadanu-ar/grand-finale-invitation/` if you deploy to the repo's root Pages site.
 
 ## Notes
 - The overlay displays animated title, ring and particles. It is not an MP4 video.
