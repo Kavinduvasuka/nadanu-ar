@@ -963,5 +963,9 @@ window.__nadanuARReady = true;
 // a second click on this page. Keep the regular Start button as a fallback
 // when camera permissions have been blocked by the browser.
 if (new URLSearchParams(window.location.search).get('autostart') === '1') {
+  // Main website already requested camera and motion permissions on its
+  // click. Register orientation tracking as this AR document starts.
+  // If Safari needs a new gesture, the Enable Phone Tilt button remains.
+  requestMotionFromStartGesture();
   void startAR();
 }
