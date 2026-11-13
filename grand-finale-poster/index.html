@@ -355,7 +355,6 @@ document.querySelectorAll('#startAR,#scrollStartAR,[data-register]').forEach(but
   event.preventDefault();
   if(button.dataset.launching==='1')return;
   button.dataset.launching='1';
-  const previous=button.textContent;
   button.textContent='REQUESTING CAMERA & TILT PERMISSIONS…';
   // Initiate both requests directly within the click's user gesture.
   // iOS Safari requires this for DeviceOrientationEvent.requestPermission.
@@ -380,7 +379,7 @@ document.querySelectorAll('#startAR,#scrollStartAR,[data-register]').forEach(but
   // The AR page will use the granted camera permission to open the scanner.
   // It also offers an Enable Phone Tilt button for browsers that require a
   // second user gesture after cross-document navigation.
-  window.location.href='./ar.html?autostart=1&v=permissions-20261113-4';
+  window.location.href='./ar.html?autostart=1&v=autostart-music-tilt-20261113-6';
  });
 });
 </script>
