@@ -31,7 +31,7 @@ jobs:
         run: npm install --global @gltf-transform/cli@4.5.1
       - name: Optimize mesh and textures, preserving the dance animation
         run: |
-          gltf-transform optimize finale/assets/solo-dancer.glb /tmp/solo-dancer-optimized.glb \
+          gltf-transform optimize grand-finale-invitation/assets/solo-dancer.glb /tmp/solo-dancer-optimized.glb \
             --compress draco \
             --texture-compress webp \
             --texture-size 768 \
@@ -49,7 +49,7 @@ jobs:
               assert t==0x4e4f534a
               d=json.loads(b[20:20+n])
               return len(b),len(d.get('animations',[])),len(d.get('meshes',[]))
-          original=info('finale/assets/solo-dancer.glb')
+          original=info('grand-finale-invitation/assets/solo-dancer.glb')
           optimized=info('/tmp/solo-dancer-optimized.glb')
           print('Original bytes / animations / meshes:',original)
           print('Optimized bytes / animations / meshes:',optimized)
@@ -59,9 +59,9 @@ jobs:
           PY
       - name: Replace model and publish
         run: |
-          cp /tmp/solo-dancer-optimized.glb finale/assets/solo-dancer.glb
+          cp /tmp/solo-dancer-optimized.glb grand-finale-invitation/assets/solo-dancer.glb
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add finale/assets/solo-dancer.glb
+          git add grand-finale-invitation/assets/solo-dancer.glb
           git commit -m "Optimize animated Solo Dancing GLB with Draco and WebP"
           git push origin HEAD:main
