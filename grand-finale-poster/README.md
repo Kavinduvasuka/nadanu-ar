@@ -1,6 +1,6 @@
 # Nadanu 3.0 — Grand Finale Poster 3D AR
 
-This is a **separate copy** of the original `finale/` 3D AR invitation experience, not the auditions website. The original `finale/`, `invitation/` and `auditions/` folders are unchanged.
+This is a **separate copy** of the original `grand-finale-invitation/` 3D AR invitation experience, not the auditions website. The original `grand-finale-invitation/`, `audition-invitation/` and `auditions/` folders are unchanged.
 
 ## Kept exactly from the existing finale experience
 - Three 3D GLB performers: `singer.glb`, `solo-dancer.glb`, `group_dancers.glb`
@@ -16,7 +16,7 @@ This is a **separate copy** of the original `finale/` 3D AR invitation experienc
 - The old auditions website, audition/judges photos, and group-singing artwork are not included
 
 ## REQUIRED before poster camera recognition works
-Compile **this exact poster image** as `assets/grand-finale-poster.mind` in the MindAR Image Target Compiler. Do not use `finale/assets/finale.mind` — it tracks the old invitation. The Start Poster AR button checks this file and displays an explanatory error until it exists.
+Compile **this exact poster image** as `assets/grand-finale-poster.mind` in the MindAR Image Target Compiler. Do not use `grand-finale-invitation/assets/finale.mind` — it tracks the old invitation. The Start Poster AR button checks this file and displays an explanatory error until it exists.
 
 The **Explore 3D Stage** link is usable independently of the poster tracking target, using the original GLB performers.
 
