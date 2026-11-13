@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MindARThree } from 'mindar-image-three';
+import { createAliveInvitation } from './invitation-alive.js';
 
-// Nadanu 3.0: ORIGINAL Stage Lights concert geometry + real GLB actors, anchored to the invitation.
+// Nadanu 3.0: ORIGINAL Stage Lights concert geometry + real GLB actors, anchored to the Grand Finale poster.
 // Animations: singer.glb and solo-dancer.glb have embedded animation clips.
 // group_dancers.glb is a STATIC mesh; it moves as a whole, not as rigged individuals.
 const landing = document.querySelector('#landing');
@@ -35,8 +36,49 @@ dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/');
 gltfLoader.setDRACOLoader(dracoLoader);
 let mindarThree, initialized = false, running = false, busy = false, tracked = false;
 let activeRenderer=null, activeAnchor=null, activeRoot=null, orbitControlsBound=false;
+let stageTargetX=0,stageTargetY=0,stageTiltX=0,stageTiltY=0,stageSensorBase=null;
+let filteredSensorX=0,filteredSensorY=0;
+// Drag is a persistent manual offset; sensors add to it instead of wiping it.
+let stageManualX=0,stageManualY=0;
+const STAGE_TOP_VIEW_MAX=1.08,STAGE_VIEW_MIN=-.30;
+let frozenStageRoot=null,stagePoseCaptured=false;
+let stableCamera=null;
+let initialMarkerDistance=0,markerDistanceZoom=1,markerDistanceTarget=1;
+const STAGE_SCREEN_COVERAGE=.68;
+let targetLostAt=0,stageWasActive=false;
+const TRACKING_GRACE_MS=550;
+const posePosition=new THREE.Vector3(),poseRotation=new THREE.Quaternion(),poseScale=new THREE.Vector3();
+let lastManualOrbitAt=0;
 let trackerGeneration=0; // Invalidate late tracking events from a previous camera session.
 let stage, warmLight, violetLight;
+let stageWireframe=null,wireframeMat=null,stageRevealAt=0;
+const STAGE_MESH_REVEAL_MS=1100;
+const arInvitationOverlay=document.getElementById('arInvitationOverlay');
+function setInvitationOverlay(visible){
+ if(arInvitationOverlay)arInvitationOverlay.hidden=!visible;
+}
+function createStageWireframe(root){
+  // A single restrained stage outline: no triangulated web or giant spokes.
+  stageWireframe=new THREE.Group();
+  stageWireframe.position.copy(stage.position);
+  stageWireframe.rotation.copy(stage.rotation);
+  stageWireframe.scale.copy(stage.scale);
+  root.add(stageWireframe);
+  wireframeMat=new THREE.LineBasicMaterial({
+    color:0x8ae5e0,transparent:true,opacity:.55,depthWrite:false
+  });
+  const perimeter=new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints(
+      Array.from({length:48},(_,i)=>{
+        const a=i/48*Math.PI*2;
+        return new THREE.Vector3(Math.cos(a)*9.15,.015,Math.sin(a)*9.15);
+      })
+    ),wireframeMat
+  );
+  stageWireframe.add(perimeter);
+  stageWireframe.visible=false;
+}
+
 let neonRings=[], eqBars=[], particles, stageSpots=[], beamCones=[], showMode=null;
 let selectedAct=null, soundEnabled=false;
 const performers = [new THREE.Group(), new THREE.Group(), new THREE.Group()];
@@ -59,6 +101,171 @@ function presentAct(index){
 const finaleInvitation=document.getElementById('finaleInvitation');
 const replayActsButton=document.getElementById('replayActsButton');
 let showInvitation=false;
+let aliveInvitation=null;
+
+const finaleMotion=document.getElementById('finaleMotion');
+const finaleMotionFrame=document.getElementById('finaleMotionFrame');
+const finaleMotionInfo=document.getElementById('finaleMotionInfo');
+let finalMotionActive=false,motionAllowed=false,motionReference=null;
+let finaleMotionUnlockedAt=0;
+let finalX=0,finalY=0,smoothedX=0,smoothedY=0,motionFrame=0;
+let finalZoom=1,zoomMotionAllowed=false,lastZoomMotionAt=0;
+function setMotionStatus(text){if(finaleMotionInfo)finaleMotionInfo.textContent=text;}
+// Calibrated against the device position when the Grand Finale poster is first shown.
+// iOS requires an explicit tap to allow orientation; Android may grant automatically.
+let motionSamples=0, motionPermissionPending=false, lastMotionEventAt=0;
+const arTiltButton=document.getElementById('arEnableTilt');
+const arTiltStatus=document.getElementById('arTiltStatus');
+function updateARTiltStatus(message,enableButton=false){
+ if(arTiltStatus)arTiltStatus.textContent=message;
+ if(arTiltButton)arTiltButton.hidden=!enableButton;
+}
+function receiveMotion(event){
+ if(!motionAllowed || !Number.isFinite(event.gamma) || !Number.isFinite(event.beta))return;
+ motionSamples++;
+ lastMotionEventAt=performance.now();
+ if(running && stagePoseCaptured && introCompleted && !showInvitation){
+  if(!stageSensorBase){
+   stageSensorBase={gamma:event.gamma,beta:event.beta};
+   updateARTiltStatus('PHONE TILT ACTIVE · MOVE PHONE TO VIEW PERFORMERS');
+  }
+  if(performance.now()-lastManualOrbitAt>2200){
+   const diffGamma=((event.gamma-stageSensorBase.gamma+540)%360)-180;
+   const diffBeta=((event.beta-stageSensorBase.beta+540)%360)-180;
+   // Ignore sensor noise below ~3 degrees. Low-pass orientation updates
+   // so a shaky hand does not make the entire stage vibrate.
+   const deadZone=angle=>Math.sign(angle)*Math.max(0,Math.abs(angle)-3);
+   // Gentle lateral yaw with a smaller sensor dead zone. Keep the
+   // independently tuned up/down (beta) behavior unchanged.
+   const lateralGamma=Math.sign(diffGamma)*Math.max(0,Math.abs(diffGamma)-1.5);
+   const desiredY=THREE.MathUtils.clamp(lateralGamma*.017,-1.08,1.08);
+   // Beta controls the top-down reveal; a ~50 degree handset tilt can
+   // now reach the stage top view instead of hitting the old 0.42rad cap.
+   const desiredX=THREE.MathUtils.clamp(-deadZone(diffBeta)*.024,-.28,STAGE_TOP_VIEW_MAX);
+   // Smooth left/right noise without losing deliberate phone movement.
+   filteredSensorY+=(desiredY-filteredSensorY)*.12;
+   filteredSensorX+=(desiredX-filteredSensorX)*.085;
+   const combinedY=THREE.MathUtils.clamp(stageManualY+filteredSensorY,-1.4,1.4);
+   const combinedX=THREE.MathUtils.clamp(stageManualX+filteredSensorX,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX);
+   if(Math.abs(combinedY-stageTargetY)>.004)stageTargetY=combinedY;
+   if(Math.abs(combinedX-stageTargetX)>.004)stageTargetX=combinedX;
+  }
+ }
+ if(!finalMotionActive || !finaleSceneReady || performance.now()<finaleMotionUnlockedAt)return;
+ if(!motionReference)motionReference={gamma:event.gamma,beta:event.beta};
+ const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+ finalY=clamp((event.gamma-motionReference.gamma)*.011,-.30,.30);
+ finalX=clamp(-(event.beta-motionReference.beta)*.008,-.23,.23);
+ if(motionSamples===1 || motionSamples%120===0)setMotionStatus('PHONE TILT ACTIVE · MOVE YOUR PHONE OR DRAG');
+}
+function receiveZoomMotion(event){
+ if(!zoomMotionAllowed||!finalMotionActive||!finaleSceneReady||performance.now()<finaleMotionUnlockedAt)return;
+ // DeviceMotion acceleration approximates a push/pull gesture, not true depth.
+ // Use gravity-free readings to keep stationary or tilted phones stable.
+ const z=event.acceleration?.z;
+ if(!Number.isFinite(z))return;
+ const now=performance.now();
+ if(now-lastZoomMotionAt<45)return;
+ lastZoomMotionAt=now;
+ const strength=Math.max(0,Math.abs(z)-1.35);
+ if(strength<.15)return;
+ const impulse=Math.sign(-z)*Math.min(strength,5)*.0025;
+ finalZoom=THREE.MathUtils.clamp(finalZoom+impulse,.90,1.12);
+}
+function requestZoomMotionPermission(){
+ if(!('DeviceMotionEvent' in window))return;
+ try{
+  const permission=typeof DeviceMotionEvent.requestPermission==='function'
+   ?DeviceMotionEvent.requestPermission():Promise.resolve('granted');
+  Promise.resolve(permission).then(value=>{
+   zoomMotionAllowed=value==='granted';
+   if(zoomMotionAllowed){
+    window.removeEventListener('devicemotion',receiveZoomMotion,true);
+    window.addEventListener('devicemotion',receiveZoomMotion,true);
+   }
+  }).catch(error=>console.warn('Motion zoom permission:',error));
+ }catch(error){console.warn('Motion zoom permission:',error)}
+}
+function requestMotionFromStartGesture(){
+ // Request motion access inside the same user gesture on iOS.
+ requestZoomMotionPermission();
+ if(!('DeviceOrientationEvent' in window)){
+  motionAllowed=false;
+  updateARTiltStatus('TILT SENSOR NOT AVAILABLE · DRAG TO ROTATE',false);
+  setMotionStatus('PHONE SENSOR UNAVAILABLE · DRAG TO TILT');
+  return;
+ }
+ if(motionPermissionPending)return;
+ motionPermissionPending=true;
+ try{
+  const result=typeof DeviceOrientationEvent.requestPermission==='function'
+    ?DeviceOrientationEvent.requestPermission():Promise.resolve('granted');
+  Promise.resolve(result).then(value=>{
+   motionAllowed=value==='granted';
+   if(motionAllowed){
+    motionSamples=0;motionReference=null;stageSensorBase=null;filteredSensorX=filteredSensorY=0;lastMotionEventAt=0;
+    window.removeEventListener('deviceorientation',receiveMotion,true);
+    window.addEventListener('deviceorientation',receiveMotion,true);
+    updateARTiltStatus('TILT ALLOWED · CALIBRATING…',false);
+    setMotionStatus('PHONE TILT ENABLED · MOVE PHONE OR DRAG');
+    document.getElementById('finaleEnableTilt').hidden=true;
+  }else{
+    updateARTiltStatus('ALLOW PHONE TILT TO ROTATE PERFORMERS',true);
+    setMotionStatus('ENABLE PHONE TILT OR DRAG TO EXPLORE');
+    document.getElementById('finaleEnableTilt').hidden=false;
+  }
+  }).catch(error=>{
+   console.warn('Orientation permission:',error);
+   motionAllowed=false;
+   updateARTiltStatus('TILT PERMISSION NEEDED · TAP ENABLE',true);
+   setMotionStatus('TAP ENABLE PHONE TILT OR DRAG');
+   document.getElementById('finaleEnableTilt').hidden=false;
+  }).finally(()=>{motionPermissionPending=false;});
+ }catch(error){
+  motionPermissionPending=false;
+  motionAllowed=false;
+  console.warn('Orientation permission:',error);
+  updateARTiltStatus('TILT PERMISSION NEEDED · TAP ENABLE',true);
+  document.getElementById('finaleEnableTilt').hidden=false;
+ }
+}
+function forwardMotion(){
+ if(!finalMotionActive)return;
+ if(finaleSceneReady && performance.now()>=finaleMotionUnlockedAt){
+  smoothedX+=(finalX-smoothedX)*.20;
+  smoothedY+=(finalY-smoothedY)*.20;
+  finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-motion',x:smoothedX,y:smoothedY,zoom:finalZoom},location.origin);
+ }
+ motionFrame=requestAnimationFrame(forwardMotion);
+}
+let finaleSceneReady=false;
+let finalePreloaded=false;
+const CINEMATIC_FRAME_URL='./cinematic/embed.html?v=depth-enhance-20261107-4';
+function preloadFinaleScene(){return;}
+window.addEventListener('message',event=>{
+ if(event.origin!==location.origin||event.source!==finaleMotionFrame?.contentWindow)return;
+ if(event.data?.type!=='nadanu-scene-ready')return;
+ finaleSceneReady=true;
+ if(!finalMotionActive)return;
+ // New invitation always starts front-facing and fitted inside the screen.
+ finaleMotionUnlockedAt=performance.now()+1200;
+ motionReference=null;
+ smoothedX=smoothedY=finalX=finalY=0;finalZoom=1;
+ finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin);
+ finaleMotion.classList.add('scene-ready');
+});
+async function revealFinalMotion(){
+ if(finalMotionActive)return;
+ finalMotionActive=true;
+ resetStageView();
+ running=false;tracked=false;
+ if(invitationScanner)invitationScanner.hidden=true;
+ if(recognitionIntro)recognitionIntro.hidden=true;
+ arUI.hidden=true;
+ if(finaleMotion){finaleMotion.hidden=false;finaleMotion.classList.add('scene-ready')}
+ try{await disposeARSession()}catch(error){console.warn('Camera cleanup:',error)}
+ arContainer.style.display='none';
+}
 // Confirm invitation with a logo reveal before any actors are visible.
 // If tracking is lost midway, replay the reveal on reacquisition.
 const recognitionIntro=document.getElementById('recognitionIntro');
@@ -78,7 +285,7 @@ function startRecognitionIntro(){
   recognitionIntro.hidden=false;
  }
  if(actBanner)actBanner.hidden=true;
- status.textContent='Poster recognized · welcome to Nadanu 3.0';
+ status.textContent='Invitation recognized · welcome to Nadanu 3.0';
 }
 function finishRecognitionIntro(){
  if(introCompleted)return;
@@ -88,11 +295,15 @@ function finishRecognitionIntro(){
  status.textContent='Welcome to Nadanu 3.0 · your AR show begins';
 }
 function resetPerformances(){
+ stageRevealAt=0;
+ setInvitationOverlay(false);
+ if(stageWireframe)stageWireframe.visible=false;
  lastPresentedAct=-1;
  actBanner.hidden=false;
  presentAct(0);
  sequenceTime=0;
  showInvitation=false;
+ if(aliveInvitation)aliveInvitation.root.visible=false;
  if(finaleInvitation)finaleInvitation.hidden=true;
 }
 replayActsButton?.addEventListener('click',()=>{
@@ -100,49 +311,66 @@ replayActsButton?.addEventListener('click',()=>{
  document.querySelectorAll('[data-act]').forEach(b=>b.classList.toggle('active',b.dataset.act==='auto'));
  resetPerformances();
 });
-// The 3D performers remain fixed to the invitation, allowing natural side views.
+// The 3D performers remain fixed to the Grand Finale poster, allowing natural side views.
 const orbit={zoom:1,pointers:new Map(),distance:0};
-const BASE_SCALE=0.17;
+const BASE_SCALE=0.115; // Compact mini-stage: keep floor and actors in the camera frame.
 // The real image-anchor pose determines camera perspective in Three.js.
-const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,0));
+const fixedStageTilt=new THREE.Quaternion().setFromEuler(new THREE.Euler(.42,0,0));
+function resetStageView(){
+ orbit.zoom=1;markerDistanceZoom=markerDistanceTarget=1;initialMarkerDistance=0;stageTargetX=stageTargetY=stageTiltX=stageTiltY=0;filteredSensorX=filteredSensorY=0;stageManualX=stageManualY=0;stageSensorBase=null;lastManualOrbitAt=0;
+ if(stage)stage.quaternion.copy(fixedStageTilt);
+ applyOrbit();
+}
 function applyOrbit(){
+ // Rotate the entire mini-concert together: performers stay firmly on
+ // the stage floor instead of twisting independently in mid-air.
  performers.forEach((group,i)=>{
-   group.rotation.y=0; // No billboard effect or automatic performer rotation.
-   group.scale.setScalar((i===2?1.80:3.35)*orbit.zoom);
+   group.rotation.set(0,0,0);
+   group.scale.setScalar((i===2?2.05:3.85)*orbit.zoom);
  });
 }
 function bindOrbitControls(){
  if(orbitControlsBound)return;
  orbitControlsBound=true;
- const surface=document.querySelector('#arContainer');
- surface.style.touchAction='none';
- surface.addEventListener('pointerdown',e=>{
-  if(!running)return;
-  orbit.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  orbit.distance=0;
-  try{surface.setPointerCapture(e.pointerId);}catch(_){}
- });
- surface.addEventListener('pointermove',e=>{
-  if(!running||!orbit.pointers.has(e.pointerId))return;
-  const old=orbit.pointers.get(e.pointerId);
-  orbit.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(orbit.pointers.size===2){
-    const [a,b]=[...orbit.pointers.values()];
-    const distance=Math.hypot(a.x-b.x,a.y-b.y);
-    if(orbit.distance>0)orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*distance/orbit.distance,.65,2.1);
-    orbit.distance=distance;
+ // Capture pointer events on the whole AR view. The scanner/HUD is layered above
+ // #arContainer, so listening only on the canvas misses ordinary finger drags.
+ const pointers=orbit.pointers;
+ const interactive=e=>e.target?.closest?.('button,a,input,select,textarea,dialog');
+ document.addEventListener('pointerdown',e=>{
+  if(!running||!stagePoseCaptured||!introCompleted||showInvitation||interactive(e))return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  lastManualOrbitAt=performance.now();
+  if(pointers.size===2)orbit.distance=0;
+ },true);
+ document.addEventListener('pointermove',e=>{
+  if(!running||!stagePoseCaptured||!introCompleted||!pointers.has(e.pointerId))return;
+  if(e.cancelable)e.preventDefault();
+  const old=pointers.get(e.pointerId);
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===1){
+   // Match lateral finger drag with the calmer phone yaw sensitivity.
+   stageManualY=THREE.MathUtils.clamp(stageManualY+(e.clientX-old.x)*.009,-1.4,1.4);
+   stageManualX=THREE.MathUtils.clamp(stageManualX+(e.clientY-old.y)*.008,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX);
+   stageTargetY=THREE.MathUtils.clamp(stageManualY+filteredSensorY,-1.4,1.4);
+   stageTargetX=THREE.MathUtils.clamp(stageManualX+filteredSensorX,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX);
+   lastManualOrbitAt=performance.now();
+  }else if(pointers.size===2){
+   const [a,b]=[...pointers.values()];
+   const distance=Math.hypot(a.x-b.x,a.y-b.y);
+   if(orbit.distance>0)orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*distance/orbit.distance,.65,2.1);
+   orbit.distance=distance;
   }
- });
- const release=e=>{orbit.pointers.delete(e.pointerId);orbit.distance=0;};
- surface.addEventListener('pointerup',release);
- surface.addEventListener('pointercancel',release);
- surface.addEventListener('wheel',e=>{
-  if(!running)return;e.preventDefault();
+ },true);
+ const release=e=>{pointers.delete(e.pointerId);orbit.distance=0;};
+ document.addEventListener('pointerup',release,true);
+ document.addEventListener('pointercancel',release,true);
+ window.addEventListener('blur',()=>{pointers.clear();orbit.distance=0;});
+ document.querySelector('#arContainer')?.addEventListener('wheel',e=>{
+  if(!running)return;
+  e.preventDefault();
   orbit.zoom=THREE.MathUtils.clamp(orbit.zoom*Math.exp(-e.deltaY*.001),.65,2.1);
  },{passive:false});
- document.querySelector('#resetViewButton')?.addEventListener('click',()=>{
-  orbit.zoom=1;applyOrbit();
- });
+ document.querySelector('#resetViewButton')?.addEventListener('click',resetStageView);
 }
 
 function panelTexture(lines, fontSize=76) {
@@ -169,37 +397,37 @@ function createStage(root){
   // Fixed local offset from the centre of the printed invitation.
   // The parent MindAR anchor provides the image pose; do not modify its world pose.
   stage.position.set(0,0,.12);
-  stage.rotation.x=.62; // Base presentation tilt, stabilized against tracker wobble below.
+  stage.rotation.x=.42; // Restore original front-facing concert stage viewing angle.
   stage.scale.setScalar(BASE_SCALE);
   root.add(stage);
   stageWorld=stage;
   const colors=[0xff3d9a,0x33e1ff,0xffc857];
-  const floor=new THREE.Mesh(new THREE.CircleGeometry(10,96),
-    new THREE.MeshStandardMaterial({color:0x140a28,metalness:.75,roughness:.22,side:THREE.DoubleSide}));
+  const floor=new THREE.Mesh(new THREE.RingGeometry(8.85,9.05,48),
+    new THREE.MeshBasicMaterial({color:0x79dfd4,transparent:true,opacity:.42,depthWrite:false,side:THREE.DoubleSide}));
   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;stage.add(floor);
   neonRings=[0xff3d9a,0x33e1ff,0xffc857,0xff3d9a].map((color,i)=>{
     const ring=new THREE.Mesh(new THREE.RingGeometry(1.8+i*1.6,1.9+i*1.6,96),
-      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
+      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.20,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}));
     ring.rotation.x=-Math.PI/2;ring.position.y=.012+i*.002;stage.add(ring);return ring;
   });
   eqBars=[];
   for(let i=0;i<40;i++){
     const a=i/40*Math.PI*2;
     const bar=new THREE.Mesh(new THREE.BoxGeometry(.16,1,.16),
-      new THREE.MeshBasicMaterial({color:0xffffff}));
-    bar.position.set(Math.sin(a)*9,0,Math.cos(a)*9);stage.add(bar);eqBars.push(bar);
+      new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:.75,depthWrite:false}));
+    bar.position.set(Math.sin(a)*9,0,Math.cos(a)*9);bar.visible=false;stage.add(bar);eqBars.push(bar);
   }
   halo=new THREE.Mesh(new THREE.TorusGeometry(2.4,.04,12,96),
     new THREE.MeshBasicMaterial({color:0xff3d9a}));
-  halo.position.set(0,2.2,-2.6);stage.add(halo);
+  halo.position.set(0,2.2,-2.6);halo.visible=false;stage.add(halo);
   stageSpots=[];beamCones=[];
   colors.forEach((color,i)=>{
     const light=new THREE.SpotLight(color,2.4,32,.5,.55,1);
     light.position.set(Math.cos(i*2.1)*6,9,Math.sin(i*2.1)*6);
     light.target.position.set(0,1,0);stage.add(light,light.target);stageSpots.push(light);
     const beam=new THREE.Mesh(new THREE.ConeGeometry(2.1,10,32,1,true),
-      new THREE.MeshBasicMaterial({color,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
-    stage.add(beam);beamCones.push(beam);
+      new THREE.MeshBasicMaterial({color,wireframe:true,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    beam.visible=false;stage.add(beam);beamCones.push(beam);
   });
   const count=500,positions=new Float32Array(count*3);
   for(let i=0;i<count;i++){
@@ -209,7 +437,7 @@ function createStage(root){
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
   particles=new THREE.Points(geometry,new THREE.PointsMaterial({size:.07,color:0xffd9f5,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false}));
-  stage.add(particles);
+  particles.visible=false;stage.add(particles);
   // Original procedural human figures are replaced by the three supplied GLBs.
   performers.forEach((group,i)=>{
     group.position.set(0,0,i===2?0:1);
@@ -234,13 +462,14 @@ function updateStageEffects(t,dt,index){
     const a=t*.4+i*2.1;
     l.position.set(Math.cos(a)*6,9,Math.sin(a)*6);
     l.target.position.set(Math.sin(t*.7+i)*1.5*sw,1,Math.cos(t*.6+i)*1.5*sw);
-    l.intensity=1.8+pulse*1.6;
+    // Keep only gentle invisible illumination on performers; no beams.
+    l.intensity=.9;
     const beam=beamCones[i],d=stageV.copy(l.position).sub(l.target.position),length=d.length();
     beam.position.copy(l.position).add(l.target.position).multiplyScalar(.5);
     stageQ.setFromUnitVectors(stageUp,d.normalize());beam.quaternion.copy(stageQ);
-    beam.scale.y=length/10;beam.material.opacity=.05+pulse*.05;
+    beam.scale.y=length/10;beam.material.opacity=0;
   });
-  neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.04*(i+1));r.material.opacity=.22+pulse*.45;});
+  neonRings.forEach((r,i)=>{r.scale.setScalar(1+pulse*.012*(i+1));r.material.opacity=.19;});
   eqBars.forEach((bar,i)=>{const height=1.2+(Math.sin(t*3+i*.7)*.5+.5)*4+pulse*2.5;bar.scale.y=height;bar.position.y=height/2;bar.material.color.setHSL((i/40+t*.05)%1,.9,.55);});
   halo.material.color.setHSL((t*.08)%1,.9,.6);halo.scale.setScalar(1+pulse*.05);
   const positions=particles.geometry.attributes.position;
@@ -267,14 +496,26 @@ function normalizeGLB(gltf, desiredHeight, targetX=0, targetZ=0, maxWidth=6.7){
   object.scale.multiplyScalar(factor);
   object.position.set(-center.x*factor,-bounds.min.y*factor,-center.z*factor);
   wrap.add(object);wrap.position.set(targetX,0,targetZ);
-  object.traverse(o=>{if(o.isMesh||o.isSkinnedMesh){o.frustumCulled=false;o.castShadow=true;}});
+  object.traverse(o=>{
+    if(o.isMesh||o.isSkinnedMesh){
+      o.frustumCulled=false;o.castShadow=true;
+      // Preserve the original textures and alpha-cutout details; only restore
+      // full performer opacity. Do not change animation or sensor behavior.
+      const mats=Array.isArray(o.material)?o.material:[o.material];
+      for(const mat of mats){
+        if(!mat)continue;
+        mat.opacity=1;
+        mat.needsUpdate=true;
+      }
+    }
+  });
   return {wrap,object};
 }
 async function loadPerformers() {
  const assets=[
-  {path:'./assets/singer.glb',index:0,height:2.25,x:0,z:0,maxWidth:3,name:'Singer'},
-  {path:'./assets/solo-dancer.glb?v=optimized-20261106',index:1,height:2.25,x:0,z:0,maxWidth:3,name:'Solo dancer'},
-  {path:'./assets/group_dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
+  {path:'../finale/assets/singer.glb',index:0,height:2.25,x:0,z:0,maxWidth:3,name:'Singer'},
+  {path:'../finale/assets/solo-dancer.glb?v=optimized-20261106',index:1,height:2.25,x:0.55,z:0,maxWidth:3,name:'Solo dancer'},
+  {path:'../finale/assets/group_dancers.glb',index:2,height:2.6,x:0,z:0,maxWidth:6.7,name:'Group dancers'}
  ];
  // Load performers one at a time after the live camera opens. Concurrent
  // Draco decode on mobile can block video rendering and look like a frozen stage.
@@ -303,69 +544,163 @@ async function loadPerformers() {
 }
 
 function setup() {
+ // Keep the Grand Finale poster backdrop inside the camera container even after
+ // an earlier AR session cleaned up its video/canvas DOM elements.
+ if(arInvitationOverlay && arInvitationOverlay.parentElement!==arContainer){
+  arContainer.appendChild(arInvitationOverlay);
+ }
  const generation=++trackerGeneration;
  tracked=false;
- mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/grand-finale-poster.mind?v=poster-20261107',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'no',uiScanning:'no',uiError:'yes'});
+ mindarThree=new MindARThree({container:document.querySelector('#arContainer'),imageTargetSrc:'./assets/grand-finale-poster.mind?v=finale-upload-20261113',maxTrack:1,filterMinCF:0.0001,filterBeta:0.1,warmupTolerance:8,missTolerance:12,uiLoading:'no',uiScanning:'no',uiError:'yes'});
  const {scene,renderer,camera}=mindarThree;
  activeRenderer=renderer;
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.2));
  const anchor=mindarThree.addAnchor(0),root=anchor.group;
  activeAnchor=anchor;activeRoot=root;
+ // Hybrid AR: preserve the working scene and camera projection.
+ // After recognition, the marker becomes a visibility gate, not a pose driver.
+ scene.add(camera);
+ stableCamera=camera;
+ frozenStageRoot=new THREE.Group();frozenStageRoot.visible=false;scene.add(frozenStageRoot);
+ stagePoseCaptured=false;
  scene.add(new THREE.HemisphereLight(0xffffff,0x34132a,2.8));
- warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);root.add(warmLight);
- violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);root.add(violetLight);
- createStage(root);
+ warmLight=new THREE.PointLight(0xffa245,3,3);warmLight.position.set(.5,.45,.55);frozenStageRoot.add(warmLight);
+ violetLight=new THREE.PointLight(0xa05bff,2,3);violetLight.position.set(-.5,.36,.5);frozenStageRoot.add(violetLight);
+ createStage(frozenStageRoot);
+ createStageWireframe(frozenStageRoot);
+ aliveInvitation=createAliveInvitation(frozenStageRoot);
  bindOrbitControls();
  root.visible=false;
  anchor.onTargetFound=()=>{
   if(generation!==trackerGeneration)return; // Ignore callbacks from disposed camera.
-  tracked=true;
-  trackingTime=performance.now();
-  stage.quaternion.copy(fixedStageTilt);
-  stage.visible=false;
-  root.visible=false; // Never show an old anchor pose during acquisition.
-  showScanner('locked','Poster detected · stabilizing stage…');
-  status.textContent='Poster detected · stabilizing tracking…';
+  const firstLock=!stagePoseCaptured;
+  tracked=true;targetLostAt=0;
+  if(firstLock){
+   trackingTime=performance.now();
+   stageRevealAt=0;
+   resetStageView();
+   stage.visible=false;
+   frozenStageRoot.visible=false;
+   showScanner('locked','Invitation detected · stabilizing stage…');
+   status.textContent='Invitation detected · stabilizing tracking…';
+  } else if(introCompleted) {
+   hideScanner();
+  }
+  root.visible=false; // Tracking-only anchor; stage uses a filtered copy of its pose.
  };
  anchor.onTargetLost=()=>{
   if(generation!==trackerGeneration)return;
   tracked=false;
-  stage.visible=false;
+  targetLostAt=performance.now();
+  setInvitationOverlay(false);
+  if(stageWireframe)stageWireframe.visible=false;
+  if(stage)stage.visible=false;
+  if(recognitionIntro && !introCompleted)resetRecognitionIntro();
+  // Short interruptions are tolerated. The render loop pauses and hides the
+  // stage only after the Grand Finale poster has genuinely been lost for a moment.
   root.visible=false;
-  if(!introCompleted){
-   introStartedAt=0;
-   if(recognitionIntro)recognitionIntro.hidden=true;
-  }
-  if(!showInvitation)showScanner('searching','Frame the printed Grand Finale poster');
-  status.textContent='Point camera at the printed Grand Finale poster';
  };
  renderer.setAnimationLoop(()=>{
   if(generation!==trackerGeneration||!running)return;
   const now=clock.getElapsedTime();const dt=Math.min(.05,Math.max(0,now-lastFrame));lastFrame=now;
   // MindAR can retain an old anchor matrix temporarily on iOS. Hide both the
   // complete stage and its lights until NEW invitation tracking has stabilized.
-  const locked=tracked && performance.now()-trackingTime>=800;
+  const locked=tracked && performance.now()-trackingTime>=650;
+  // Focus lost: never keep stale marker-locked AR objects on camera.
+  const inGrace=false;
+  if(locked && introCompleted && invitationScanner && !invitationScanner.hidden)hideScanner();
   if(locked && !introCompleted && !introStartedAt)startRecognitionIntro();
   if(locked && introStartedAt && performance.now()-introStartedAt>=INTRO_DURATION_MS)finishRecognitionIntro();
-  const showStage=locked && introCompleted;
-  root.visible=showStage;
+  // Capture ONE valid marker pose; attach the complete existing stage to the
+  // camera without jumping. Future image pose jitter no longer moves the stage.
+  if(locked && !stagePoseCaptured && frozenStageRoot && stableCamera){
+   root.updateWorldMatrix(true,false);
+   root.matrixWorld.decompose(posePosition,poseRotation,poseScale);
+   initialMarkerDistance=Math.abs(posePosition.z);
+   if(Number.isFinite(posePosition.x)&&Number.isFinite(posePosition.y)&&Number.isFinite(posePosition.z)){
+    frozenStageRoot.position.copy(posePosition);
+    frozenStageRoot.quaternion.copy(poseRotation);
+    frozenStageRoot.scale.copy(poseScale);
+    stableCamera.attach(frozenStageRoot);
+    // Maintain visible initial pose but fit the stage inside portrait screens.
+    if(stableCamera.isPerspectiveCamera && frozenStageRoot.position.z < -.15){
+     const depth=-frozenStageRoot.position.z;
+     const viewHeight=2*depth*Math.tan(THREE.MathUtils.degToRad(stableCamera.fov)*.5);
+     const viewWidth=viewHeight*stableCamera.aspect;
+     const naturalDiameter=20*BASE_SCALE;
+     const fit=Math.min(1,(Math.min(viewWidth,viewHeight)*STAGE_SCREEN_COVERAGE)/Math.max(.01,naturalDiameter));
+     if(Number.isFinite(fit)&&fit>0){
+      frozenStageRoot.scale.multiplyScalar(Math.max(.15,fit));
+      const safeX=Math.max(0,(viewWidth-naturalDiameter*fit)*.45);
+      const safeY=Math.max(0,(viewHeight-naturalDiameter*fit)*.40);
+      frozenStageRoot.position.x=THREE.MathUtils.clamp(frozenStageRoot.position.x,-safeX,safeX);
+      // Keep the miniature concert below the centre, clear of the top HUD.
+      frozenStageRoot.position.y=-Math.max(viewHeight*.11,Math.min(safeY,viewHeight*.16));
+     }
+    }
+    stagePoseCaptured=true;
+    stageSensorBase=null;
+   }
+  }
+  // Read live image-marker depth for real approach/retreat zoom.
+  // Do NOT follow marker translation or rotation (camera-locked stability).
+  if(locked && stagePoseCaptured && initialMarkerDistance>.1){
+   root.updateWorldMatrix(true,false);
+   const currentDepth=Math.abs(root.matrixWorld.elements[14]);
+   if(Number.isFinite(currentDepth)&&currentDepth>.1){
+    const desired=THREE.MathUtils.clamp(initialMarkerDistance/currentDepth,.78,1.38);
+    // Ignore less than 2.2% change to suppress camera tracking noise.
+    if(Math.abs(desired-markerDistanceTarget)>.022)markerDistanceTarget=desired;
+   }
+  }
+  const showStage=(locked||inGrace) && introCompleted && stagePoseCaptured;
+  if(showStage && !stageRevealAt)stageRevealAt=performance.now();
+  const meshProgress=showStage?THREE.MathUtils.clamp((performance.now()-stageRevealAt)/STAGE_MESH_REVEAL_MS,0,1):0;
+  // Viewport-fitted overlay stays independent of the 3D camera frustum.
+  setInvitationOverlay(locked && stagePoseCaptured && !showInvitation);
+  if(showStage && motionAllowed && motionSamples===0 && performance.now()-trackingTime>2400){
+   updateARTiltStatus('NO TILT DATA · CHECK MOTION ACCESS OR DRAG',true);
+  }
+  if(!showStage && stageWasActive && !showInvitation && !tracked){
+   showScanner('searching','Invitation lost · stage paused. Frame the artwork to resume.');
+   status.textContent='Invitation lost · stage paused';
+  }
+  stageWasActive=showStage;
+  root.visible=false;
+  if(frozenStageRoot)frozenStageRoot.visible=showStage;
+  // Render the concert in mesh/wireframe style throughout all 3 acts.
   stage.visible=showStage && !showInvitation;
+  if(stageWireframe){
+    stageWireframe.visible=showStage && !showInvitation;
+    wireframeMat.opacity=.55;
+  }
+  if(aliveInvitation){aliveInvitation.root.visible=showStage && showInvitation;if(aliveInvitation.root.visible)aliveInvitation.update(dt);}
   if(showStage){
-    // Keep local stage orientation constant while MindAR tracks the invitation.
-    // Moving around the invitation creates genuine perspective and parallax.
-    stage.quaternion.copy(fixedStageTilt);
+    // Keep local stage orientation constant while MindAR tracks the Grand Finale poster.
+    // Moving around the Grand Finale poster creates genuine perspective and parallax.
+    // Slow, frame-rate-independent damping: stable even if mobile FPS varies.
+    const smoothing=1-Math.exp(-4.3*dt);
+    stageTiltX+=(stageTargetX-stageTiltX)*smoothing;
+    // Yaw follows the same damped path as pitch, without sudden side flips.
+    stageTiltY+=(stageTargetY-stageTiltY)*smoothing;
+    // Smooth 3D orbit of the full stage + performers in screen-locked hybrid AR.
+    // Keep the camera-space stage position fixed to avoid marker tracking jitter.
+    // Base 0.42 + positive tilt up to 1.08 => top-down stage view;
+    // stop short of flipping the performers upside down.
+    stage.quaternion.setFromEuler(new THREE.Euler(.42+THREE.MathUtils.clamp(stageTiltX,STAGE_VIEW_MIN,STAGE_TOP_VIEW_MAX),stageTiltY,0,'XYZ'));
+    if(stageWireframe)stageWireframe.quaternion.copy(stage.quaternion);
     // Preserve each 8-second act until its GLB has fully loaded.
     // A slow first download must never silently skip the solo dancer.
     const activeAutoAct=Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS));
     const canAdvance=performerReady[activeAutoAct]||performerFailed[activeAutoAct];
-    if(!showInvitation&&selectedAct===null&&canAdvance)sequenceTime+=dt;
+    if(tracked&&!showInvitation&&selectedAct===null&&canAdvance&&meshProgress>=1)sequenceTime+=dt;
+    // Load cinematic artwork before the last performance ends.
+    if(sequenceTime>=ACT_SECONDS+1&&!finalePreloaded&&performerReady[2])preloadFinaleScene();
     // One complete three-act showcase, followed by the formal invitation.
     if(selectedAct===null && sequenceTime>=ACT_SECONDS*TOTAL_ACTS && !showInvitation){
       showInvitation=true;
-      hideScanner();
-      finaleInvitation.hidden=false;
       actBanner.hidden=true;
-      status.textContent='You are cordially invited to the Nadanu 3.0 Grand Finale';
+      void revealFinalMotion();
     }
     const index=selectedAct===null
       ? Math.min(TOTAL_ACTS-1,Math.floor(sequenceTime/ACT_SECONDS))
@@ -377,15 +712,17 @@ function setup() {
         ? `${performerNames[index]} model unavailable — try refreshing the page.`
         : `Preparing ${performerNames[index]} 3D model…`;
     }
-    for(const mixer of mixers)mixer.update(dt);
-    // The third GLB has no animation clip: the entire model turns subtly, not individuals dancing.
+    if(tracked)for(const mixer of mixers)mixer.update(dt);
+    // Apply explicit visual rotation to the performers, not the stage.
     applyOrbit();
-    // Lock to the invitation centre; delay the first reveal to avoid acquisition bounce.
+    // Lock to the Grand Finale poster centre; delay the first reveal to avoid acquisition bounce.
     // No stage orbit or dynamic resizing after lock.
-    if(performerReady[index] && status.textContent.startsWith('Poster detected')){
+    if(performerReady[index] && status.textContent.startsWith('Invitation detected')){
       status.textContent='Stage ready · move sideways for a 3D view · pinch to zoom';
     }
-    stage.scale.setScalar(BASE_SCALE);
+    markerDistanceZoom+=(markerDistanceTarget-markerDistanceZoom)*(1-Math.exp(-2.0*dt));
+    stage.scale.setScalar(BASE_SCALE*markerDistanceZoom);
+    if(stageWireframe)stageWireframe.scale.copy(stage.scale);
     warmLight.position.x=.38*Math.sin(now*1.4);violetLight.position.x=.38*Math.cos(now*1.2);
     updateStageEffects(now,dt,index);
   }
@@ -396,34 +733,29 @@ function setup() {
 let modelErrors=[];
 // Camera-first startup: do not download/decode the large GLB performers while
 // MindAR opens the camera and compiles the tracking target on mobile phones.
-message.textContent='Tap Start Invitation AR to open your camera.';
+message.textContent='Tap Start Grand Finale AR to open your camera.';
 let performersPromise=null;
 function ensurePerformersLoaded(){
  if(!performersPromise)performersPromise=loadPerformers();
  return performersPromise;
 }
 // Warm just the small tracking target through browser cache, without decoding GLBs.
-fetch('./assets/grand-finale-poster.mind?v=poster-20261107',{priority:'high'}).then(r=>{
+fetch('./assets/grand-finale-poster.mind?v=finale-upload-20261113',{priority:'high'}).then(r=>{
  if(!r.ok)throw new Error('Tracking target HTTP '+r.status);
  return r.arrayBuffer();
 }).catch(e=>console.warn('Invitation tracking target prefetch failed:',e));
 async function startAR(){
  if(busy||running)return;busy=true;startButton.disabled=true;message.textContent='Opening camera… allow camera access when prompted.';
  try{
-  // Do not reuse the unrelated invitation image-target file.
-  const posterTarget=await fetch('./assets/grand-finale-poster.mind?v=poster-20261107',{cache:'no-cache'});
-  if(!posterTarget.ok)throw new Error('Poster AR needs assets/grand-finale-poster.mind compiled from the actual Grand Finale poster. The Explore 3D Stage option works without scanning.');
-  // Original GLB stage, actor animations, camera and recognition lifecycle preserved.
+  // No duplicate blocking fetch here: MindAR uses the browser-cached target.
   const cam = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
   if(!window.isSecureContext || !cam) throw new Error('Camera requires localhost or HTTPS in a compatible browser.');
   console.info('Secure context:',window.isSecureContext,'Three revision:',THREE.REVISION);
 
-  // AR styles only apply while the camera is active; the ZIP landing look is preserved.
-  const arStyles=document.getElementById('arRuntimeStyles');
-  if(arStyles)arStyles.media='all';
   // Make the camera layer available before MindAR measures its dimensions.
   arContainer.style.display='block';
   resetRecognitionIntro();
+  updateARTiltStatus(motionAllowed?'TILT ALLOWED · MOVE PHONE':'TAP ENABLE PHONE TILT',!motionAllowed);
   // Show the custom scanner before MindAR starts; avoid blank loading screens.
   landing.style.display='none';
   arUI.hidden=false;
@@ -443,7 +775,7 @@ async function startAR(){
   mixers.forEach(m=>m.setTime(0));
   resetPerformances();
   if(!tracked)showScanner('searching','Align the Grand Finale poster inside the frame');
-  else showScanner('locked','Poster detected · stabilizing stage…');
+  else showScanner('locked','Invitation detected · stabilizing stage…');
   status.textContent='Camera ready. Point at the Grand Finale poster';
   // Models now load after the camera starts, so video startup is not blocked
   // by Draco / WebP decoding or multiple concurrent model downloads.
@@ -469,28 +801,34 @@ async function startAR(){
    arContainer.style.display='none';
    arUI.hidden=true;
    landing.style.display='block';
-   const arStyles=document.getElementById('arRuntimeStyles');if(arStyles)arStyles.media='not all';
    resetRecognitionIntro();
    if(invitationScanner)invitationScanner.hidden=true;
    disableSound();
-   await disposeARSession();
-   console.info('MindAR startup did not complete. Reload before retrying; inspect the FIRST console error.');
+   try{await disposeARSession();}catch(cleanupError){console.warn('AR startup cleanup:',cleanupError);}
+   console.info('MindAR startup did not complete. Inspect the first startup error.');
  }
  finally{busy=false;startButton.disabled=false;}
 }
 // Rebuild the MindAR controller after exit: a reused iOS camera tracker can
-// leave its old anchor transform visible even when the invitation is absent.
+// leave its old anchor transform visible even when the Grand Finale poster is absent.
 async function disposeARSession(){
  ++trackerGeneration; // Old tracker must never re-show the stage on callbacks.
  const instance=mindarThree,renderer=activeRenderer,anchor=activeAnchor,root=activeRoot;
  if(anchor){anchor.onTargetFound=null;anchor.onTargetLost=null;}
  if(root)root.visible=false;
  if(stage)stage.visible=false;
+ setInvitationOverlay(false);
  try{
   if(instance)await instance.stop();
  }catch(err){
   console.warn('MindAR shutdown warning:',err);
  }finally{
+  setInvitationOverlay(false);
+  if(stageWireframe){stageWireframe.traverse(o=>{if(o.geometry)o.geometry.dispose();});stageWireframe.parent?.remove(stageWireframe);stageWireframe=null;}
+  if(wireframeMat){wireframeMat.dispose();wireframeMat=null;}
+  stageRevealAt=0;
+  initialMarkerDistance=0;markerDistanceZoom=markerDistanceTarget=1;
+  if(frozenStageRoot){frozenStageRoot.visible=false;frozenStageRoot.parent?.remove(frozenStageRoot);frozenStageRoot=null;stagePoseCaptured=false;targetLostAt=0;stageWasActive=false;stableCamera=null;}
   if(renderer){
    try{renderer.setAnimationLoop(null);}catch(_){}
    try{renderer.dispose();}catch(_){}
@@ -501,10 +839,13 @@ async function disposeARSession(){
    try{video.srcObject?.getTracks().forEach(track=>track.stop());}catch(_){}
    try{video.srcObject=null;}catch(_){}
   }
+  if(aliveInvitation){aliveInvitation.dispose();aliveInvitation=null;}
   arContainer.replaceChildren();
+  // Preserve the original overlay for subsequent Start AR / Replay sessions.
+  if(arInvitationOverlay){arInvitationOverlay.hidden=true;arContainer.appendChild(arInvitationOverlay);}
   arContainer.style.display='none';
   mindarThree=null;activeRenderer=null;activeAnchor=null;activeRoot=null;
-  initialized=false;tracked=false;
+  initialized=false;tracked=false;stageSensorBase=null;stagePoseCaptured=false;
   orbit.pointers.clear();orbit.distance=0;orbit.zoom=1;
   applyOrbit();
   clock.stop();lastFrame=0;trackingTime=0;
@@ -520,7 +861,6 @@ async function stopAR(){
  resetRecognitionIntro();
  arContainer.style.display='none';
  landing.style.display='block';
- const arStyles=document.getElementById('arRuntimeStyles');if(arStyles)arStyles.media='not all';
  disableSound();
  resetPerformances();
  selectedAct=null;
@@ -529,11 +869,35 @@ async function stopAR(){
  finally{busy=false;}
 }
 startButton.addEventListener('click',()=>{
- // Must unlock Web Audio in the direct tap gesture, before camera and network awaits.
+ // The SAME user tap requests motion and camera. iOS may show separate prompts.
+ requestMotionFromStartGesture();
  enableSound().catch(e=>console.warn('Audio could not start:',e));
  startAR();
 });
+function closeFinalMotion(){
+ finalMotionActive=false;cancelAnimationFrame(motionFrame);finalZoom=1;
+ finaleMotion.classList.remove('scene-ready','prewarming');
+ finaleMotion.hidden=true;
+ finaleMotionFrame.removeAttribute('src');
+ finalePreloaded=false;finaleSceneReady=false;
+ disableSound();resetPerformances();selectedAct=null;
+ landing.style.display='block';message.textContent='';
+}
+document.getElementById('finaleEnableTilt')?.addEventListener('click',requestMotionFromStartGesture);
+arTiltButton?.addEventListener('click',requestMotionFromStartGesture);
+document.getElementById('finaleResetTilt')?.addEventListener('click',()=>{
+ motionReference=null;finalX=finalY=smoothedX=smoothedY=0;finalZoom=1;
+ finaleMotionUnlockedAt=performance.now()+900;
+ finaleMotionFrame?.contentWindow?.postMessage({type:'nadanu-reset-view',fit:true},location.origin);
+ setMotionStatus(motionAllowed?'VIEW RESET · MOVE PHONE TO TILT':'VIEW RESET · DRAG TO TILT');
+});
+document.getElementById('finaleMotionClose')?.addEventListener('click',closeFinalMotion);
+document.getElementById('finaleMotionBack')?.addEventListener('click',closeFinalMotion);
+document.getElementById('finaleMotionReplay')?.addEventListener('click',()=>{
+ closeFinalMotion();startAR();
+});
 stopButton.addEventListener('click',stopAR);
+document.getElementById('arBackToSite')?.addEventListener('click',stopAR);
 document.getElementById('backToWebsiteButton')?.addEventListener('click',stopAR);
 window.addEventListener('pagehide',()=>{disableSound();if(running&&mindarThree)mindarThree.stop().catch(()=>{});});
 
@@ -553,7 +917,7 @@ for(const button of document.querySelectorAll('[data-act]')){
 // Play from the Start AR user gesture, so iOS Safari permits unmuted playback.
 // Audio is independent of the heavy 3D models and never blocks camera setup.
 const soundButton=document.getElementById('soundButton');
-const soundtrack=new Audio('./assets/nadanu-retro-score.m4a');
+const soundtrack=new Audio('../auditions/assets/nadanu-retro-score.m4a');
 soundtrack.preload='none'; // Delay network work until the visitor actually starts AR.
 soundtrack.loop=true;
 soundtrack.volume=.95; // Louder than the Auditions page's .72 volume.
